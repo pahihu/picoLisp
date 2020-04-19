@@ -1,0 +1,3696 @@
+####### 19.12 #######
+24dec19
+   Add 'less', move 'depth'
+      doc/ref.html
+
+13dec19
+   Automatic 'clip' in '+ListTextField'
+      lib/form.l
+
+11dec19
+   'bagBag' GUI function for a list of bags with list of bags relation
+      lib/form.l
+
+05dec19
+   Renamed ":copy" command to ":cp"
+      lib/vip.l
+
+01dec19
+   Scroll to column 1 for 'I' in long lines
+      lib/vip.l
+
+25nov19
+   Minor optimization (+ 19 17)
+      {src64,pilos/src}/big.l
+
+14nov19
+   Minor comment
+      {src64,pilos/src}/io.l
+
+11nov19
+   Don't modify last position  in relative movements
+      lib/vip.l
+
+10nov19
+   Set '*StatNm' also on 'save>'
+      lib/vip.l
+
+09nov19
+   Show "$" for anonymous namespaces in '*Prompt'
+      lib/debug.l
+      pilos/init/lib/dbg.l
+
+06nov19
+   Include dot-files in directories
+      lib/vip.l
+
+21oct19
+   Request camera permission in 'location?' and 'camera?'
+      lib/android.l
+
+19oct19
+   Show symbolic links in directories
+      lib/vip.l
+   Comment change for java Reflector field values
+      lib/android.l
+
+14oct19
+   Minor bug in file name expansion
+      lib/vip.l
+
+13oct19
+   Support 4th UTF-8 byte
+      doc/refN.html
+
+11oct19
+   Minor comment
+      {src64,pilos/src}/sym.l
+
+26sep19
+   Bug in 'format' (Mike Pechkin)
+      {src64,pilos/src}/big.l
+
+20sep19
+   "flat" must be per buffer
+      lib/vip.l
+
+15sep19
+   F1 "flat" display per window
+      lib/vip.l
+
+10sep19
+   Wrong link location in heap diagram
+      doc64/structures
+
+06sep19
+   Updated examples for 'seed'
+      doc/refS.html
+
+02sep19
+   "$" command
+   '*Shell' global
+      lib/vip.l
+
+30aug19
+   Wrong example in 'bool/3'
+      doc/refB.html
+
+25aug19
+   Support list as destination in 'put' and '=:' (64-bit)
+      {src64,pilos/src}/sym.l
+      doc/refP.html
+      doc/ref_.html
+      doc/refG.html
+
+09aug19
+   Allow '+Link' in '+Joint' back-relation
+      lib/db.l
+
+02aug19
+   Include link to Wiki article
+      lib/vip.l
+
+01aug19
+   Minor fix for '*TStp[12]'
+      doc/refT.html
+
+31jul19
+   Run '*TStp1' and '*TStp2' also in non-raw mode
+      src64/main.l
+   Use "Z" to scroll left (reverse of "z")
+   Handle SIGTSTP (*TStp1) and SIGCONT (*TStp2)
+      lib/vip.l
+30jul19
+   '*TStp1', '*TStp2' global variables
+      src64/glob.l
+      src64/main.l
+      doc/ref.html
+      doc/refH.html
+      doc/refS.html
+      doc/refT.html
+   Check for COLUMNS and LINES
+   Fast scroll key events
+      lib/vip.l
+
+29jul19
+   Avoid [n]curses, use ANSI escape sequences
+      lib/vip.l
+   Same stdin, stdout and stderr as in arm64.linux.defs.l
+      src64/sys/arm64.android.defs.l
+   Treat control chars as "wide"
+      lib/wide.l
+   Print control chars as "^X" instead of "_"
+      lib/led.l
+
+23jul19
+   Revert interning of all cells in 'grid'
+      lib/simul.l
+
+18jul19
+   Remove second 'editButton'
+      lib/user.l
+      lib/role.l
+      app/sal.l
+      app/ord.l
+      app/item.l
+      app/cusu.l
+
+06jul19
+   TAB word movement to last delimiter
+      lib/vip.l
+
+05jul19
+   Another (unrelated) bug in 'super'
+      ersatz/fun.src
+
+####### 19.6 #######
+05jul19
+   Bug in 'super'
+      {src64,pilos/src}/flow.l
+   Minor clean-up
+      lib/vip/draw.l
+
+04jul19
+   Intern *all* cells in 'grid' (Wojciech Gac)
+      lib/simul.l
+
+02jul19
+   Don't force same line for 'set' in 'pretty'
+      lib.l
+   Try to auto-start "@" default app
+      src/httpGate.c
+
+18jun19
+   Optional arguments to "# VIP " auto-load
+      lib/vip.l
+   Update changes from unicode.org (Mike Pechkin)
+      lib/wide.l
+
+13jun19
+   Reset 'Busy' flag in ping()
+      lib/form.js
+
+11jun19
+   New file
+      lib/vip/draw.l
+
+10jun19
+   Tag stack also with "K" and "Q" (compatible @lib/edit.l)
+      lib/vip.l
+
+08jun19
+   Global 'Busy' flag (Chrome race condition?)
+      lib/form.js
+   Fix OpenSSL library to "libssl-dev"
+      doc/httpGate.html
+
+06jun19
+   Minor tuning
+      lib/gis.js
+   Use 'setExactAndAllowWhileIdle' in 'android~alarm'
+      lib/android.l
+
+05jun19
+   'Hover' function for '<poi>'
+      lib/gis.l
+      lib/gis.js
+
+04jun19
+   Pass current field to 'msg' in '+DstButton' and '+obj'
+      lib/db.l
+      lib/form.l
+
+03jun19
+   Mark horizontal scroll position with "M", use in <enter> for next line
+      lib/vip.l
+
+01jun19
+   Keep horizontal position in buffer switches
+      lib/vip.l
+
+30may19
+   Add 'GUI' and 'Config' to locals
+      lib/android.l
+
+25may19
+   "See also" 'asoq' -> 'get'
+      doc/refA.html
+   Handle long path names in 'status'
+      lib/vip.l
+
+24may19
+   Zero 'ext' in callbacks
+      lib/android.l
+
+21may19
+   Return to 4 pipes in Java RPC protocol
+      lib/android.l
+
+20may19
+   Typo in 'idForm'
+      lib/form.l
+
+17may19
+   Set up 'InFrame' in parser functions
+      {src64,pilos/src}/io.l
+      src/io.c
+
+13may19
+   'rc' stores multiple key/value pairs
+      lib.l
+      doc/refR.html
+      test/lib.l
+   Minor fix
+      doc/refD.html
+
+09may19
+   Tune horizontal positioning in 'goto'
+      lib/vip.l
+
+07may19
+   Handle long path names in 'status'
+      lib/vip.l
+   'onDone' function
+      lib/form.l
+
+04may19
+   Removed 'terminate', added 'restart' function
+      lib/android.l
+
+03may19
+   Pass flags to PendingIntent
+   Prevent 'wake' under-lock
+      lib/android.l
+   Arrows scroll only by single column
+      lib/vip.l
+
+30apr19
+   Keep count argument to 'fmt' in buffer
+      lib/vip.l
+
+29apr19
+   Optional count argument to 'fmt' in F4
+   Scroll right to longer line below current line
+   <enter> goes to beginning of next line
+   "Dirty" indicator " * "
+      lib/vip.l
+
+28apr19
+   "Dirty" indicator "*" instead of "[+]"
+   Scroll right continued in longer line
+      lib/vip.l
+
+27apr19
+   Change 'hunspell' spell checker fron "z" to "gs" command
+   Use "z" to scroll right in addition to right arrow
+      lib/vip.l
+
+26apr19
+   Handle 'T' hook in '+ObjVal'
+      lib/form.l
+
+24apr19
+   Added hint to read-macros to 'as'
+      doc/refA.html
+
+21apr19
+   'repl' CSS class
+      lib/phone.css
+
+19apr19
+   Remove 'nulp' instruction
+      src64/arch/arm64.l
+   Check socket in 'serverSend'
+      lib/xhtml.l
+
+17apr19
+   Remove 'nulp' instruction
+      doc64/asm
+      src64/arch/arm64.l
+      src64/arch/x86-64.l
+      src64/arch/ppc64.l
+      src64/arch/emu.l
+      src64/lib/asm.l
+      src64/net.l
+   Minor comment
+      src64/flow.l
+   File name handling
+      lib/vip.l
+
+13apr19
+   Clean up file name handling
+   'scratch' function
+      lib/vip.l
+
+12apr19
+   Add '*F8' and  '*F9'
+      lib/vip.l
+
+09apr19
+   Close stale task in 'serverSentEvent'
+      lib/xhtml.l
+
+08apr19
+   Minor comment formatting
+      games/chess.l
+
+07apr19
+   Mark trailing space also after backslash
+      lib/vip.l
+
+04apr19
+   'fName' in auto-load
+      lib/vip.l
+
+03apr19
+   Handle leading '@' in 'wordFun'
+      lib/vip.l
+
+02apr19
+   Bug for empty 'spell' result
+   Wrong 'gc' size calculation
+      lib/vip.l
+   '<dl>', '<dt>' and '<dd>' tags
+      lib/xhtml.l
+
+31mar19
+   Scroll left/right by 3 instead of 1
+      lib/vip.l
+
+24mar19
+   Changes in 'notify' for SDK >= 26
+      lib/android.l
+
+22mar19
+   Default argument 'null' for 'notify'
+      lib/android.l
+
+16mar19
+   Replace 'getPackageName' with direct value
+      lib/android.l
+
+09mar19
+   Change CONTEXT offset to "H@@@"
+   Add 'javaExt' function
+      lib/android.l
+
+06mar19
+   Change 'stepBtn' list argument to direct cons pair
+      lib/xhtml.l
+
+05mar19
+   Optional exclude-list argument to 'clone>'
+      lib/db.l
+
+04mar19
+   Mark trailing space also in comments
+      lib/vip.l
+
+02mar19
+   Avoid full (lock) in 'admin' and 'dbCheck'
+      lib/too.l
+      lib/dbgc.l
+
+26feb19
+   Remove (incompatible) namespace support
+      ersatz/sys.src
+      ersatz/fun.src
+      ersatz/mkJar
+      ersatz/lib.l
+
+25feb19
+   Single-pass 'dbgc' in new file
+      lib/dbgc.l
+   'dbgc' stub function
+      lib/too.l
+   Fix http:// to https://
+      INSTALL
+   Skip block comments in 'indent'
+      lib/vip.l
+
+23feb19
+   Move .relNN classes to @lib.css
+      lib.css
+      lib/phone.css
+
+21feb19
+   More .relNN classes
+      lib/phone.css
+
+18feb19
+   Default 'login>' method
+      lib/adm.l
+
+16feb19
+   Default "https://" in '+HttpField'
+      lib/form.l
+
+14feb19
+   Transient "Var" in 'accu'
+      lib.l
+      mini/lib/misc.l
+      ersatz/lib.l
+      pilos/init/lib.l
+
+11feb19
+   Abandon the habit of super parentheses for (local) lists
+      lib/android.l
+      lib/gis.l
+      lib/vip.l
+      doc/refL.html
+   Add 'runOnUiThread' to local
+      lib/android.l
+
+07feb19
+   'in', 'out', 'pipe' and 'load' pipe exit status code in '@@'
+      src64/io.l
+      src/io.c
+      doc/refI.html
+      doc/refO.html
+      doc/refP.html
+
+04feb19
+   Set document.title in 'serverSentEvent'
+      lib/xhtml.l
+
+02feb19
+   "v" view hook
+      lib/vip.l
+
+01feb19
+   Added note to 'curry'
+      doc/refC.html
+
+31jan19
+   Mark trailing space
+      lib/vip.l
+
+30jan19
+   Fixes for F12
+      src/Makefile
+      src64/sys/x86-64.freeBsd.defs.l
+   Change to ld4/st4 in errno_A/errnoC
+      src64/sys/x86-64.freeBsd.code.l
+      src64/sys/x86-64.openBsd.code.l
+      src64/sys/x86-64.sunOs.code.l
+
+29jan19
+   Minor tuning
+      lib/import.l
+
+27jan19
+   Bug in 'tzo' for negative offsets (Rick Hanson)
+      src64/main.l
+
+26jan19
+   "See also" link to 'set'
+      doc/refC.html
+
+25jan19
+   Minor tuning
+   Auto-load "# VIP " in first line
+      lib/vip.l
+
+24jan19
+   Auto-load "# VIP " in first line
+      lib/vip.l
+   Minor fixes (Mike Pechkin)
+      doc/faq.html
+      test/src/sym.l
+
+20jan19
+   'dirty>' buffer method
+   Fix pass window to 'load>'
+      lib/vip.l
+
+19jan19
+   Pass window to 'load>' and 'save>'
+   Redirect 'err' in 'command' eval and F7
+      lib/vip.l
+
+18jan19
+   <space> does ":" (instead of scroll down)
+      lib/vip.l
+
+10jan19
+   '*Retire' global
+      lib/http.l
+
+09jan19
+   Fixed 'wordFun'
+      lib/vip.l
+
+08jan19
+   Pass form into 'gui>'
+      lib/user.l
+
+05jan19
+   Undo locking
+      bin/replica
+
+04jan19
+   Removed ^F "write history" command
+      lib/led.l
+
+03jan19
+   OpenLayers update
+      lib/gis.l
+
+28dec18
+   Comments
+      lib/android.l
+
+####### 18.12 #######
+25dec18
+   Bug in *Tsm removal
+      {src64,pilos/src}/io.l
+      src/io.c
+
+24dec18
+   More 'StkLimit' checks
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/flow.l
+      src64/db.l
+
+22dec18
+   Wide character support
+      lib/led.l
+      lib/eled.l
+   New file
+      lib/wide.l
+
+21dec18
+   Fixed e-mail addresses
+      doc/app.html
+      doc/httpGate.html
+      doc/form/form.html
+   Remove *Tsm functionality
+      {src64,pilos/src}/glob.l
+      {src64,pilos/src}/io.l
+      src/pico.h
+      src/tab.c
+      src/main.c
+      src/io.c
+      lib/led.l
+      lib/eled.l
+      lib/debug.l
+      lib/el/README
+      lib/el/picolisp.el
+      doc/ref.html
+      doc/refT.html
+      doc/tut.html
+      Removed lib/tsm.l, doc/vim-tsm and lib/el/tsm.el
+   No explicit 'lock' during 'create'
+      lib/db.l
+      doc/refC.html
+
+20dec18
+   "Different file" restriction not necessary
+      doc/refC.html
+
+18dec18
+   Support 4th UTF-8 byte
+      {src64,pilos/src}/defs.l
+      src64/main.l
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/sym.l
+      src64/ht.l
+      src/pico.h
+      src/io.c
+      src/sym.c
+      src/ht.c
+   Typo
+      doc/select.html
+
+16dec18
+   Clear 'last' after "bd" command
+      lib/vip.l
+
+15dec18
+   Separate temp files in 'create'
+      lib/db.l
+      doc/refC.html
+   Locking revisited
+      lib/too.l
+      bin/replica
+
+14dec18
+   'create' more memory-conservative
+      lib/db.l
+      doc/refC.html
+
+11dec18
+   Update also existing objects in 'create'
+      lib/db.l
+      doc/refC.html
+   Locking
+      lib/db.l
+      lib/too.l
+      bin/replica
+
+10dec18
+   Backspace bug revisited
+      lib/vip.l
+   'create' function
+      lib/db.l
+      doc/ref.html
+      doc/refC.html
+
+06dec18
+   Backspace bug in "O" revisited
+      lib/vip.l
+
+29nov18
+   Correct 'prune' reference and example
+      doc/refT.html
+
+27nov18
+   Comments
+      lib/vip.l
+
+25nov18
+   Backspace bug in "O" insert mode
+      lib/vip.l
+
+21nov18
+   Explicit runOnUiThread() on general threads
+      lib/android.l
+   Remove java/ (see PilBox instead)
+
+20nov18
+   GUI thread function callbacks
+      lib/android.l
+
+18nov18
+   Treat double quotes as 'word' tokens
+      lib/vip.l
+   'pdf' accepts also multipage SVG file
+      lib/svg.l
+
+16nov18
+   'svg' and 'page.svg' multipage SVG
+      lib/svg.l
+   'svg' -> 'svgOut'
+      lib/svg.l
+      lib/pdfPage.l
+
+15nov18
+   Extended error messages
+      src/ssl.c
+
+14nov18
+   Typos in 'local' calls
+      lib/android.l
+
+13nov18
+   Show '@' in bind frames
+      doc64/structures
+   Cosmetics
+      lib/svg.l
+
+12nov18
+   Coroutine-version of 'table'
+      lib/svg.l
+   'svg' direct SVG display
+      lib/svg.l
+      lib/pdfPage.l
+
+11nov18
+   Replace runOnUiThread() with direct PilView calls
+      lib/android.l
+
+09nov18
+   Add NIL as "end of file"
+      doc/ref.html
+
+08nov18
+   Minor fixes
+      refD.html
+      refE.html
+      refS.html
+      refU.html
+      tut.html
+   Explain 'trace' limitation
+      doc/refT.html
+   Use also network provider for location
+      lib/android.l
+
+07nov18
+   Minor cosmetics
+      doc/refN.html
+      doc/refS.html
+
+06nov18
+   'ctty' sets TTY flag with NIL argument
+      src64/main.l
+      src/main.c
+      doc/refC.html
+   Restore LocationListener
+      lib/android.l
+
+05nov18
+   Wrong page-down size
+      lib/vip.l
+   Simplified RPC protocol
+   Reentrant 'java' calls
+      lib/android.l
+
+03nov18
+   Change 'wait' to T syntax
+      {src64,pilos/src}/io.l
+      src/io.c
+      ersatz/fun.src
+      doc/refW.html
+
+02nov18
+   Large font also for '.hints'
+      lib/phone.css
+   File descriptor argument for 'wait'
+      {src64,pilos/src}/io.l
+      src/io.c
+      ersatz/fun.src
+      doc/refW.html
+   '*Rply' global
+      lib/android.l
+   Minor typo
+      doc/refF.html
+
+01nov18
+   Remove LocationListener
+      lib/android.l
+
+31oct18
+   'toast' variable number of arguments
+   '*ResultProxy' tuning
+      lib/android.l
+
+30oct18
+   Add 'null' to local
+      lib/android.l
+
+29oct18
+   Propagate 'java' exceptions via 'quit'
+      lib/android.l
+   Clear '*Msg' in 'repl'
+      lib/form.l
+
+25oct18
+   Minor optimization '=1'
+      games/chess.l
+   Minor optimization in 'stepBtn'
+      lib/xhtml.l
+   Bug in 'getWord' due to 'prior'
+      lib/vip.l
+
+24oct18
+   Check for atomic first argument in 'prior'
+      {src64,pilos/src}/subr.l
+      {src,mini/src}/subr.c
+      ersatz/fun.src
+      test/src/subr.l
+
+23oct18
+   Accept direct list in 'stepBtn'
+      lib/xhtml.l
+   Adjust 'panel' and 'idForm' for that
+      lib/form.l
+
+16oct18
+   Add size check to 'doJournal'
+      src64/db.l
+
+15oct18
+   Add stack check to 'doJournal'
+      src64/db.l
+
+13oct18
+   Optionally disable 'DbJnl' and 'DbLog' in 'journal'
+      src64/db.l
+      doc/refJ.html
+
+11oct18
+   Revisit 'parMatch'
+   Save last position in 'goUp' and 'goDown'
+      lib/vip.l
+
+09oct18
+   Minor fix ("302" instead of "301", 12apr17)
+      doc/httpGate.html
+
+05oct18
+   Treat parentheses as 'word' tokens
+      lib/vip.l
+
+04oct18
+   Revisit 'parMatch'
+      lib/vip.l
+
+30sep18
+   Fix 'pre?' and 'text' for compatibility
+      mini/src/sym.c
+
+26sep18
+   Support target in '<post>'
+      lib/xhtml.l
+
+22sep18
+   Minor translation change
+      loc/de
+   Accept all-uppercase as global constants
+      lib/lint.l
+
+21sep18
+   Bug in setting checkbox values
+      lib/form.js
+
+18sep18
+   Disable TLSv1
+      src/httpGate.c
+   Disable TLSv1, use 'SSL_set_tlsext_host_name' (Mike Pechkin)
+      src/ssl.c
+
+16sep18
+   Minor typo
+      doc/refD.html
+
+13sep18
+   Input field in 'repl' shorter
+      lib/form.l
+   Large font also for 'textarea' and 'select'
+      lib/phone.css
+
+08sep18
+   Mark saved namespaces in catch/coroutine frames
+      {src64,pilos/src}/gc.l
+
+05sep18
+   Bug in initial 'tasks' timeout
+      lib.l
+
+01sep18
+   Clear 'DbJnl' and 'DbLog' in 'pool2'
+      src64/db.l
+
+25aug18
+   Minor fix
+      doc/ref.html
+   ":bx" buffer exchange command
+      lib/vip.l
+
+23aug18
+   Force reload of 'loginForm'
+      lib/adm.l
+   'revolve/2' reference
+      doc/ref.html
+      doc/refR.html
+
+22aug18
+   'revolve/2' predicate
+      {lib,pilos/init/lib}/pilog.l
+   Fix and simplify 'parMatch'
+      lib/vip.l
+
+18aug18
+   Mask overflow in external symbol offsets
+      {src64,pilos/src}/io.l
+
+17aug18
+   <space> scrolls down
+      lib/vip.l
+
+15aug18
+   "|" column command
+   "#" and "&" search word commands
+      lib/vip.l
+
+03aug18
+   Wrong comment
+      doc/tut.html
+
+18jul18
+   Catch frame bug in coroutines (64-bit)
+      {src64,pilos/src}/flow.l
+
+17jul18
+   Minor cosmetics
+      doc64/structures
+
+16jul18
+   Suppress output of 'L' in trail error log
+      lib/app.l
+
+14jul18
+   Added "Android" to '*OS'
+      doc/refO.html
+
+12jul18
+   Pastebin buffer with ":ix.io" command
+   "Z" command (corresponds to "ZZ" in VI)
+      lib/vip.l
+   Reference fix, 'new!' example
+      doc/refN.html
+
+11jul18
+   Undo fix from 02may18 ("list" was correct)
+   Typo in 'tasks' comment
+      doc/refT.html
+   'local' only defined symbols
+      lib/gis.l
+   Minor reference fix
+      doc/refA.html
+
+10jul18
+   Minor cosmetics
+      lib.l
+      mini/lib.l
+      ersatz/lib.l
+      pilos/init/lib.l
+
+09jul18
+   ":copy" command sends clip(s) to system clipboard
+      lib/vip.l
+
+05jul18
+   Lock only first byte in 'blk'
+      src64/db.l
+
+03jul18
+   Factoring inline <javascript>
+      lib/xhtml.l
+
+02jul18
+   Set 'getStringExtra' local
+      lib/android.l
+
+29jun18
+   Typo
+      doc/app.html
+
+####### 18.6 #######
+28jun18
+   Typo
+      doc/select.html
+
+27jun18
+   Typo
+      doc/app.html
+
+23jun18
+   Check for 'import' conflict
+      lib.l
+      pilos/init/lib.l
+
+17jun18
+   Use microseconds instead of milliseconds internally in '*Run' (64-bit)
+      src64/main.l
+      src64/io.l
+      src64/net.l
+
+16jun18
+   '*Spell' global
+      lib/vip.l
+   Extend 'dbgc' for distributed DBs via '*ExtDBs' global
+      lib/too.l
+   Improved REPL
+      lib/vip.l
+
+15jun18
+   'blk' returns meta-information from block zero, and NIL for invalid blocks
+      src64/db.l
+      doc/refB.html
+
+14jun18
+   Restore modified timeout, round milliseconds not slept
+      src64/main.l
+      src64/io.l
+      src/io.c
+
+13jun18
+   Use 'hunspell' spell checker ("z" command)
+      lib/vip.l
+   Added 'csFont' and 'csQuadraticCurveTo' functions (Srinivasan Ramaswamy)
+      lib/canvas.l
+      lib/canvas.js
+
+12jun18
+   New files
+      lib/pdfPage.l misc/pdfPage.l
+   Don't use modified timeout after select() in Linux
+      src64/main.l
+      src64/io.l
+      src/io.c
+   Check also for Android in *TargetOS
+      src64/net.l
+   Wrong ESC handling
+      app/lib.l
+
+11jun18
+   'ctl' policy revisited
+      lib/form.l
+   Some more beeps
+      lib/vip.l
+
+08jun18
+   Minor cosmetics
+      app/lib.l
+
+07jun18
+   Minor cosmetics
+      app/lib.l
+      app/ord.l
+
+05jun18
+   Handle excludes in 'snapshot's with "-path"
+      lib/too.l
+
+01jun18
+   Add 'ext' to function index
+      doc/ref.html
+
+29may18
+   'gc' policy
+      lib/vip.l
+
+24may18
+   Dynamic search for CURSES library
+      lib/vip.l
+
+23may18
+   Better abstraction for server-sent events
+      lib/xhtml.l
+   Server-sent events independent of 'form' GUI
+      lib/xhtml.l
+      lib/form.js
+
+20may18
+   HTML markup mismatch
+      doc/refP.html
+   Variable size for 'less', default 4
+      lib/debug.l
+      pilos/init/lib/dbg.l
+      doc/refL.html
+
+17may18
+   '<thead>' and '<tbody>' functions
+      lib/xhtml.l
+   'local' fix for 'distance'
+      lib/gis.l
+   Minor reference fixes
+      doc/ref.html
+
+14may18
+   Minor fix in 'goto'
+      lib/vip.l
+
+11may18
+   Fix 'ctl' policy
+      lib/form.l
+
+09may18
+   Check for bad EOL in '_htHead'
+      lib/http.l
+
+08may18
+   Consider 'Hook' for entity count in 'choDlg'
+      lib/form.l
+
+06may18
+   Pedantics
+      doc/refA.html
+
+05may18
+   Minor extension
+      ersatz/README
+   Generalize and simplify 'serverSentEvent' + 'serverSend'
+      lib/xhtml.l
+      lib/form.js
+
+02may18
+   Minor typo
+      doc/refT.html
+   No timeouts when '*Timeout' is NIL
+      lib/http.l
+      lib/form.l
+      lib/adm.l
+   Accept text from stdin
+      lib/vip.l
+
+01may18
+   Allow empty (vi) calls
+      bin/vip
+      lib/vip.l
+
+26apr18
+   Disable 'repl' text area unless in edit mode
+      lib/form.l
+   Change .tiny from "smaller" to "small"
+      lib.css
+   Minor cosmetics
+      lib/android.l
+
+23apr18
+   Minor cosmetics
+      doc/refL.html
+
+22apr18
+   Return true from ':x' command continued
+      lib/vip.l
+   'nsp' function
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/glob.l
+      doc/ref.html
+      doc/refN.html
+      doc/refP.html
+      doc/refS.html
+      test/src/sym.l
+
+21apr18
+   Handle namespaces in "^]" command
+      lib/vip.l
+   Minor cosmetics
+      {src64,pilos/src}/sym.l
+
+20apr18
+   Restore "~" as delimiter
+      lib/vip.l
+
+18apr18
+   Add "<" and ">" to 'mail' addresses (Mansur Mamkin)
+      lib/misc.l
+
+16apr18
+   Fix increment (^A) and decrement (^X)
+      lib/vip.l
+   Nested block comments
+      {src64,pilos/src}/io.l
+      {src,mini/src}/io.c
+      ersatz/sys.src
+      doc/ref.html
+
+15apr18
+   Return true from ':x' command
+      bin/vip
+      lib/vip.l
+
+13apr18
+   Dangling indexes in duplicate (+List +Bag) items revisited
+      lib/db.l
+      mini/lib/db.l
+      pilos/init/lib/db.l
+
+12apr18
+   Ignore non-existing file in ":r" command
+      lib/vip.l
+
+10apr18
+   Avoid dangling indexes in duplicate (+List +Bag) items
+      lib/db.l
+      mini/lib/db.l
+      pilos/init/lib/db.l
+   Word-search also with '@' wildcards
+      lib/vip.l
+
+09apr18
+   Minor typo
+      doc/refV.html
+
+06apr18
+   Bug in 'blk' buffer handling
+      src64/db.l
+
+01apr18
+   Enable hostname validation
+      src/ssl.c
+
+23mar18
+   'tasks' function
+      lib.l
+      doc/ref.html
+      doc/refT.html
+
+22mar18
+   Bug in mirror number parsing
+      src/ssl.c
+
+19mar18
+   Use hard links if more than one mirror directory
+      src/ssl.c
+   Persistent marks continued
+      lib/vip.l
+
+18mar18
+   Persistent marks with "m" command
+   "%" replacement for "!", "r" and "w" commands
+      lib/vip.l
+
+17mar18
+   Replace "%" in "e" command with current filename
+      lib/vip.l
+
+15mar18
+   Bug in 'echo' for zero 'cnt' arguments
+      {src64,pilos/src}/io.l
+      src/io.c
+      ersatz/fun.src
+   Bug in 'pool2' function
+      src64/db.l
+
+14mar18
+   'pool2' function (64-bit)
+      src64/glob.l
+      src64/db.l
+      doc/ref.html
+      doc/refB.html
+      doc/refP.html
+   'blk' and 'struct' are 64-bit-only
+      doc/refB.html
+      doc/refS.html
+
+13mar18
+   Optional mirror destination directory arguments
+      src/ssl.c
+
+11mar18
+   Fix trailing slash in 'dirname' and 'basename' arguments
+      lib/misc.l
+      ersatz/lib.l
+      pilos/init/lib/misc.l
+      test/lib/misc.l
+
+06mar18
+   'diff' with F2 also on encrypted files
+   Use 'bash' instead of 'sh' in shell commands
+      lib/vip.l
+
+04mar18
+   '*F10', '*F11' and  '*F12' (configurable in ~/.pil/viprc)
+      lib/vip.l
+
+03mar18
+   Fix markup for '#' continued
+      lib/vip.l
+   Increase 'snapshot' range from 9/10 to 59/60
+      lib/too.l
+
+28feb18
+   Fix markup for '#' at end of line
+      lib/vip.l
+
+27feb18
+   Prepend "LSD" command tokens to server messages
+      lib/xhtml.l
+      lib/form.js
+
+26feb18
+   Server-Sent Events
+      lib/xhtml.l
+      lib/form.js
+
+25feb18
+   Allow partial chunks in 'ht:Out'
+      src64/ht.l
+      src/ht.c
+
+22feb18
+   Resolve symbolic links
+   Sort directory listing
+      lib/vip.l
+
+18feb18
+   Show buffer and number of buffers in status line
+      lib/vip.l
+
+17feb18
+   Relocation errors for 'adrp' in Debian Sid
+      src64/arch/arm64.l
+      src64/ht.l
+
+16feb18
+   Print results in 'repl' inside 'catch' body
+      lib/form.l
+
+15feb18
+   Return 'T' from 'mark' for non-local symbols (instead of error)
+      src64/db.l
+
+14feb18
+   Optional 'fd2' for locking
+   No need to set 'DbBlock'
+   Minor comment fix
+      src64/db.l
+
+13feb18
+   'blk' function (64-bit)
+      src64/glob.l
+      src64/db.l
+      doc/ref.html
+      doc/refB.html
+      doc/refE.html
+
+12feb18
+   Remove obsolete 'dbfMigrate' function(s)
+      lib/too.l
+
+10feb18
+   Large font for 'tiny' components
+      lib/phone.css
+
+09feb18
+   Large font for 'input' fields
+      lib/phone.css
+
+07feb18
+   Omit 'stepBtn' in 'panel' if 'Cls' is NIL
+      lib/form.l
+
+06feb18
+   Change "stop" catch tag to 'stop'
+      lib/form.l
+
+03feb18
+   Pedantics
+      lib/vip.l
+
+02feb18
+   Remove '*SesAdr' global
+      lib/http.l
+
+01feb18
+   Optional Session ID for 'psh'
+      lib/http.l
+      bin/psh
+
+29jan18
+   'reload' after "key"
+      lib/vip.l
+
+24jan18
+   Add note about the meanings of the 'id' numbers
+      doc/refI.html
+
+23jan18
+   Cosmetics
+      doc/select.html
+
+21jan18
+   Notifications and Alarm continued
+      lib/android.l
+
+20jan18
+   Remove 'cancel', change syntax of 'notify' and 'alarm'
+      lib/android.l
+
+18jan18
+   Initial 'seq' check moved to "init.l"
+      app/main.l
+      app/init.l
+
+17jan18
+   bash-completion uses dynamic loader
+      lib/bash_completion
+
+15jan18
+   'android~alarm' also at specific date and time
+      lib/android.l
+   Minor typo
+      doc/refB.html
+
+13jan18
+   "~" no delimiter
+   'reload' after "kab"
+      lib/vip.l
+
+12jan18
+   Remove "time" from 'proc', and enable for Android
+      lib/debug.l
+      ersatz/lib.l
+   Missing delimiter characters "`~{}"
+      lib/vip.l
+
+11jan18
+   Destructive side-effect in 'insMode'
+      lib/vip.l
+
+10jan18
+   Added coroutine producer function
+      misc/fibo.l
+
+09jan18
+   Bug in token parser
+      {src64,pilos/src}/io.l
+      ersatz/sys.src
+   Let 'co' and 'yield' preserve '@'
+      {src64,pilos/src}/flow.l
+      doc64/structures
+   Cosmetic 'prog1' -> 'swap'
+      misc/fibo.l
+
+08jan18
+   'byte' is 64-bit-only
+      doc/refB.html
+      test/src/main.l
+
+05jan18
+   Pedantics
+      lib/db.l
+      app/er.l
+   Added 'yoke' link to 'made'
+      doc/refM.html
+
+02jan18
+   Clean up '*Java', '*Lisp' etc. in '*Fork'
+   'android~cancel' function
+      lib/android.l
+
+01jan18
+   Separate 'java1' function
+      lib/android.l
+
+30dec17
+   (java "cls") returns the class
+   'android~alarm' function
+      lib/android.l
+
+####### 17.12 #######
+29nov17
+   Handle '\' at EOL in strings
+      lib/vip.l
+
+19nov17
+   'loadTxt' function
+      lib/android.l
+
+17nov17
+   Ignore SIGPIPE earlier
+      src/ssl.c
+   Support SSL and AUTH in 'mail'
+      lib/misc.l
+      doc/refM.html
+
+14nov17
+   Edit directories
+      lib/vip.l
+
+13nov17
+   Added note about valid UTF-8 to "Input/Output"
+      doc/ref.html
+   Start-of-line search with "^"
+      lib/vip.l
+
+12nov17
+   Plain (non-pattern) search
+   Expand "~/" before file names as $HOME
+      lib/vip.l
+
+10nov17
+   Inherit LANG to application processes
+      src/httpGate.c
+
+09nov17
+   Added 'byte' function
+      {src64,pilos/src}/glob.l
+      {src64,pilos/src}/main.l
+      doc/ref.html
+      doc/refA.html
+      doc/refB.html
+      test/src/main.l
+
+05nov17
+   Need to seek before truncate
+      src/ssl.c
+
+03nov17
+   Add 'throw' to pretty-printer
+      lib.l
+   Bidirectional mode without GET when empty 'url' argument
+      src/ssl.c
+   Keep port open
+      bin/replica
+
+02nov17
+   Added (illumos) to SunOS
+      README
+
+31oct17
+   Bug in setting SYS = .linux
+      src64/Makefile
+
+28oct17
+   Refer to "picoLisp.tgz" instead of "picoLisp-XXX.tgz"
+      INSTALL
+   "sys/arm64.linux.*.l" renamed to "sys/arm64.android.*.l"
+      src64/Makefile
+      src64/sys/arm64.linux.code.l
+      src64/sys/arm64.linux.defs.l
+      New files
+         src64/sys/arm64.android.code.l
+         src64/sys/arm64.android.defs.l
+
+25oct17
+   Avoid "unpredictable register load" warning in 'drop/pop'
+      src64/arch/arm64.l
+
+24oct17
+   Fixed example and text for '+Ref2'
+      doc/refR.html
+
+18oct17
+   New files
+      doc/search
+      lib/vip.l
+      bin/vip
+
+12oct17
+   Revert auto-reload on visibilitychange event
+      lib/xhtml.l
+
+11oct17
+   Don't read same input channel in child processes
+      misc/reverse.l
+
+10oct17
+   Optional "Reply-To:" header in 'mail' (Andreas Rüegger)
+      lib/misc.l
+
+07oct17
+   Simple example for reading whole file contents
+      doc/tut.html
+
+04oct17
+   Continued (Mickie Byrd)
+      src/Makefile
+
+03oct17
+   Define isinf() for Solaris 10
+      src/big.c
+
+27sep17
+   Fix for -m32 (Mickie Byrd)
+      src/Makefile
+
+14sep17
+   Make '*HtSock' global continued
+      lib/http.l
+
+11sep17
+   Clear named pipes initially
+      lib/android.l
+
+10sep17
+   'notify' brings current task to front
+      lib/android.l
+   Use "/dev/urandom" in 'longRand'
+      lib/rsa.l
+
+02sep17
+   'boss' function
+      lib/android.l
+   Make '*HtSock' global
+      lib/http.l
+   Added 'fd' function
+      src64/glob.l
+      src64/io.l
+      src/pico.h
+      src/tab.c
+      src/io.c
+      doc/ref.html
+      doc/refF.html
+
+01sep17
+   Minor cosmetics
+      lib/http.l
+
+31aug17
+   Added 'clearHistory' and 'clearCache' functions
+   'toast' returns argument string
+      lib/android.l
+
+30aug17
+   Added 'distance' function
+      lib/gis.l
+   Added padding to 'tiny' class
+      lib/phone.css
+   Note about the higher bits in 'rand'
+      doc/refR.html
+
+28aug17
+   Added "Settings" to language files
+      loc/ca
+      loc/de
+      loc/es
+      loc/fr
+      loc/gr
+      loc/jp
+      loc/no
+      loc/ru
+      loc/sv
+   Ignore missing language files in 'locale'
+      {lib,pilos/init/lib}/misc.l
+   Check for empty value in '(rel?> . +Swap)'
+      {lib,pilos/init/lib}/db.l
+
+27aug17
+   Minor change: 'max-age' for 'css' from 1 h to 1 d
+      lib/http.l
+
+21aug17
+   Added 'toast' function
+   (wake) only initializes, (wake 'flg) acquires/releases
+      lib/android.l
+   '*Osm' without implicit clipping
+      lib/gis.l
+
+20aug17
+   Set '<line>' local
+      lib/gis.l
+
+18aug17
+   Added '<line>' function
+      lib/gis.l
+      lib/gis.js
+   Make 'css' function global
+      lib/xhtml.l
+
+17aug17
+   Use "$ " prefix in 'repl' instead of "Shell" button
+      lib/form.l
+
+11aug17
+   Typos in documentation (Nehal Singhal)
+      doc/ref.html
+      doc/refA.html
+   Added 'startForeground' and 'stopForeground'
+      lib/android.l
+
+09aug17
+   Omit linefeed in 'wrap' if last word is too long
+      lib/misc.l
+      test/lib/misc.l
+
+07aug17
+   Use 'run'/'str' instead of 'eval'/'any' in 'repl'
+      lib/form.l
+   No namespace modification in 'java'
+      lib/android.l
+
+04aug17
+   Keep 'repl' state in global variables
+      lib/form.l
+
+02aug17
+   Revert 'genKey' change from 25mar16
+      {lib,pilos/init/lib}/db.l
+
+31jul17
+   'notify' returns 'Notification' object
+      lib/android.l
+
+30jul17
+   National trunk prefix in localization
+      lib/misc.l
+      pilos/init/lib/misc.l
+      loc/[A-Z]*.l
+      doc/refE.html
+      doc/refT.html
+   Minor reference additions to '+Entity'
+      doc/refE.html
+
+29jul17
+   OSM continued
+      lib/gis.l
+   Change 'edit' style to transient
+      lib/form.l
+
+28jul17
+   OSM view, click and drag events
+      lib/gis.l
+      lib/gis.js
+   'xxxECnt' for PilOS
+      pilos/init/lib/db.l
+
+27jul17
+   Fixes for 'incECnt', 'decECnt', 'badECnt' and 'fixECnt' (Andreas Rüegger)
+      lib/db.l
+      lib/too.l
+   Documentation fix about T/NIL naming conventions (Nehal Singhal)
+      doc/ref.html
+
+26jul17
+   'httpGate' shutdown() on SIGALRM
+      src/httpGate.c
+
+24jul17
+   '+Stop' GUI prefix class
+      lib/form.l
+   Fix WakeLock release
+      lib/android.l
+
+22jul17
+   Use home-relative path
+      lib/tinymce.l
+   Typos in documentation (Nehal Singhal)
+      doc/ref.html
+      doc/faq.html
+      doc/native.html
+
+20jul17
+   Changed 'rdOpen[EXY]' to set SIGPIPE to default
+      src64/io.l
+      src/io.c
+
+19jul17
+   Use 'w3m' instead of 'lynx' in 'help'
+      lib/debug.l
+      doc/refH.html
+
+18jul17
+   Added 'help' function (Peter Nagy)
+      lib/debug.l
+      doc/ref.html
+      doc/refH.html
+   Enable 'paste' plugin
+      lib/tinymce.l
+
+17jul17
+   Print PID if 8th argument is zero
+      src/ssl.c
+   Added 'terminate' function
+      lib/android.l
+
+16jul17
+   Needs 'fileUri' ('FileProvider') instead of 'fromFile' for SDK >= 24
+      lib/android.l
+
+15jul17
+   Bug in 'doMulDiv' ('*/')
+      {src64,pilos/src}/big.l
+   Minor typo
+      doc/refT.html
+
+13jul17
+   Reference examples
+      doc/ref_.html
+      doc/refF.html
+
+12jul17
+   '+Swap/R' GUI prefix class
+      lib/form.l
+
+10jul17
+   Added '<poi>' URL support
+      lib/gis.l
+      lib/gis.js
+
+09jul17
+   '<poi>' function
+      lib/gis.l
+      lib/gis.js
+
+08jul17
+   New file
+      lib/gis.js
+   Minor 'javascript' cosmetics
+      lib/xhtml.l
+      lib/form.l
+      lib/gis.l
+
+07jul17
+   Preserve namespaces in error handler
+      {src64,pilos/src}/err.l
+
+06jul17
+   'OL-CSS' URL and '<osm>' function
+      lib/gis.l
+   Fix for Cygwin|Msys (Mike Pechkin)
+      src/Makefile
+
+05jul17
+   Minor addition to greek localiztion
+      loc/gr
+
+04jul17
+   Added 'wifi?' function
+      lib/android.l
+   Catalan localiztion (Arnau Figueras)
+      loc/ca
+   Removed "ifdef __CYGWIN__" for fcntl()
+      src/io.c
+
+29jun17
+   Mail multipart/alternative block
+      lib/misc.l
+
+####### 17.6 #######
+28jun17
+   Avoid "push S"
+      src64/big.l
+      pilos/src/big.l
+
+26jun17
+   Minor register size change
+      src64/arch/arm64.l
+
+24jun17
+   Call shell in 'repl'
+      lib/form.l
+   Minor initialization changes
+      lib/android.l
+
+23jun17
+   Unlink pipes before creation
+      lib/android.l
+
+22jun17
+   Minor local declaration
+      lib/android.l
+
+20jun17
+   Added 'zxing?' checking for QR-Code scanner
+      lib/android.l
+   Document volatile properties
+      doc/ref.html
+   "Call" button in 'repl'
+      lib/form.l
+
+18jun17
+   'ssl' and 'download' functions
+      lib/misc.l
+      doc/refD.html
+      doc/refS.html
+
+16jun17
+   Minor ref fixes for 'pool', 'dbSync' and 'lock'
+      doc/refP.html
+      doc/refD.html
+      doc/refL.html
+
+15jun17
+   'update', 'update?' and 'location?' functions
+   Renamed 'hasCamera' to 'camera?'
+      lib/android.l
+
+13jun17
+   Added a note in the reference of 'later' about 'rd' and 'pr', in response to
+   https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=857277
+      doc/refL.html
+
+06jun17
+   'lat' and 'lon' functions
+      lib/gis.l
+   Minor fix to 'idForm', needs (fin "Var")
+      lib/form.l
+
+03jun17
+   "See also" link to 'swap'
+      doc/refS.html
+
+01jun17
+   '+TreeChart' GUI class
+      lib/form.l
+
+31may17
+   'step' stores the key in '@@'
+      lib/btree.l
+      doc/refS.html
+
+30may17
+   Rename 'val' property in '+Radio' to 'rad'
+      lib/form.l
+
+26may17
+   "name=" optional in 'mail'
+      lib/misc.l
+
+16may17
+   Wrong charset in "Saint-Exupéry"
+      doc/form/form.html
+
+14may17
+   Typos in reference (Nehal Singhal)
+      doc/form/form.html
+      doc/form/refC.html
+      doc/form/refD.html
+      doc/form/refF.html
+      doc/form/refI.html
+      doc/form/refO.html
+      doc/form/refQ.html
+      doc/form/refR.html
+      doc/form/refS.html
+
+11may17
+   Minor typo
+      doc/refA.html
+
+06may17
+   Missing line
+      loc/es
+
+04may17
+   Omit "./" in "src64/tags"
+      src64/lib/asm.l
+
+02may17
+   Removed 'cut>' and 'paste>' from '+Chart'
+      lib/form.l
+
+01may17
+   Hint filename in 'repl'
+      lib/form.l
+
+30apr17
+   Wrong '@' value in 'repl'
+      lib/form.l
+
+28apr17
+   Fix hook for '+ObjVal'
+      lib/form.l
+
+24apr17
+   Handle hook for '+ObjVal', and for 'Fld' in 'choDlg'
+      lib/form.l
+
+21apr17
+   Pass hook to 'panel'
+      lib/form.l
+
+20apr17
+   Evaluate 'objHook' in '(hint> . +Obj)'
+      lib/form.l
+
+19apr17
+   Fixes for the mail header parser by Rowan Thorpe
+      misc/mailing
+
+18apr17
+   Add '@' to the '*Run' reference
+      doc/refR.html
+
+12apr17
+   Use "302 Found" instead of "301 Moved Permanently" in 'httpGate'
+      src/httpGate.c
+
+07apr17
+   Simplification of 'delete' etc.
+      {src64,pilos/src}/subr.l
+      {src64,pilos/src}/sym.l
+
+05apr17
+   Optional 'flg' argument also for 'del'
+      {src64,pilos/src}/subr.l
+      {src64,pilos/src}/sym.l
+      {src,mini/src}/subr.c
+      {src,mini/src}/sym.c
+      doc/refD.html
+      test/src/sym.l
+   Revert httpGate (without SSL_shutdown())
+      src/httpGate.c
+
+04apr17
+   Minor fix in 'genKey', make 'ubZval' non-destructive
+      pilos/init/lib/db.l
+   Delete multiple list elements in '(del> . +List)'
+      {lib,mini/lib,pilos/init/lib}/db.l
+   Optional 'flg' argument for 'delete' and 'delq'
+      {src64,pilos/src}/subr.l
+      {src,mini/src}/subr.c
+      ersatz/fun.src
+      doc/refD.html
+      test/src/subr.l
+
+29mar17
+   Missing 'flood' function
+      doc/ref.html
+
+28mar17
+   Conditional "PIE = -no-pie" for x86_64 (Mike Pechkin)
+      src64/Makefile
+   Add SSL_shutdown() to httpGate
+      src/httpGate.c
+   Bug in 'ssl', needs SSL_clear()
+      src/ssl.c
+
+25mar17
+   Bug in case conversions ('fold', 'uppc' etc.) for TOP character
+      {src64,pilos/src}/sym.l
+
+24mar17
+   'repl' history as '+Hint1'
+      lib/form.l
+   'repl' eval with environment offset
+      lib/form.l
+
+23mar17
+   Unmark default namespace
+      {src64,pilos/src}/sym.l
+
+21mar17
+   Clear line with ^U
+      lib/led.l
+   Suppress unnecceary "?" in 'url'
+      lib/form.l
+
+18mar17
+   Handle "301 Moved Permanently" in 'httpGate'
+      src/httpGate.c
+   Default "PIE = -no-pie" for x86_64
+      src64/Makefile
+
+17mar17
+   Handle "301 Moved Permanently" in 'httpGate'
+      src/httpGate.c
+      doc/httpGate.html
+
+16mar17
+   Removed legacy version checks
+      src64/arch/emu.l
+      pilos/make.l
+
+15mar17
+   Fix ref example for 'struct' (03nov16: Terminate char arrays on null bytes)
+      doc/refS.html
+   Internal 'Intent' methods in addition to 'putExtra'
+      lib/android.l
+   'repl' '@@' and '@@@' handling
+   'file>' method for '+FileField'
+   "Edit" button in 'repl'
+      lib/form.l
+
+11mar17
+   Missing part in '+Joint' example
+      doc/refJ.html
+
+10mar17
+   Still bug in secondary namespace lookup
+      {src64,pilos/src}/sym.l
+   Pass either unit or zoom to <svg>
+      lib/svg.l
+   Local renames
+      lib/gis.l
+
+09mar17
+   Bug lookup of long names in secondary namespaces
+      {src64,pilos/src}/sym.l
+   New files
+      lib/gis.l
+      lib/android.l
+      lib/nodroid.l
+   'all' also for given namespace
+      {src64,pilos/src}/sym.l
+      doc/refA.html
+
+08mar17
+   Minor change (Danilo Kordic)
+      lib/eled.l
+   Bug in 'intern' for namespaces
+      {src64,pilos/src}/sym.l
+      doc/refI.html
+      doc/refN.html
+
+07mar17
+   Minor clean up in 'equ' definitions
+      pilos/src/defs.l
+
+06mar17
+   'symbols' optional 'prg' for local namespace list
+      {src64,pilos/src}/sym.l
+      lib.l
+      doc/refS.html
+      doc/refL.html
+   Omit 'local' and 'import' from pil32
+      lib.l
+   Bug in namespace chaining
+      {src64,pilos/src}/sym.l
+   Added 'url1>'
+      lib/db.l
+
+04mar17
+   Namespace chaining instead of merging
+      {src64,pilos/src}/glob.l
+      {src64,pilos/src}/main.l
+      {src64,pilos/src}/gc.l
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/err.l
+      src64/ht.l
+      lib.l
+      lib/debug.l
+      pilos/init/lib.l
+      pilos/init/lib/dbg.l
+      test/src/sym.l
+      doc/ref.html
+      doc/refI.html
+      doc/refL.html
+      doc/refP.html
+      doc/refS.html
+      doc/refZ.html
+
+03mar17
+   French localization
+      loc/FR.l
+      loc/fr
+      app/loc/fr
+      app/main.l
+
+24feb17
+   Input fields without border
+      lib.css
+
+17feb17
+   Minor ref fix
+      doc/ref.html
+
+08feb17
+   idFocus() function and disable '+Focus' on touch devices
+      lib/form.js
+      lib/form.l
+
+07feb17
+   More "See also" entries for flow functions
+      doc/refA.html
+      doc/refC.html
+      doc/refI.html
+      doc/refN.html
+      doc/refO.html
+      doc/refU.html
+      doc/refW.html
+
+05feb17
+   Minor fixes to some 'chk>' methods
+      lib/form.l
+
+30jan17
+   Note 'flush' in the 'out' reference
+      doc/refO.html
+
+27jan17
+   More tag fixes
+      doc/form/refC.html
+
+26jan17
+   More tag fixes
+      doc/form/refA.html
+      doc/form/refC.html
+      doc/form/refD.html
+      doc/form/refF.html
+      doc/form/refI.html
+      doc/form/refJ.html
+      doc/form/refO.html
+      doc/form/refQ.html
+
+25jan17
+   More tag fixes
+      doc/form/refF.html
+      doc/form/refO.html
+      doc/form/refQ.html
+      doc/form/refS.html
+      doc/form/refV.html
+      doc/form/form.html
+
+24jan17
+   Bug in indent script with closing comments '}#'
+      bin/pilIndent
+
+23jan17
+   More typos in docs
+      doc/app.html
+
+22jan17
+   Unmatched tags (Jon / Mattias)
+      doc/form/refC.html
+
+20jan17
+   Incorrect usage of 'ctl' in 'rc' and 'acquire'
+      lib.l
+
+17jan17
+   Bug in 'port', guarantee 16-bit value after ntohs()
+      src64/net.l
+   More ref fixes (Jon / Mattias)
+      doc/form/refQ.html
+
+13jan17
+   Missing '#' in link (Jon / Mattias)
+      doc/form/refP.html
+
+09jan17
+   Make 'tzo' Linux-only
+      src/main.c
+      doc/refT.html
+      test/src/main.l
+   Remove lib/dbase.l from distribution
+      lib/dbase.l
+   Avoid race condition in 'tzo' unit test
+      test/src/main.l
+
+07jan17
+   'tzo' function
+      src64/sys/arm64.linux.defs.l
+      src64/sys/x86-64.linux.defs.l
+      src64/sys/ppc64.linux.defs.l
+      src64/sys/x86-64.freeBsd.defs.l
+      src64/sys/x86-64.openBsd.defs.l
+      src64/sys/x86-64.sunOs.defs.l
+      src64/sysdefs.c
+      src64/main.l
+      src64/glob.l
+      src/pico.h
+      src/tab.c
+      src/main.c
+      doc/ref.html
+      doc/refT.html
+      test/src/main.l
+
+02jan17
+   One more example for 'fish'
+      doc/refF.html
+
+22dec16
+   Preserve "LayX" in <layout>
+      lib/xhtml.l
+
+19dec16
+   Add '+Rid' to 'resetButton'
+      lib/form.l
+
+18dec16
+   'expDat' accepts "." and "+/-<num>" for "today"
+      lib/misc.l
+      doc/refE.html
+      test/lib/misc.l
+
+16dec16
+   Base64-encode 'mail' subject if necessary
+      lib/misc.l
+   Wrong link to 'mail'
+      doc/refP.html
+
+14dec16
+   Better error diagnostics
+      src64/mkAsm
+
+12dec16
+   Minor typo, duplicated line
+      doc/refR.html
+
+09dec16
+   Reverse bind order (for (pathologically) duplicated symbols)
+      {src64,pilos/src}/main.l
+      {src64,pilos/src}/flow.l
+
+####### 16.12 #######
+05dec16
+   Stub for 'PIE = -no-pie' in Linux/x86_64 (enable in Debian Sid)
+      src64/Makefile
+
+04dec16
+   Example for 'need'
+      doc/refN.html
+
+02dec16
+   'T' result specification for 'native'
+      src64/main.l
+      doc/refN.html
+
+29nov16
+   Reference clarification for 'diff'
+      doc/refD.html
+
+25nov16
+   Minor fix, quote in 'delim?' not needed
+      lib/led.l
+
+24nov16
+   '++' function
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/glob.l
+      src/sym.c
+      src/tab.c
+      src/pico.h
+      mini/src/sym.c
+      mini/src/init.s
+      ersatz/fun.src
+      doc/ref.html
+      doc/ref_.html
+      doc/refP.html
+      test/src/sym.l
+      bin/pilIndent
+      games/chess.l
+      misc/trip.l
+      misc/rcsim.l
+      misc/calc.l
+      lib/xm.l
+      lib/xml.l
+      lib/conDbgc.l
+      lib/misc.l
+      mini/lib/misc.l
+      lib/app.l
+      lib/complete.l
+      lib/too.l
+      lib/form.l
+      lib/tex.l
+      lib/simul.l
+      lib/ps.l
+      lib/xmlrpc.l
+      lib/lint.l
+      lib/btree.l
+      lib/adm.l
+      lib/debug.l
+      mini/lib/debug.l
+      lib/json.l
+      lib/dbase.l
+      lib/http.l
+      lib/tinymce.l
+      lib/sq.l
+      lib/eled.l
+      lib/db32-64.l
+      lib/led.l
+      lib/rsa.l
+      lib/db.l
+      mini/lib/db.l
+      lib/scrape.l
+      lib/xhtml.l
+      lib/pilog.l
+      mini/lib/pilog.l
+      lib/svg.l
+      ersatz/lib.l
+      app/lib.l
+      lib.l
+      pilos/init/lib/misc.l
+      pilos/init/lib/dbg.l
+      pilos/init/lib/btree.l
+      pilos/init/lib/sq.l
+      pilos/init/lib/db.l
+      pilos/init/lib/pilog.l
+      pilos/init/lib.l
+   Incomplete error diagnoses in pil64 (X register)
+   'de', 'read', 'with', 'bind', 'co', 'on', 'off', 'onOff', 'zero' and 'one'
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/flow.l
+      {src64,pilos/src}/io.l
+
+23nov16
+   Surplus parenthesis
+      doc/tut.html
+
+16nov16
+   Added 'url5>' .. 'url9>'
+      lib/db.l
+
+06nov16
+   *Dbg info in GUI form (vi *Top)
+      lib/form.l
+
+04nov16
+   More examples for 'filter'
+      doc/refF.html
+
+03nov16
+   Terminate 'native' char arrays on null bytes
+      src64/main.l
+   Bug in 'native', needs 'consE_Y'
+      src64/main.l
+   Introduce 'consE_Y' to save E across garbage collection
+      {src64,pilos/src}/gc.l
+
+25oct16
+   Minor typo
+      doc/refG.html
+
+24oct16
+   'group' in Asm/C
+      {src64,pilos/src}/subr.l
+      {src64,pilos/src}/glob.l
+      pilos/init/lib.l
+      src/pico.h
+      src/subr.c
+      src/tab.c
+      lib.l
+      test/lib.l
+      test/src/subr.l
+
+20oct16
+   'insert', 'remove' and 'place' in Asm/C
+      {src64,pilos/src}/subr.l
+      {src64,pilos/src}/glob.l
+      pilos/init/lib.l
+      src/pico.h
+      src/subr.c
+      src/tab.c
+      lib.l
+      test/lib.l
+      test/src/subr.l
+
+17oct16
+   Check for '+relation' in 'dbfCheck'
+      lib/too.l
+   '+Obj2' GUI prefix class
+      lib/form.l
+
+11oct16
+   Several doc fixes by Rick Hanson
+      doc/ref.html
+
+06oct16
+   Note in 'lup' reference about empty tree
+      doc/refL.html
+
+03oct16
+   Minor tuning
+      app/item.l
+
+01oct16
+   Cleared-up description of 'sort'
+      doc/refS.html
+
+30sep16
+   Emacs lisp patches by Vasilij Schneidermann
+      lib/el/picolisp.el
+
+24sep16
+   Minor typo
+      doc/native.html
+
+13sep16
+   Remove 'zap' protection in pil64
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/glob.l
+
+10sep16
+   Add 'viewBox' to '<svg>'
+      lib/svg.l
+
+09sep16
+   Add '+Swap' link
+      doc/refR.html
+
+06sep16
+   Small optimizations (Mike Pechkin)
+      lib/db.l
+      mini/lib/db.l
+      pilos/init/lib/db.l
+   'repl' optional size parameters
+      lib/form.l
+
+05sep16
+   Viewport relative font size
+      lib/phone.css
+   Minor ref fix
+      doc/refF.html
+   'T' argument to '<layout>' for percentages
+      lib/xhtml.l
+
+04sep16
+   Mistype in '=0' ref
+      doc/ref_.html
+   Global '<layout>' state
+      lib/xhtml.l
+
+03sep16
+   Changed '<button>' syntax and style
+      lib/xhtml.l
+      lib.css
+      lib/phone.css
+   Handle '#{ .. }#' comments
+      bin/pilIndent
+
+02sep16
+   Minor generalization in "portable"
+      doc/faq.html
+
+29aug16
+   Greek localiztion (Anas Drak)
+      loc/gr
+      loc/GR.l
+      app/loc/gr
+      app/main.l
+
+26aug16
+   Bug in 'prin' of anonymous symbols
+      src/io.c
+   Minor cosmetics
+      lib/db.l
+
+18aug16
+   'flush' in 'repl'
+      lib/form.l
+
+16aug16
+   Include "@lib/boss.l" only as comment
+      app/main.l
+
+03aug16
+   Call native symlink() in 'blob+' if 64-bit
+      lib/db.l
+
+01aug16
+   Minor ref addition to 'detach'
+      doc/refD.html
+
+31jul16
+   Precise Auto-symbol check
+      {src64,pilos/src}/apply.l
+   Byte manipulating instructions in 'emu'
+      src64/arch/emu.l
+
+29jul16
+   Reload names config upon SIGHUP
+      src/httpGate.c
+      doc/httpGate.html
+
+28jul16
+   Make 'ubZval' non-destructive
+      lib/db.l
+   Note about 'adr' and garbage collection (DKordic)
+      doc/refA.html
+
+27jul16
+   Suppress columns in 'table' with (T . prg)
+      lib/svg.l
+      lib/ps.l
+   Align in 'heapAlloc' only for 'emu'
+      src64/main.l
+   Force data alignment in 'emu'
+      src64/arch/emu.l
+
+25jul16
+   Allow NIL elements in 'ubZval'
+      lib/db.l
+   Handle empty '*Dbs' in 'fixECnt'
+      lib/too.l
+
+23jul16
+   '<button>' function
+      lib/xhtml.l
+      lib/phone.css
+
+22jul16
+   Bug in arm64 'mul' instruction
+      src64/arch/arm64.l
+
+19jul16
+   Accept standard input in sslFile()
+      src/ssl.c
+
+17jul16
+   Set 'quit' reason to whole 'Prg' in 'assert' (DKordic)
+      lib.l
+      ersatz/lib.l
+      pilos/init/lib.l
+
+16jul16
+   Bug in 'text' (64-bit)
+      {src64,pilos/src}/sym.l
+      test/src/sym.l
+
+15jul16
+   Removed "/installpath/bin/" from man page
+      man/man1/picolisp.1
+
+12jul16
+   Add SVG links
+      lib/svg.l
+
+08jul16
+   Define "^D" and "^X" as 'fkey'
+      lib/led.l
+
+03jul16
+   'pool' ref example extension
+      doc/refP.html
+
+####### 16.6 #######
+28jun16
+   Keep in sync with PilBox
+      java/InOut.java
+
+27jun16
+   'repl' stderr and '@' handling
+      lib/form.l
+
+25jun16
+   Remove 'fmt64' from 'pw'
+      lib/http.l
+   Add 'err' to 'prtty3' symbols
+      lib.l
+   Keep in sync with PilBox
+      java/Reflector.java
+      java/InOut.java
+
+21jun16
+   Minor comment fix
+      java/Reflector.java
+
+20jun16
+   'httpGate' documentation (Mattias Sundblad)
+      doc/httpGate.html
+
+19jun16
+   Bug in 'date'/'time' (64-bit)
+      {src64,pilos/src}/main.l
+
+16jun16
+   Check size and EOF
+      bin/replica
+
+12jun16
+   Lock DB for unique connection
+      bin/replica
+
+04jun16
+   Handle Pilog predicates 'xxx/N' in 'docs'
+      lib/debug.l
+
+03jun16
+   Bug in 'doShift' ('>>')
+      {src64,pilos/src}/big.l
+
+02jun16
+   arm64 register pair push/pop optimization
+      src64/arch/arm64.l
+
+01jun16
+   Bug in x86-64 'cmpn' instruction ('from' and 'echo')
+      src64/arch/x86-64.l
+
+30may16
+   Minor improvements
+      src64/lib/asm.l
+      {src64,pilos/src}/subr.l
+
+28may16
+   64-bit call/ret optimizations
+      doc64/asm
+      src64/lib/asm.l
+      src64/arch/x86-64.l
+      src64/arch/ppc64.l
+      src64/arch/arm64.l
+      src64/arch/emu.l
+      {src64,pilos/src}/main.l
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/flow.l
+      {src64,pilos/src}/big.l
+      {src64,pilos/src}/db.l
+      {src64,pilos/src}/err.l
+      src64/ht.l
+
+22may16
+   'flood' flooding algorithm
+      lib.l
+      ersatz/lib.l
+      pilos/init/lib.l
+      doc/refF.html
+
+18may16
+   Changed random bit patterns
+      misc/bigtest
+
+13may16
+   Skip header lines without delimiting space in '_htHead'
+   Header field names case-insensitive
+      lib/http.l
+
+08may16
+   Allow +User for current user
+      lib/adm.l
+      lib/user.l
+      app/gui.l
+
+03may16
+   Clean up stack checks
+      {src64,pilos/src}/main.l
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/flow.l
+      {src64,pilos/src}/subr.l
+      {src64,pilos/src}/apply.l
+      {src64,pilos/src}/io.l
+
+29apr16
+   Bug in arm64 'add D ..' instruction
+      src64/arch/arm64.l
+   Throttle CPU load
+      misc/bigtest
+   Avoid sub/carry mix for arm64
+      {src64,pilos/src}/big.l
+
+28apr16
+   Bug in 64-bit condition code optimization (ppc64, arm64)
+      src64/lib/asm.l
+
+22apr16
+   CSS by Mansur Mamkin
+      app/main.l
+      app/menu.css
+
+21apr16
+   Minor correction
+      doc/refB.html
+
+19apr16
+   Private history for 'revise'
+      lib/led.l
+      lib/eled.l
+   'msg' more polite in teminal
+      lib.l
+      lib/led.l
+      lib/eled.l
+
+15apr16
+   Explain building 'tools' and 'gate' on 64 bits
+      INSTALL
+   'choSal' search dialog
+      app/gui.l
+      app/sal.l
+      app/cusu.l
+
+13apr16
+   Comments
+      src/ssl.c
+
+11apr16
+   Close port to force unique connection
+      bin/replica
+   Upper case names in Swedish localization
+      loc/SE.l
+   Ref typo
+      doc/form/refV.html
+
+10apr16
+   Tutorial fix
+      doc/tut.html
+
+09apr16
+   '*Sep3' and language file name in Swedish localization
+      loc/SE.l
+      loc/se -> loc/sv
+      app/loc/se -> app/loc/sv
+      lib/socialshareprivacy/loc/se -> lib/socialshareprivacy/loc/sv
+      app/main.l
+
+07apr16
+   Canvas touch events
+      lib/canvas.js
+      lib/canvas.l
+
+03apr16
+   Minor ref fixes
+      doc/ref.html
+
+01apr16
+   Skip white space in 'ext:Base64'
+      src64/ext.l
+      src/ext.c
+
+29mar16
+   Check for NIL argument in 'jsHint'
+      lib/form.l
+
+28mar16
+   Check '*Dbg' in 'psh'
+      lib/http.l
+
+26mar16
+   'request!' function
+      lib/db.l
+      doc/ref.html
+      doc/refI.html
+      doc/refN.html
+      doc/refP.html
+      doc/refR.html
+      doc/refS.html
+
+25mar16
+   Minor fix in 'genKey'
+      lib/db.l
+
+21mar16
+   Bug in arm64 'or' instruction
+      src64/arch/arm64.l
+
+19mar16
+   Load "@lib/too.l" (for e.g. 'psh')
+      dbg.l
+   Fix 'noLint' handling
+      lib/http.l
+      dbg.l
+
+16mar16
+   Use 'srcUrl' in '<faces>'
+      lib/svg.l
+   'detach' function
+      src64/flow.l
+      src64/glob.l
+      src64/arch/emu.l
+      src/pico.h
+      src/flow.c
+      src/tab.c
+      doc/ref.html
+      doc/refD.html
+      doc/refF.html
+      doc/refK.html
+      doc/refT.html
+
+14mar16
+   'Http1' not needed
+      src/httpGate.c
+
+11mar16
+   'psh' port detection with 'httpGate' auto-start
+      lib/http.l
+      bin/psh
+
+01mar16
+   Changed '<faces>' from 'base64' to external links
+      lib/svg.l
+   Clear 'Key' in fldChg()
+      lib/form.js
+   Keep empty lines in '+ListTextField'
+      lib/form.l
+
+29feb16
+   Form doc fix (Mattias Sundblad)
+      doc/form/refF.html
+
+27feb16
+   Form documentation (Mattias Sundblad)
+      doc/app.html
+   Java Interoperability extensions by Craig Allen
+      java/lib.l
+      java/Reflector.java
+
+26feb16
+   Typos
+      doc/form/refS.html
+      doc/form/refO.html
+      doc/form/refL.html
+      doc/form/refH.html
+      doc/form/refF.html
+
+   'docs' function
+      lib.l
+      lib/debug.l
+      lib/form.l
+      doc/refD.html
+
+25feb16
+   Renamed files "doc/formdoc/formRefX.html" to "doc/form/refX.html"
+   Read reference links in 'doc' into 'doc' property
+      lib/debug.l
+      doc/toc.html
+
+24feb16
+   Parameterize font type in '<faces>'
+      lib/svg.l
+
+21feb16
+   Catch frame bug in coroutines (64-bit)
+      {src64,pilos/src}/glob.l
+      {src64,pilos/src}/flow.l
+
+18feb16
+   Added '.wrap' style class
+      lib.css
+
+####### 16.2 #######
+18feb16
+   Form-GUI documentation (Mattias Sundblad)
+      doc/toc.html
+      doc/index.html
+      doc/formdoc/*.html
+
+11feb16
+   'info' checks for regular files
+      src64/sysdefs.c
+      src64/sys/x86-64.linux.defs.l
+      src64/sys/arm64.linux.defs.l
+      src64/sys/ppc64.linux.defs.l
+      src64/sys/x86-64.freeBsd.defs.l
+      src64/sys/x86-64.sunOs.defs.l
+      src64/main.l
+      src/main.c
+      doc/refI.html
+      ersatz/fun.src
+
+07feb16
+   Bug in arm64 optimization
+      src64/arch/arm64.l
+
+04feb16
+   Default '+User' GUI more flexible
+      lib/db.l
+      lib/user.l
+
+03feb16
+   Blob handshake in replica/ssl
+      src/ssl.c
+      lib/db.l
+      bin/replica
+   Use 'htStyle' in 'ps'
+      lib/svg.l
+
+02feb16
+   Mike Pechkin added IRIX64
+      src/Makefile
+      src/main.c
+      lib/gcc.l
+      test/src/main.l
+   'protect' only handshake/journal
+      bin/replica
+
+28jan16
+   Minor typo
+      doc/native.html
+   Mike Pechkin added NetBSD, OpenBSD, SunOS, HP-UX and AIX
+      README
+      lib/gcc.l
+
+25jan16
+   Patch from Mike Pechkin for SunOS
+      lib/native.l
+
+22jan16
+   Minor ref fix
+      doc/refR.html
+      doc/refE.html
+
+13jan16
+   Change some internal symbols to transients
+      lib/boss.l
+      lib/btree.l
+      lib/conDbgc.l
+      lib/db32-64.l
+      lib/db.l
+      lib/debug.l
+      lib/edit.l
+      lib/eedit.l
+      lib/eled.l
+      lib/gcc.l
+      lib/http.l
+      lib/native.l
+      lib/tex.l
+      lib/too.l
+      lib/xhtml.l
+      ersatz/lib.l
+      cygwin/tcc.l
+      misc/stress.l
+      java/lib.l
+      app/main.l
+      test/src/main.l
+      test/src/flow.l
+   Minor ref and comment fixes
+      doc/ref_.html
+      {src64,pilos/src}/subr.l
+      src/subr.c
+      mini/src/subr.c
+      ersatz/fun.src
+
+10jan16
+   Bug in 'shruA_A' (destructive in '>>' and '*/')
+   Optimized '>>' for large shift counts
+      {src64,pilos/src}/big.l
+
+08jan16
+   Liberalized Aux check in 'initQuery'
+      lib/pilog.l
+
+07jan16
+   Added note to the threads section
+      doc/faq.html
+
+05jan16
+   '+InsRowButton' GUI prefix class localizations
+      loc/es
+      loc/no
+      loc/ru
+      loc/se
+
+04jan16
+   Added "e" command (go to end of word) to line editor
+      lib/led.l
+   Small fixes in line editor tutorial
+      doc/tut.html
+
+03jan16
+   Minor ref and comment fixes
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/flow.l
+      src/io.c
+      src/flow.c
+      doc/refB.html
+      doc/refW.html
+      ersatz/fun.src
+
+02jan16
+   Minor ref fix
+      doc/refR.html
+
+28dec15
+   Minor typo
+      doc/tut.html
+
+26dec15
+   Minor typo
+      doc/ref_.html
+
+18dec15
+   External links in '<menu>'
+      lib/xhtml.l
+
+17dec15
+   '+InsRowButton' GUI prefix class
+      lib/form.l
+      loc/de
+      loc/jp
+
+16dec15
+   Added 'pil' to index
+      doc/ref.html
+
+10dec15
+   Minor typo
+      doc/refR.html
+
+03dec15
+   Avoid duplicated REPL history after editing with ^E. Simplified.
+      lib/led.l
+      lib/eled.l
+      pilos/init/lib/dbg.l
+
+27nov15
+   Preserve default value in '+Tip'
+      lib/form.l
+   Minor comment fix
+      src/ext.c
+
+26nov15
+   Add "threads" section to FAQ
+      doc/faq.html
+
+####### 15.11 #######
+24nov15
+   Version Numbering: Switch to YY.MM[.nn] style
+      {src64,pilos/src}/version.l
+      {src64,pilos/src}/glob.l
+      src/main.c
+      ersatz/fun.src
+      doc/refV.html
+
+####### 3.1.11.14 #######
+20nov15
+   Changed "bin/replica" to non-forking server
+      bin/replica
+
+16nov15
+   Fine-tuned and optimized 64-bit version for ARMv8 (arm64)
+      README
+      INSTALL
+      doc64/README
+      doc/refC.html
+      src64/Makefile
+      src64/lib/asm.l
+      src64/arch/arm64.l
+
+####### 3.1.11.13 #######
+11nov15
+   'catch' and 'throw' flow control instructions
+      doc64/asm
+      src64/lib/asm.l
+      src64/arch/*.l
+      {src64,pilos/src}/flow.l
+
+####### 3.1.11.12 #######
+06nov15
+   Omit message-body in 'noContent'
+      lib/http.l
+   '+ObjVal' GUI prefix class
+      lib/form.l
+
+31oct15
+   64-bit version for ARMv8 (arm64)
+      src64/arch/arm64.l
+
+30oct15
+   Condition code instructions: Separate borrow [b] from carry [c]
+      doc64/asm
+      src64/lib/asm.l
+      src64/arch/*.l
+      {src64,pilos/src}/flow.l
+      {src64,pilos/src}/big.l
+      {src64,pilos/src}/db.l
+
+26oct15
+   Condition code instructions: Removed 'ldc' and 'ldnc'
+      doc64/asm
+      src64/lib/asm.l
+      src64/arch/*.l
+      {src64,pilos/src}/db.l
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/sym.l
+      src64/ext.l
+
+20oct15
+   Removed 'movm' instruction
+      doc64/asm
+      src64/lib/asm.l
+      src64/arch/*.l
+      {src64,pilos/src}/io.l
+
+####### 3.1.11.11 #######
+12oct15
+   Simplified unit test setup
+      lib/test.l
+      test/src/net.l
+
+12oct15
+   Switched ppc64 version to ppc64le (little endian)
+      src64/Makefile
+      src64/arch/ppc64.l
+      src64/sys/ppc64.linux.defs.l
+
+10oct15
+   Changed asm syntax 'push/pop F' to 'push/pop zsc' and 'push/pop x'
+      src64/arch/x86-64.l
+      src64/arch/ppc64.l
+      src64/arch/emu.l
+      {src64,pilos/src}/main.l
+      {src64,pilos/src}/big.l
+      {src64,pilos/src}/err.l
+
+04oct15
+   Condition code instructions: New extension bit [x] in addition to carry [c]
+      doc64/asm
+      src64/lib/asm.l
+      src64/arch/x86-64.l
+      src64/arch/ppc64.l
+      src64/arch/emu.l
+      {src64,pilos/src}/main.l
+      {src64,pilos/src}/gc.l
+      {src64,pilos/src}/flow.l
+      {src64,pilos/src}/sym.l
+      {src64,pilos/src}/subr.l
+      {src64,pilos/src}/big.l
+      {src64,pilos/src}/io.l
+      {src64,pilos/src}/db.l
+      src64/net.l
+      src64/err.l
+      src64/ext.l
+      src64/ht.l
+
+####### 3.1.11.10 #######
+03oct15
+   Check for FD overflow in 'waitFdCEX_A'
+      src64/glob.l
+      src64/io.l
+
+####### 3.1.11.9 #######
+29sep15
+   Minor ref and comment fixes
+      doc/refI.html
+      {src64,pilos/src}/flow.l
+      src/flow.c
+      mini/src/flow.c
+      ersatz/fun.src
+
+16sep15
+   'cache' without 'prg' argument returns internal 'var'
+      lib.l
+      ersatz/lib.l
+      pilos/init/lib.l
+      test/lib.l
+      test/src/sym.l
+
+####### 3.1.11.8 #######
+06sep15
+   Minor reference details for 'eval' and 'run'
+      doc/refE.html
+      doc/refR.html
+
+03sep15
+   '+Chg' prefix crashes without JS
+      lib/form.l
+
+####### 3.1.11.7 #######
+02sep15
+   Minor cosmetics
+      lib/heartbeat.l
+      bin/watchdog
+
+   Use (lock) to be on the safe side
+      bin/replica
+
+01sep15
+   Extensions and additions by Oscar Roca
+      lib/openGl.l
+
+####### 3.1.11.6 #######
+26aug15
+   Omit keyfile lock. Not needed, because only a single 'ssl' process feeds it
+      bin/replica
+
+####### 3.1.11.5 #######
+04aug15
+   Removed '<tree>' function
+      lib/xhtml.l
+
+####### 3.1.11.4 #######
+18jul15
+   Synchronize exernal changes in '+E/R' prefix class
+      lib/form.l
+
+####### 3.1.11.3 #######
+13jul15
+   Added all-uppercase rule to the naming conventions
+      doc/ref.html
+
+08jul15
+   Revert 'ssl' to alarm()
+      src/ssl.c
+
+####### 3.1.11.2 #######
+06jul15
+   Check for empty date in 'day'
+      lib/misc.l
+      ersatz/lib.l
+      doc/tut.html
+
+02jul15
+   Slightly improve 'scrape' for 'href' with nested 'img'
+      lib/scrape.l
+
+####### 3.1.11.1 #######
+25jun15
+   Forgotten file
+      lib/svg.l
+
+####### 3.1.10.9 #######
+18jun15
+   Optional 'T' argument to 'asm' function
+      src64/lib/asm.l
+
+17jun15
+   Slightly extended 'idObj' formatting
+      lib/form.l
+
+13jun15
+   Generic 'asm' directive
+      src64/lib/asm.l
+
+####### 3.1.10.8 #######
+09jun15
+   Enable "Delete" button only in enabled form
+      lib/form.l
+
+01jun15
+   Bug in binary print of partial circular lists
+      src64/io.l
+      pilMCU/src/io.l
+      src/io.c
+
+27may15
+   Clean up circular checks (64-bit)
+   Check for circularity in 'funqE_FE' + 'funq'
+      src64/main.l
+      src64/subr.l
+      src64/io.l
+      pilMCU/src/main.l
+      pilMCU/src/subr.l
+      pilMCU/src/io.l
+      ersatz/sys.src
+      src/main.c
+      mini/src/main.c
+      mini/src/sym.c
+      doc/refC.html
+
+####### 3.1.10.7 #######
+26may15
+   Remove setpgid() from 'doExec'
+      src64/flow.l
+      src/flow.c
+   SVG Printing
+      lib/svg.l
+      app/main.l
+      app/ord.l
+      app/lib.l
+
+24may15
+   '=1' function
+      src64/subr.l
+      src64/glob.l
+      pilMCU/src/subr.l
+      pilMCU/src/glob.l
+      src/subr.c
+      src/tab.c
+      src/pico.h
+      mini/src/subr.c
+      mini/src/init.s
+      ersatz/fun.src
+      doc/ref.html
+      doc/ref_.html
+      test/src/subr.l
+
+####### 3.1.10.6 #######
+23may15
+   Need 'note' instead of 'alert'
+      misc/calc.l
+
+21may15
+   Check meta 'hook' in '+Obj' prefix
+      lib/form.l
+   Fix 'dump' for keys with hooks
+      lib/too.l
+
+19may15
+   Bug in 'compareAE_F' for external symbols
+      src64/main.l
+      pilMCU/src/main.l
+
+####### 3.1.10.5 #######
+18may15
+   Update reference to describe the 64-bit structures
+      doc/ref.html
+
+06may15
+   Slightly simplified
+      lib/role.l
+
+05may15
+   Imported 'choUser'
+      lib/adm.l
+      lib/user.l
+
+03may15
+   Accept \ddd\ in strings
+      src64/io.l
+      pilMCU/src/io.l
+      src/io.c
+      ersatz/sys.src
+      doc/ref.html
+
+02may15
+   Changed HTTP parsing to use 'till' instead of 'match'
+      lib/http.l
+
+####### 3.1.10.4 #######
+01may15
+   Reference entry for 'prBase64'
+      doc/refP.html
+   More examples for 'in' and 'out'
+      doc/refI.html
+      doc/refO.html
+
+30apr15
+   Accept \n, \r and \t in strings
+      src64/io.l
+      pilMCU/src/io.l
+      src/io.c
+      ersatz/sys.src
+      doc/ref.html
+
+####### 3.1.10.3 #######
+30apr15
+   'prBase64' multiline Base64 printing
+      lib/misc.l
+   Catch "undefined" arguments in Canvas drawing
+      lib/canvas.js
+
+28apr15
+   Changes to 'seed' and 'rand' in Ersatz suggested by Christophe Gragnic
+      ersatz/fun.src
+
+####### 3.1.10.2 #######
+26apr15
+   Added library for a subset of JSON
+      lib/json.l
+   Fix 'memq' instruction in 'emu'
+      src64/arch/emu.l
+   Support also input (parse) mode for 'ext:Base64'
+      src64/ext.l
+      src/ext.c
+      test/src/ext.l
+
+24apr15
+   Additional "user:passwd" argument to 'xmlrpc'
+      lib/xmlrpc.l
+
+####### 3.1.10.1 #######
+24apr15
+   Optional styles in <select> input elements
+      lib/xhtml.l
+      lib/form.l
+
+23apr15
+   Clear background in 'csDraw' and 'csDrawImage'
+      lib/canvas.js
+
+22apr15
+   Changed demo logo 7fach.gif -> 7fachLogo.png
+
+21apr15
+   Temporary fix for 3.1.1 and older
+      src64/arch/emu.l
+
+####### 3.1.9.17 #######
+17apr15
+   Slightly generalized 'mimetype' function
+      lib/http.l
+
+15apr15
+   Added "image/svg+xml" mime type
+      lib/http.l
+
+14apr15
+   Sanity checks in 'postForm'
+      lib/form.l
+
+13apr15
+   Keep 'Extern' symbol trees sorted by external symbol names, so that 'commit'
+   can write symbols sequentially. Instead of randomizing the keys, a "Lazy
+   Binary Tree" (abu) is used.
+      src64/glob.l
+      src64/main.l
+      src64/gc.l
+      src64/sym.l
+      src64/db.l
+
+####### 3.1.9.16 #######
+12apr15
+   Slightly simplified 'choDlg'
+      lib/form.l
+
+04apr15
+   Minor rearrangements
+      lib/canvas.l
+      lib/canvas.js
+
+03apr15
+   Bug in 'uninternEXY' for long names (found by Alexander Williams)
+      src64/sym.l
+      pilMCU/src/sym.l
+
+####### 3.1.9.15 #######
+03apr15
+   Replaced 'wchan' with 'time' (accumulated CPU time) in 'proc'
+      lib/debug.l
+      ersatz/lib.l
+
+02apr15
+   Minor bug in 'rand' argument handling: (rand (= 3 4)) was not treated as
+   (rand NIL) or (rand)
+      src64/big.l
+
+####### 3.1.9.14 #######
+01apr15
+   'gcc' -> 'gcc48' for FreeBSD
+      src/Makefile
+
+31mar15
+   Some changes in FAQ by Rick Hanson
+      doc/faq.html
+
+29mar15
+   Slightly optimized 'externX_E'
+      src64/sym.l
+
+27mar15
+   'depth' stores the total number of nodes in '@@'
+      lib/misc.l
+
+####### 3.1.9.13 #######
+23mar15
+   Generalized Makefile (with fix for pil32 on FreeBSD) by Rick Hanson and
+   Mihail Pechkin
+      src/Makefile
+
+####### 3.1.9.12 #######
+12mar15
+   Add filter to 'dumpDB'
+      lib/too.l
+   Bug in (read "_")
+      src64/io.l
+      pilMCU/src/io.l
+      src/io.c
+
+11mar15
+   Dump/load data and blobs with 'dumpDB' and 'loadDB'
+      lib/too.l
+
+####### 3.1.9.11 #######
+05mar15
+   Use window.location.replace() instead of window.location.reload()
+      lib/xhtml.l
+
+25feb15
+   Catch div/0 in 'rand'
+      src64/big.l
+      pilMCU/src/big.l
+      src/big.c
+      mini/src/math.c
+      ersatz/fun.src
+
+####### 3.1.9.10 #######
+21feb15
+   'rassoc' function
+      src64/subr.l
+      src64/glob.l
+      pilMCU/src/subr.l
+      pilMCU/src/glob.l
+      src/subr.c
+      src/tab.c
+      src/pico.h
+      mini/src/subr.c
+      mini/src/init.s
+      ersatz/fun.src
+      doc/ref.html
+      doc/refR.html
+      test/src/subr.l
+
+####### 3.1.9.9 #######
+16feb15
+   TinyMCE 'htmlText' more flexible tag handling
+   Added TinyMCE 'colorpicker'
+      lib/tinymce.l
+
+15feb15
+   Added sub-/superscript to 'psAlign'
+   Protect "*Size" and "*Font" globals in 'psAlign'
+      lib/ps.l
+
+13feb15
+   Additional 'flg' argument for 'ht:Pack' to handle percent in URLs
+      src64/ht.l
+      src/ht.c
+      lib/http.l
+      lib/form.l
+      test/src/ht.l
+
+####### 3.1.9.8 #######
+12feb15
+   Slightly extended able check for '+BubbleButton'
+      lib/form.l
+   TinyMCE switch on 'nowrap'
+      lib/tinymce.l
+
+11feb15
+    'able' check in '+Chg'
+      lib/form.l
+
+10feb15
+   '<rgb>' tag and '+RgbField'
+      lib/xhtml.l
+      lib/form.l
+
+####### 3.1.9.7 #######
+05feb15
+   No special target for "java/mkJar"
+      java/mkJar
+
+04feb15
+   TinyCME force_br_newlines works now
+   TinyCME min_height 12
+      lib/tinymce.l
+
+03feb15
+   Prune 'jre'
+      java/lib.l
+
+02feb15
+   Java Interoperability
+      java/lib.l
+      java/mkJar
+      java/Reflector.java
+      java/InOut.java
+      java/test.l
+
+####### 3.1.9.6 #######
+30jan15
+   'pipe' bidirectional, using socketpair()
+      src64/io.l
+      src64/arch/emu.l
+      src/io.c
+      src/net.c
+      src/pico.h
+
+####### 3.1.9.5 #######
+29jan15
+   Default SIGPIPE handling in 'pipe'
+      src64/io.l
+      src/io.c
+
+28jan15
+   Inhibit chart action upon field error
+      lib/form.l
+
+27jan15
+   'tr' unit test for 'pipe'
+      test/src/io.l
+
+26jan15
+   'push1q' function
+      src64/sym.l
+      src64/glob.l
+      pilMCU/src/sym.l
+      pilMCU/src/glob.l
+      src/sym.c
+      src/tab.c
+      src/pico.h
+      mini/src/sym.c
+      mini/src/init.s
+      ersatz/fun.src
+      doc/ref.html
+      test/src/sym.l
+
+####### 3.1.9.4 #######
+23jan15
+   'dbgc' at the end of 'admin' maintenance
+      lib/too.l
+
+21jan15
+   One more fix for "'+IdxFold' not subclass of '+Fold'"
+      lib/pilog.l
+
+####### 3.1.9.3 #######
+14jan15
+   '+IdxFold' not subclass of '+Fold'
+      lib/db.l
+
+####### 3.1.9.2 #######
+12jan15
+   'visibilitychange' event handling lib/form.js -> lib/xhtml.l, when (=0 Upd)
+      lib/form.js
+      lib/xhtml.l
+
+03jan15
+   Make 'lint' aware of destructuring 'let'
+      lib/lint.l
+
+02jan15
+   Use NIL instead of '@' for "don't care in destructuring 'let'"
+      src64/flow.l
+      pilMCU/src/flow.l
+
+01jan15
+   Destructuring 'let' (64-bit)
+      src64/flow.l
+      pilMCU/src/flow.l
+
+####### 3.1.9.1 #######
