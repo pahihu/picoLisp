@@ -74,11 +74,18 @@ typedef struct child {
    byte *buf;
 } child;
 
+typedef struct symVal {
+  any sym;
+  any val;
+} symBind;
+
 typedef struct bindFrame {
    struct bindFrame *link;
    int i, cnt;
    struct {any sym; any val;} bnd[1];
 } bindFrame;
+
+#define allocFrame(n)   ((bindFrame*)alloca(sizeof(bindFrame) + ((n)-1) * sizeof(symBind)))
 
 typedef struct inFile {
    int fd, ix, cnt, next;

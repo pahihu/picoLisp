@@ -1,3 +1,10 @@
+# Changes
+
+* the 32bit version could be compiled with clang on macOS
+
+
+
+
 02nov17abu
 (c) Software Lab. Alexander Burger
 
