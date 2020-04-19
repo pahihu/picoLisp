@@ -12,8 +12,9 @@ CCLD = gcc
 
 M32=-m32
 
-CFLAGS = -c -O2 -pipe \
-	-falign-functions=32 -fomit-frame-pointer -fno-strict-aliasing \
+OPT = -O2 -fomit-frame-pointer
+CFLAGS = -c $(OPT) -pipe \
+	-falign-functions=32 -fno-strict-aliasing \
 	-W -Wimplicit -Wreturn-type -Wunused -Wformat \
 	-Wuninitialized -Wstrict-prototypes \
 	-D_GNU_SOURCE  -D_FILE_OFFSET_BITS=64
@@ -60,11 +61,12 @@ ifeq ($(shell uname), NetBSD)
 else
 ifeq ($(shell uname), Darwin)
 	OS = Darwin
-	CFLAGS += ${M32}
+	CFLAGS += ${M32} -mmacosx-version-min=10.6
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS = -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
-	LCRYPT = -lcrypto
+        SYSDIRS = -I/opt/local/include -L/opt/local/lib
+	LCRYPT = #-lcrypto
 	STRIP = strip -x
 else
 ifeq ($(shell uname), SunOS)
@@ -181,11 +183,11 @@ $(bin)/balance: balance.c
 	$(STRIP) $(bin)/balance$(exe)
 
 $(bin)/ssl: ssl.c
-	$(CC) -o $(bin)/ssl$(exe) ssl.c -lssl -lcrypto
+	$(CC) $(SYSDIRS) -o $(bin)/ssl$(exe) ssl.c -lssl -lcrypto
 	$(STRIP) $(bin)/ssl$(exe)
 
 $(bin)/httpGate: httpGate.c
-	$(CC) -o $(bin)/httpGate$(exe) httpGate.c -lssl -lcrypto
+	$(CC) $(SYSDIRS) -o $(bin)/httpGate$(exe) httpGate.c -lssl -lcrypto
 	$(STRIP) $(bin)/httpGate$(exe)
 
 

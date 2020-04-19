@@ -46,11 +46,24 @@ else
 	endif
 endif
 
+
+OS  = $(shell uname -s)
+CFLAGS = -O -fomit-frame-pointer
 SYS =
 PIE =
 FMT = .c
 ARCH = emu
 STRIP = :
+
+
+ifeq ($(MAKECMDGOALS), emu)
+        ifeq ($(OS), Darwin)
+                CC  = cc -m32 -mmacosx-version-min=10.6
+                LD-MAIN = -lc -lm -ldl
+                LD-SHARED = -dynamiclib -undefined dynamic_lookup
+        endif
+endif
+
 
 ifeq ($(UNAME), Android)
 	OS = Android
@@ -169,10 +182,10 @@ sysdefs: sysdefs.c
 	$(STRIP) sysdefs
 
 emu.base.o: sysdefs emu.base.c
-	$(CC) -c -O -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 emu.base.c
+	$(CC) -c $(CFLAGS) -D_FILE_OFFSET_BITS=64 emu.base.c
 
 .c.o:
-	$(CC) -c -O -fpic -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 $*.c
+	$(CC) -c -fpic $(CFLAGS) -D_FILE_OFFSET_BITS=64 $*.c
 
 ### Translate ###
 $(ARCH)$(SYS).base$(FMT): arch/$(ARCH).l defs.l $(baseFiles) sys/$(ARCH)$(SYS).code.l
