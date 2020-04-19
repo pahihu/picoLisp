@@ -1303,6 +1303,7 @@ any loadAll(any ex) {
 static void init(int ac, char *av[]) {
    char *p;
    sigset_t sigs;
+   struct rlimit ALim;
 
    AV0 = *av++;
    AV = av;
@@ -1322,6 +1323,12 @@ static void init(int ac, char *av[]) {
    OutFile = initOutFile(STDOUT_FILENO);
    Env.task = Alarm = Sigio = Line = Nil;
    setrlimit(RLIMIT_STACK, &ULim);
+   getrlimit(RLIMIT_STACK, &ALim);
+   if (ALim.rlim_cur != ULim.rlim_max) {
+      ULim.rlim_cur = ALim.rlim_max;
+      ULim.rlim_max = ALim.rlim_max;
+      setrlimit(RLIMIT_STACK, &ULim);
+   }
    Tio = tcgetattr(STDIN_FILENO, &OrgTermio) == 0;
    ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
    ApplyBody = cons(Nil,Nil);

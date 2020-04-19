@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* set the stack size to the allowed maximum, when cannot be set to unlimited
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
