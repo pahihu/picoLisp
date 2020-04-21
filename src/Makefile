@@ -10,7 +10,9 @@ CC = gcc
 # CCLD is the cc (compiler frontend) to use for the link step.
 CCLD = gcc
 
-M32=-m32
+ifeq ($(target),pil32)
+        M32=-m32
+endif
 
 OPT = -O2 -fomit-frame-pointer
 CFLAGS = -c $(OPT) -pipe \

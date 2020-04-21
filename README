@@ -3,11 +3,15 @@ Changes
 
 All bugs introduced are mine.
 
+* pil default target is 64bit, build the 32bit version with "make target=pil32"
+  seed and rand is not compatible with 32bit build.
+  The 64bit version passes the picoLisp tests except the seed and rand tests,
+  and passes tankf33der's huge.l
 * set the stack size to the allowed maximum, when cannot be set to unlimited
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 19 / 4 / 2020
+pahihu 21 / 4 / 2020
 
 
 

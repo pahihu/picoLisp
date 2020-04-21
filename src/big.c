@@ -4,8 +4,8 @@
 
 #include "pico.h"
 
-#define MAX    MASK           // Max digit size    0xFFFF....
-#define OVFL   ((1<<BITS-1))  // Carry/Overflow    0x8000....
+#define MAX    MASK                    // Max digit size    0xFFFF....
+#define OVFL   ((((word)1)<<BITS-1))   // Carry/Overflow    0x8000....
 
 // For Solaris 10
 #ifdef __SVR4
@@ -468,13 +468,20 @@ static inline int numlen(any x) {
 }
 
 /* Make symbol from number */
+#ifdef __LP64__
+#define NINES ((word)999999999999999999LL)
+#define NUM9S 18
+#else
+#define NINES ((word)999999999)
+#define NUM9S  9
+#endif
 any numToSym(any x, int scl, int sep, int ign) {
    int i;
    bool sign;
    cell c1;
    word n = numlen(x);
    word c, *p, *q, *ta, *ti, acc[n], inc[n];
-   char *b, buf[10];
+   char *b, buf[NUM9S+1];
 
    sign = isNeg(x);
    *(ta = acc) = 0;
@@ -487,16 +494,16 @@ any numToSym(any x, int scl, int sep, int ign) {
             do {
                if (ta < p)
                   *++ta = 0;
-               if (c = (*p += *q + c) > 999999999)
-                  *p -= 1000000000;
+               if (c = (*p += *q + c) > NINES)
+                  *p -= (NINES + 1);
             } while (++p, ++q <= ti);
             if (c)
                *p = 1,  ++ta;
          }
          c = 0,  q = inc;
          do
-            if (c = (*q += *q + c) > 999999999)
-               *q -= 1000000000;
+            if (c = (*q += *q + c) > NINES)
+               *q -= (NINES + 1);
          while (++q <= ti);
          if (c)
             *q = 1,  ++ti;
@@ -505,7 +512,7 @@ any numToSym(any x, int scl, int sep, int ign) {
          break;
       n = 1;
    }
-   n = (ta - acc) * 9;
+   n = (ta - acc) * NUM9S;
    n += sprintf(b = buf, "%ld", *ta--);
    if (sep < 0)
       return boxCnt(n + sign);
@@ -523,7 +530,7 @@ any numToSym(any x, int scl, int sep, int ign) {
       if (!*b) {
          if (ta < acc)
             return consStr(Pop(c1));
-         sprintf(b = buf, "%09ld", *ta--);
+         sprintf(b = buf, "%0*ld", NUM9S, *ta--);
       }
       if (scl == 0)
          charSym(sep, &i, &x);
@@ -1198,17 +1205,17 @@ static uint64_t initSeed(any x) {
 
 // (seed 'any) -> cnt
 any doSeed(any ex) {
-   return box(hi(Seed = initSeed(EVAL(cadr(ex))) * 6364136223846793005LL));
+   return box(hi64(Seed = initSeed(EVAL(cadr(ex))) * 6364136223846793005LL));
 }
 
 // (hash 'any) -> cnt
 any doHash(any ex) {
-   word2 n = initSeed(EVAL(cadr(ex)));
+   uint64_t n = initSeed(EVAL(cadr(ex)));
    int i = 64;
    int j = 0;
 
    do {
-      if (((int)n ^ j) & 1)
+      if (((long)n ^ j) & 1)
          j ^= 0x14002;  /* CRC Polynom x**16 + x**15 + x**2 + 1 */
       n >>= 1,  j >>= 1;
    } while (--i);
@@ -1223,11 +1230,11 @@ any doRand(any ex) {
    x = cdr(ex);
    Seed = Seed * 6364136223846793005LL + 1;
    if (isNil(x = EVAL(car(x))))
-      return box(hi(Seed));
+      return box(hi64(Seed));
    if (x == T)
-      return hi(Seed) & 1 ? T : Nil;
+      return hi64(Seed) & 1 ? T : Nil;
    n = xCnt(ex,x);
    if (m = evCnt(ex, cddr(ex)) + 1 - n)
-      n += hi(Seed) % m;
+      n += hi64(Seed) % m;
    return boxCnt(n);
 }

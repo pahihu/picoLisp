@@ -595,7 +595,7 @@ any doPath(any x) {
 /* Add next byte to symbol name */
 void byteSym(int c, int *i, any *p) {
    if ((*i += 8) < BITS)
-      setDig(*p, unDig(*p) | (c & 0xFF) << *i);
+      setDig(*p, unDig(*p) | ((word)(c & 0xFF)) << *i);
    else
       *i = 0,  *p = cdr(numCell(*p)) = box(c & 0xFF);
 }
@@ -2803,7 +2803,11 @@ any new64(adr n, any x) {
          w = w << 8 | c + '0';
       } while (i >>= 6);
    }
+#ifdef __LP64__
+   return consNum(num(w), x);
+#else
    return hi(w)? consNum(num(w), consNum(hi(w), x)) : consNum(num(w), x);
+#endif
 }
 
 adr blk64(any x) {
@@ -2815,7 +2819,7 @@ adr blk64(any x) {
    if (isNum(x)) {
       w = unDig(x);
       if (isNum(x = cdr(numCell(x))))
-         w |= (adr)unDig(x) << BITS;
+         w |= (adr)unDig(x) << BITS32;
       do {
          if ((c = w & 0xFF) == '-')
             F = n-1,  n = 0;
@@ -2845,7 +2849,11 @@ any extOffs(int offs, any x) {
 
       w |= ((n >>= 20) & 0xFFF) << 28;
       w |= (adr)(F >> 8) << 40 | (n >> 12) << 48;
+#ifdef __LP64__
+      x = consNum(num(w), Nil);
+#else
       x = hi(w)? consNum(num(w), consNum(hi(w), Nil)) : consNum(num(w), Nil);
+#endif
    }
    F = f;
    return x;

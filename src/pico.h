@@ -38,8 +38,9 @@
 #define MAIN main2
 #endif
 
-#define WORD ((int)sizeof(long))
+#define WORD ((int)sizeof(word))
 #define BITS (8*WORD)
+#define BITS32 ((int)32)
 #define MASK ((word)-1)
 #define CELLS (1024*1024/sizeof(cell)) // Heap allocation unit 1MB
 #define IHASH 4999                     // Internal hash table size (should be prime)
@@ -47,9 +48,14 @@
 #define TOP 0x110000                   // Character Top
 
 typedef unsigned long word;
+typedef unsigned int  word32;
 typedef unsigned char byte;
 typedef unsigned char *ptr;
+#ifdef __LP64__
+typedef __uint128_t word2;
+#else
 typedef unsigned long long word2;
+#endif
 typedef long long adr;
 
 #undef bool
@@ -166,6 +172,7 @@ typedef struct catchFrame {
 #define neg(x)          (car(numCell(x)) = (any)(unDig(x) ^ 1))
 #define lo(w)           num((w)&MASK)
 #define hi(w)           num((w)>>BITS)
+#define hi64(w)         num((w)>>BITS32)
 
 /* Symbol access */
 #define symPtr(x)       ((any)&(x)->cdr)
@@ -313,7 +320,7 @@ void digMul(any,word);
 void digMul2(any);
 void digSub1(any);
 any doubleToNum(double);
-unsigned long ehash(any);
+uint32_t ehash(any);
 any endString(void);
 bool eol(void);
 bool equal(any,any);
@@ -340,7 +347,7 @@ void giveup(char*) __attribute__ ((noreturn));
 bool hashed(any,any);
 void heapAlloc(void);
 any idx(any,any,int);
-unsigned long ihash(any);
+uint32_t ihash(any);
 inFile *initInFile(int,char*);
 outFile *initOutFile(int);
 void initSymbols(void);

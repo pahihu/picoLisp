@@ -1,0 +1,2 @@
+#!/bin/sh
+exec ${0%/*}/bin/picolisp64 ${0%/*}/lib.l @ext.l "$@"

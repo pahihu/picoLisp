@@ -5,8 +5,8 @@
 #include "pico.h"
 
 /* Internal/transient hash */
-unsigned long ihash(any x) {
-   unsigned long g, h;
+uint32_t ihash(any x) {
+   uint32_t g, h;
    word n;
 
    for (h = 0; isNum(x); x = cdr(numCell(x)))
@@ -16,8 +16,8 @@ unsigned long ihash(any x) {
 }
 
 /* External hash */
-unsigned long ehash(any x) {
-   unsigned long h;
+uint32_t ehash(any x) {
+   uint32_t h;
    word n;
 
    for (h = 0; isNum(x); x = cdr(numCell(x)))
