@@ -1,0 +1,9 @@
+#!/bin/sh
+GNUMAKE=make
+os=`uname -s`
+if [ "${os}" = "Darwin" ];
+then
+  GNUMAKE=gnumake
+fi
+$GNUMAKE clean
+$GNUMAKE target=pil32 2>&1 | tee make.log
