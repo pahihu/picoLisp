@@ -2010,7 +2010,13 @@ static int16_t Lower[] = {
    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 };
 
-static inline int charType(int c) {return Data[Blocks[c>>5]+c & 0xFFFF] & 0x1F;}
+#define MAXBLOCKS       (sizeof(Blocks) / sizeof(Blocks[0]))
+#define MAXDATA         (sizeof(Data) / sizeof(Data[0]))
+#define BLOCKS(x)       ((x) < MAXBLOCKS ? Blocks[x] : 0)
+#define DATA(x)         ((x) <   MAXDATA ?   Data[x] : 0)
+#define DATABLOCKS(c)   (DATA(BLOCKS((c)>>5)+(c) & 0xFFFF))
+
+static inline int charType(int c) {return DATABLOCKS(c) & 0x1F;}
 
 static inline bool isLowc(int c) {return charType(c) == CHAR_LOWERCASE;}
 static inline bool isUppc(int c) {return charType(c) == CHAR_UPPERCASE;}
@@ -2020,11 +2026,11 @@ static inline bool isLetterOrDigit(int c) {
 }
 
 static int toUpperCase(int c) {
-   return c + Upper[Data[Blocks[c>>5]+c & 0xFFFF] >> 7];
+   return c + Upper[DATABLOCKS(c) >> 7];
 }
 
 static int toLowerCase(int c) {
-   return c + Lower[Data[Blocks[c>>5]+c & 0xFFFF] >> 7];
+   return c + Lower[DATABLOCKS(c) >> 7];
 }
 
 // (low? 'any) -> sym | NIL

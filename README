@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* fixed SIGSEGV on UTF-8 character tables
 * added build scripts m and m32 in src/ dir
 * pil supports short numbers in 32bit/64bit versions
 * pil default target is 64bit, build the 32bit version with "make target=pil32"

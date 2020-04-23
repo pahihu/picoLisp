@@ -45,7 +45,7 @@ word2 unBoxWord2(any x) {
 
    // cdr(x) is the high-order word
    if (isNum(x = cdr(numCell(x))))
-      n = (unDig(x) << BITS) + n; 
+      n = ((word2)unDig(x) << BITS) + n; 
 
    // reduces to 63bits unsigned
    return n / 2;

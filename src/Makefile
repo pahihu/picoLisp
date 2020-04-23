@@ -17,7 +17,7 @@ endif
 ifeq ($(debug),yes)
 	CC += -g
 	CCLD += -g
-	OPT = -DDEBUG=1
+	OPT = -DPICODEBUG=1
         STRIP = :
 else
 	OPT = -O2 -fomit-frame-pointer
@@ -34,7 +34,7 @@ DYNAMIC-CC-FLAGS=
 
 ifeq ($(shell uname), Linux)
 	OS = Linux
-	CFLAGS += ${M32}
+	CFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
 	LIB-FLAGS = -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic

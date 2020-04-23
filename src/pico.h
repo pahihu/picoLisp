@@ -38,7 +38,7 @@
 #define MAIN main2
 #endif
 
-#ifdef DEBUG
+#ifdef PICODEBUG
 #define ASSERT(x)   myAssert(x,#x,__FILE__,__LINE__)
 void myAssert(int,const char*,const char*,int);
 #else
