@@ -14,7 +14,16 @@ ifeq ($(target),pil32)
         M32=-m32
 endif
 
-OPT = -O2 -fomit-frame-pointer
+ifeq ($(debug),yes)
+	CC += -g
+	CCLD += -g
+	OPT = -DDEBUG=1
+        STRIP = :
+else
+	OPT = -O2 -fomit-frame-pointer
+        STRIP = strip
+endif
+
 CFLAGS = -c $(OPT) -pipe \
 	-falign-functions=32 -fno-strict-aliasing \
 	-W -Wimplicit -Wreturn-type -Wunused -Wformat \
@@ -30,7 +39,6 @@ ifeq ($(shell uname), Linux)
 	LIB-FLAGS = -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
 	LCRYPT = -lcrypt
-	STRIP = strip
 else
 ifeq ($(shell uname), OpenBSD)
 	OS = OpenBSD
@@ -39,7 +47,6 @@ ifeq ($(shell uname), OpenBSD)
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = -Wl,-E -Wl,-shared
 	LCRYPT = -lcrypto
-	STRIP = strip
 else
 ifeq ($(shell uname), FreeBSD)
 	OS = FreeBSD
@@ -50,7 +57,6 @@ ifeq ($(shell uname), FreeBSD)
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
 	LCRYPT = -lcrypt
-	STRIP = strip
 else
 ifeq ($(shell uname), NetBSD)
 	OS = NetBSD
@@ -59,7 +65,6 @@ ifeq ($(shell uname), NetBSD)
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
 	LCRYPT = -lcrypto
-	STRIP = strip
 else
 ifeq ($(shell uname), Darwin)
 	OS = Darwin
@@ -69,7 +74,7 @@ ifeq ($(shell uname), Darwin)
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
         SYSDIRS = -I/opt/local/include -L/opt/local/lib
 	LCRYPT = #-lcrypto
-	STRIP = strip -x
+	STRIP-FLAGS = -x
 else
 ifeq ($(shell uname), SunOS)
 	OS = SunOS
@@ -78,7 +83,6 @@ ifeq ($(shell uname), SunOS)
 	LIB-FLAGS = -lm -lnsl -lsocket
 	DYNAMIC-LIB-FLAGS = -G
 	LCRYPT = -lcrypt
-	STRIP = strip
 else
 ifeq ($(shell uname), AIX)
 	OS = AIX
@@ -87,7 +91,6 @@ ifeq ($(shell uname), AIX)
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = -maix32 -Wl,-G -shared -lm
 	LCRYPT = -lcrypt
-	STRIP = strip
 else
 ifeq ($(shell uname), HP-UX)
 	OS = HP-UX
@@ -96,13 +99,12 @@ ifeq ($(shell uname), HP-UX)
 	LIB-FLAGS = -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
 	LCRYPT =
-	STRIP = strip
 else
 ifeq ($(shell uname), IRIX64)
 	OS = IRIX64
 	CFLAGS += -std=gnu99
 	DYNAMIC-LIB-FLAGS = -shared
-	STRIP = strip -f
+	STRIP-FLAGS = -f
 else
 ifeq ($(shell uname -o | egrep -q "Cygwin|Msys" ; echo $$?), 0)
 	OS = Cygwin
@@ -111,7 +113,6 @@ ifeq ($(shell uname -o | egrep -q "Cygwin|Msys" ; echo $$?), 0)
 	PICOLISP-FLAGS =
 	DLL-DEFS = $(bin)/picolisp.dll
 	LCRYPT = -lcrypt
-	STRIP = strip
 	exe = .exe
 	dll = .dll
 endif
@@ -146,51 +147,51 @@ ifeq ($(OS), Cygwin)
 
 $(bin)/picolisp$(dll): $(picoFiles:.c=.o)
 	$(CCLD) -o $(bin)/picolisp$(dll) $(DYNAMIC-LIB-FLAGS) $(picoFiles:.c=.o)
-	$(STRIP) $(bin)/picolisp$(dll)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/picolisp$(dll)
 
 $(bin)/picolisp: $(picoFiles:.c=.o) $(bin)/picolisp$(dll) start.o
 	mkdir -p $(bin) $(lib)
 	$(CCLD) -o $(bin)/picolisp$(exe) $(PICOLISP-FLAGS) start.o -L$(bin) -l$(bin)/picolisp
-	$(STRIP) $(bin)/picolisp$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/picolisp$(exe)
 
 else
 
 $(bin)/picolisp: $(picoFiles:.c=.o)
 	mkdir -p $(bin) $(lib)
 	$(CCLD) -o $(bin)/picolisp$(exe) $(PICOLISP-FLAGS) $(picoFiles:.c=.o) $(LIB-FLAGS)
-	$(STRIP) $(bin)/picolisp$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/picolisp$(exe)
 
 endif
 
 
 $(lib)/ext$(dll): ext.o
 	$(CCLD) -o $(lib)/ext$(dll) $(DYNAMIC-LIB-FLAGS) ext.o $(DLL-DEFS) $(LCRYPT)
-	$(STRIP) $(lib)/ext$(dll)
+	$(STRIP) $(STRIP-FLAGS) $(lib)/ext$(dll)
 
 $(lib)/ht$(dll): ht.o
 	$(CCLD) -o $(lib)/ht$(dll) $(DYNAMIC-LIB-FLAGS) ht.o $(DLL-DEFS)
-	$(STRIP) $(lib)/ht$(dll)
+	$(STRIP) $(STRIP-FLAGS) $(lib)/ht$(dll)
 
 
 $(bin)/lat1: lat1.c
 	$(CC) -o $(bin)/lat1$(exe) lat1.c
-	$(STRIP) $(bin)/lat1$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/lat1$(exe)
 
 $(bin)/utf2: utf2.c
 	$(CC) -o $(bin)/utf2$(exe) utf2.c
-	$(STRIP) $(bin)/utf2$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/utf2$(exe)
 
 $(bin)/balance: balance.c
 	$(CC) -o $(bin)/balance$(exe) balance.c
-	$(STRIP) $(bin)/balance$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/balance$(exe)
 
 $(bin)/ssl: ssl.c
 	$(CC) $(SYSDIRS) -o $(bin)/ssl$(exe) ssl.c -lssl -lcrypto
-	$(STRIP) $(bin)/ssl$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/ssl$(exe)
 
 $(bin)/httpGate: httpGate.c
 	$(CC) $(SYSDIRS) -o $(bin)/httpGate$(exe) httpGate.c -lssl -lcrypto
-	$(STRIP) $(bin)/httpGate$(exe)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/httpGate$(exe)
 
 
 # Clean up

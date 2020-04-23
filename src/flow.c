@@ -1133,7 +1133,7 @@ any doDo(any x) {
             drop(c1);
             return z;
          }
-         digSub1(data(c1));
+         data(c1) = digSub1(data(c1));
       }
       y = x;
       do {
@@ -1168,6 +1168,7 @@ any doDo(any x) {
 // (at '(cnt1 . cnt2|NIL) . prg) -> any
 any doAt(any ex) {
    any x;
+   word n;
 
    x = cdr(ex),  x = EVAL(car(x));
    NeedPair(ex,x);
@@ -1175,9 +1176,17 @@ any doAt(any ex) {
       return Nil;
    NeedCnt(ex,car(x));
    NeedCnt(ex,cdr(x));
-   if (num(setDig(car(x), unDig(car(x))+2)) < unDig(cdr(x)))
+   n = unDig(car(x))+2;
+   if (isShort(car(x)))
+      car(x) = box(n);
+   else
+      setDig(car(x), n);
+   if (n < unDig(cdr(x)))
       return Nil;
-   setDig(car(x), 0);
+   if (isShort(car(x)))
+      car(x) = box(0);
+   else
+      setDig(car(x), 0);
    return prog(cddr(ex));
 }
 
@@ -1217,7 +1226,11 @@ any doFor(any x) {
       for (;;) {
          if (isNum(data(c1))) {
             val(f.bnd[0].sym) = bigCopy(val(f.bnd[0].sym));
-            digAdd(val(f.bnd[0].sym), 2);
+            val(f.bnd[0].sym) = digAdd(val(f.bnd[0].sym), 2);
+            if (isBig(val(f.bnd[0].sym)) || isBig(data(c1))) {
+               val(f.bnd[0].sym) = big(val(f.bnd[0].sym));
+               data(c1) = big(data(c1));
+            }
             if (bigCompare(val(f.bnd[0].sym), data(c1)) > 0)
                break;
          }
@@ -1230,7 +1243,7 @@ any doFor(any x) {
          }
          if (f.cnt == 2) {
             val(f.bnd[1].sym) = bigCopy(val(f.bnd[1].sym));
-            digAdd(val(f.bnd[1].sym), 2);
+            val(f.bnd[1].sym) = digAdd(val(f.bnd[1].sym), 2);
          }
          do {
             if (!isNum(y = car(x))) {
@@ -1289,7 +1302,7 @@ any doFor(any x) {
    for (;;) {
       if (f.cnt == 2) {
          val(f.bnd[1].sym) = bigCopy(val(f.bnd[1].sym));
-         digAdd(val(f.bnd[1].sym), 2);
+         val(f.bnd[1].sym) = digAdd(val(f.bnd[1].sym), 2);
       }
       if (isNil(a = EVAL(cond)))
          break;
@@ -1559,8 +1572,17 @@ any doTick(any ex) {
    times(&tim);
    n1 = (tim.tms_utime - n1) - (ticks1 - save1);
    n2 = (tim.tms_stime - n2) - (ticks2 - save2);
-   setDig(caadr(ex), unDig(caadr(ex)) + 2*n1);
-   setDig(cdadr(ex), unDig(cdadr(ex)) + 2*n2);
+   {
+      any p = cadr(ex);
+      if (isShort(car(p)))
+         car(p) = box(unDig(car(p)) + 2*n1);
+      else
+         setDig(car(p), unDig(car(p)) + 2*n1);
+      if (isShort(cdr(p)))
+         cdr(p) = box(unDig(cdr(p)) + 2*n2);
+      else
+         setDig(cdr(p), unDig(cdr(p)) + 2*n2);
+   }
    ticks1 += n1,  ticks2 += n2;
    return x;
 }

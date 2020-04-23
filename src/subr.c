@@ -367,34 +367,53 @@ any doRange(any ex) {
          argError(ex,x);
    }
    Push(c4, x = cons(data(c1), Nil));
-   if (bigCompare(data(c2), data(c1)) >= 0) {
-      for (;;) {
-         data(c1) = bigCopy(data(c1));
-         if (!isNeg(data(c1)))
-            bigAdd(data(c1), data(c3));
-         else {
-            bigSub(data(c1), data(c3));
-            if (!IsZero(data(c1)))
-               neg(data(c1));
+   if (isShort(data(c1)) && isShort(data(c2)) && isShort(data(c3))) {
+      long n1 = unBox(data(c1)), n2 = unBox(data(c2)), n3 = unBox(data(c3));
+      if (n2 >= n1) {
+         for (;;) {
+            n1 += n3;
+            if (n2 < n1)
+               break;
+            x = cdr(x) = cons(boxLong(n1), Nil);
          }
-         if (bigCompare(data(c2), data(c1)) < 0)
-            break;
-         x = cdr(x) = cons(data(c1), Nil);
+      } else
+         for (;;) {
+            n1 -= n3;
+            if (n2 > n1)
+               break;
+            x = cdr(x) = cons(boxLong(n1), Nil);
+         }
+   } else {
+      data(c1) = big(data(c1)), data(c2) = big(data(c2)), data(c3) = big(data(c3));
+      if (bigCompare(data(c2), data(c1)) >= 0) {
+         for (;;) {
+            data(c1) = bigCopy(data(c1));
+            if (!isNeg(data(c1)))
+               bigAdd(data(c1), data(c3));
+            else {
+               bigSub(data(c1), data(c3));
+               if (!IsZero(data(c1)))
+                  neg(data(c1));
+            }
+            if (bigCompare(data(c2), data(c1)) < 0)
+               break;
+            x = cdr(x) = cons(data(c1), Nil);
+         }
       }
-   }
-   else {
-      for (;;) {
-         data(c1) = bigCopy(data(c1));
-         if (!isNeg(data(c1)))
-            bigSub(data(c1), data(c3));
-         else {
-            bigAdd(data(c1), data(c3));
-            if (!IsZero(data(c1)))
-               neg(data(c1));
+      else {
+         for (;;) {
+            data(c1) = bigCopy(data(c1));
+            if (!isNeg(data(c1)))
+               bigSub(data(c1), data(c3));
+            else {
+               bigAdd(data(c1), data(c3));
+               if (!IsZero(data(c1)))
+                  neg(data(c1));
+            }
+            if (bigCompare(data(c2), data(c1)) > 0)
+               break;
+            x = cdr(x) = cons(data(c1), Nil);
          }
-         if (bigCompare(data(c2), data(c1)) > 0)
-            break;
-         x = cdr(x) = cons(data(c1), Nil);
       }
    }
    drop(c1);
@@ -1019,7 +1038,8 @@ any doEq0(any x) {
 // (=1 'any) -> 1 | NIL
 any doEq1(any x) {
    x = cdr(x);
-   return isNum(x = EVAL(car(x))) && (unDig(x)==2 && !isNum(cdr(numCell(x))))? x : Nil;
+   return isNum(x = EVAL(car(x)))
+          && (unDig(x)==2 && !isNum(nextDig(x))) ? x : Nil;
 }
 
 // (=T 'any) -> flg

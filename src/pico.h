@@ -38,6 +38,13 @@
 #define MAIN main2
 #endif
 
+#ifdef DEBUG
+#define ASSERT(x)   myAssert(x,#x,__FILE__,__LINE__)
+void myAssert(int,const char*,const char*,int);
+#else
+#define ASSERT(x)
+#endif
+
 #define WORD ((int)sizeof(word))
 #define BITS (8*WORD)
 #define BITS32 ((int)32)
@@ -158,18 +165,23 @@ typedef struct catchFrame {
 
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
-#define cellPtr(x)      ((any)((word)(x) & ~(2*WORD-1)))
+#define cellPtr(x)      ((any)(num(x) & ~(2*WORD-1)))
+#define typeTag(x)      (num(x) & (2*WORD-2))
+#define T_NUM           (WORD/2)
+#define T_SYM           (WORD)
+#define T_SHORT         (T_NUM + T_SYM)
+#ifdef __LP64__
+#define TAGBITS         4
+#else
+#define TAGBITS         3
+#endif
+#define SHORTMAX        (num(1)<<(BITS-TAGBITS))
+#define LONGMIN         ((long)num(1)<<(BITS-1))
 
 /* Number access */
 #define num(x)          ((word)(x))
-#define numPtr(x)       ((any)(num(x)+(WORD/2)))
-#define numCell(n)      ((any)(num(n)-(WORD/2)))
-#define box(n)          (consNum(n,Nil))
-#define unDig(x)        num(car(numCell(x)))
-#define setDig(x,v)     (car(numCell(x))=(any)(v))
 #define isNeg(x)        (unDig(x) & 1)
-#define pos(x)          (car(numCell(x)) = (any)(unDig(x) & ~1))
-#define neg(x)          (car(numCell(x)) = (any)(unDig(x) ^ 1))
+#define BOX(n)          (consNum(n,Nil))
 #define lo(w)           num((w)&MASK)
 #define hi(w)           num((w)>>BITS)
 #define hi64(w)         num((w)>>BITS32)
@@ -227,11 +239,12 @@ typedef struct catchFrame {
 
 /* Predicates */
 #define isNil(x)        ((x)==Nil)
-#define isNum(x)        (num(x)&(WORD/2))
-#define isSym(x)        (num(x)&WORD)
-#define isCell(x)       (!(num(x)&(2*WORD-2)))
+#define isNum(x)        (typeTag(x)&T_NUM)
+#define isShort(x)      (typeTag(x)==T_SHORT)
+#define isSym(x)        (typeTag(x)==T_SYM)
+#define isCell(x)       (!typeTag(x))
 #define isExt(s)        (num(tail(s))&1)
-#define IsZero(n)       (!unDig(n) && !isNum(cdr(numCell(n))))
+#define isBig(x)        (isNum(x)&&!isShort(x))
 
 /* Evaluation */
 #define EVAL(x)         (isNum(x)? x : isSym(x)? val(x) : evList(x))
@@ -239,7 +252,8 @@ typedef struct catchFrame {
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
-#define NeedCnt(ex,x)   if (!isNum(x) || isNum(cdr(numCell(x)))) cntError(ex,x)
+#define NeedCnt(ex,x)   if (!isNum(x) || isNum(nextDig(x))) cntError(ex,x)
+// #define NeedCnt(ex,x)   if (!isNum(x) || isNum(cdr(numCell(x)))) cntError(ex,x)
 #define NeedSym(ex,x)   if (!isSym(x)) symError(ex,x)
 #define NeedExt(ex,x)   if (!isSym(x) || !isExt(x)) extError(ex,x)
 #define NeedPair(ex,x)  if (!isCell(x)) pairError(ex,x)
@@ -314,11 +328,11 @@ void newline(void);
 void ctOpen(any,any,ctlFrame*);
 void db(any,any,int);
 int dbSize(any,any);
-void digAdd(any,word);
+any digAdd(any,word);
 void digDiv2(any);
-void digMul(any,word);
-void digMul2(any);
-void digSub1(any);
+any digMul(any,word);
+any digMul2(any);
+any digSub1(any);
 any doubleToNum(double);
 uint32_t ehash(any);
 any endString(void);
@@ -791,12 +805,119 @@ any doYoke(any);
 any doZap(any);
 any doZero(any);
 
-static inline long unBox(any x) {
-   long n = unDig(x) / 2;
-   return unDig(x) & 1? -n : n;
+// bigNum only
+static inline any numPtr(any x) {
+   return (any)(num(x)+T_NUM);
 }
 
-static inline any boxCnt(long n) {return box(n>=0?  n*2 : -n*2+1);}
+static inline any numCell(any n) {
+   ASSERT(isBig(n));
+   return (any)(num(n)-T_NUM);
+}
+
+// shortNum/bigNum
+static inline any box(word n) {
+   if (n < SHORTMAX)
+      return (any)((n << TAGBITS) + T_SHORT);
+   return BOX(n);
+}
+
+static inline word unDig(any x) {
+   ASSERT(isNum(x));
+   if (isShort(x))
+      return num(x) >> TAGBITS;
+   return num(car(numCell(x)));
+}
+
+static inline any big(any x) {
+   ASSERT(isNum(x));
+   if (isShort(x))
+      return BOX(unDig(x));
+   return x;
+}
+
+static inline any nextDig(any x) {
+   ASSERT(isNum(x));
+   return isShort(x) ? Nil : cdr(numCell(x));
+}
+
+static inline int IsZero(any x) {
+   word d;
+
+   ASSERT(isNum(x));
+   d = unDig(x);
+   if (d)
+      return 0;
+   if (isShort(x))
+      return 1;
+   return !isNum(cdr(numCell(x)));
+}
+
+// bigNum only
+static inline any setDig(any x,word v) {
+   ASSERT(isBig(x));
+   car(numCell(x))=(any)(v);
+   return (any)v;
+}
+
+static inline any pos(any x) {
+   ASSERT(isBig(x));
+   car(numCell(x)) = (any)(unDig(x) & ~num(1));
+   return x;
+}
+
+static inline any neg(any x) {
+   ASSERT(isBig(x));
+   car(numCell(x)) = (any)(unDig(x) ^ num(1));
+   return x;
+}
+
+static inline long unBox(any x) {
+   ASSERT(isNum(x));
+   long n = unDig(x) / 2L;
+   return unDig(x) & num(1)? -n : n;
+}
+
+// shortNum
+static inline any posShort(any x) {
+   ASSERT(isShort(x));
+   return (any)(num(x) & ~(num(1)<<TAGBITS));
+}
+
+static inline any negShort(any x) {
+   ASSERT(isShort(x));
+   return (any)(num(x) ^ (num(1)<<TAGBITS));
+}
+
+// short/bigNum
+static inline any boxLong(long n) {
+   any x;
+   cell c1;
+
+   if (LONGMIN == n) {
+      Push(c1, BOX(1));
+      x = consNum(0, data(c1));
+      drop(c1);
+      return x;
+   }
+   return box(n>=0?  n*2 : -n*2+1);
+}
+
+static inline any boxWord(word n) {
+   any x;
+   cell c1;
+
+   if (n&(num(1)<<(BITS-1))) {          // MSB set?
+      Push(c1, BOX(1));                 // take MSB alone
+      x = consNum(2*n, data(c1));       // shift n and store
+      drop(c1);
+      return x;
+   }
+   return box(2*n);                     // shift n and box
+}
+
+// always bigNum
+static inline any boxCnt(long n) { return BOX(n>=0?  n*2 : -n*2+1); }
 
 /* List element access */
 static inline any nCdr(int n, any x) {

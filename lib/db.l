@@ -1049,7 +1049,7 @@
 (de blob+ (Obj Var)
    (when *Jnl
       (chdir *Blob
-         `(if (== 64 64)
+         `(if (and *CPU (== 64 64))
             '(native "@" "symlink" 'I
                (pack (glue "/" (chop Obj)) "." Var)
                (pack "=" (name Obj) "." Var) )

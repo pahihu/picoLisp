@@ -44,7 +44,7 @@
                            (setq S (extern (pack (replace @S '/))))
                            (get S (intern (pack @R))) )
                         (inc 'Cnt)
-                        `(if (== 64 64)
+                        `(if (and *CPU (== 64 64))
                            '(native "@" "unlink" NIL (pack F))
                            '(call "rm" (pack F)) ) )
                      (wipe S) ) ) ) ) ) )

@@ -423,12 +423,12 @@ bool equal(any x, any y) {
    bool res;
 
    for (;;) {
-      if (x == y)
+      if (x == y) // x, y shortNum
          return YES;
       if (isNum(x)) {
          if (!isNum(y)  ||  unDig(x) != unDig(y))
             return NO;
-         x = cdr(numCell(x)),  y = cdr(numCell(y));
+         x = nextDig(x), y = nextDig(y);
          continue;
       }
       if (isSym(x)) {
@@ -498,6 +498,8 @@ int compare(any x, any y) {
    if (isNum(x)) {
       if (!isNum(y))
          return isNil(y)? +1 : -1;
+      if (isBig(x) || isBig(y))
+        x = big(x), y = big(y);
       return bigCompare(x,y);
    }
    if (isSym(x)) {
@@ -519,9 +521,9 @@ int compare(any x, any y) {
          if ((n1 >>= 8) == 0) {
             if ((n2 >>= 8) != 0)
                return -1;
-            if (!isNum(a = cdr(numCell(a))))
-               return !isNum(b = cdr(numCell(b)))? 0 : -1;
-            if (!isNum(b = cdr(numCell(b))))
+            if (!isNum(a = nextDig(a)))
+               return !isNum(b = nextDig(b))? 0 : -1;
+            if (!isNum(b = nextDig(b)))
                return +1;
             n1 = unDig(a), n2 = unDig(b);
          }
@@ -784,7 +786,7 @@ any funq(any x) {
    if (isSym(x))
       return Nil;
    if (isNum(x))
-      return (unDig(x)&3) || isNum(cdr(numCell(x)))? Nil : x;
+      return (unDig(x)&3) || isNum(nextDig(x))? Nil : x;
    if (circ(y = cdr(x)))
       return Nil;
    while (isCell(y)) {
@@ -1358,4 +1360,12 @@ int MAIN(int ac, char *av[]) {
    }
    for (;;)
       load(NULL, ':', Nil);
+}
+
+void myAssert(int cond,const char *expr,const char *path,int line) {
+   char msg[128];
+   if (!cond) {
+      sprintf(msg,"%s:%d: assertion failed \"%s\"\n",path,line,expr);
+      giveup(msg);
+   }
 }

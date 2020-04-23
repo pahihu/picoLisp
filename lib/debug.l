@@ -456,7 +456,7 @@
                (format (*/ (- (usec) U) 1000) 3)
                " sec" ) ) ) ) )
 
-`(== 64 64)  # Only in the 64-bit version
+`(and *CPU (== 64 64))  # Only in the 64-bit version
 
 # Backtrace
 (de bt (Flg)

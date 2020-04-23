@@ -46,7 +46,7 @@
                                              (pack New '/ F) ) ) )
                                     (call "touch" "-r" Src New) )
                                  ((= (info Src T) (info Old T))  # Same
-                                    `(if (== 64 64)
+                                    `(if (and *CPU (== 64 64))
                                        '(native "@" "link" 'I Old New)
                                        '(call "ln" Old New) ) )
                                  (T (call "cp" "-a" Src New)) ) ) )  # Changed or new

@@ -8,11 +8,16 @@
 static void mark(any x) {
    cell *p;
 
+   if (isShort(x))
+      return;
+
    while (num((p = cellPtr(x))->cdr) & 1) {
       *(word*)&cdr(p) &= ~1;
       if (!isNum(x))
          mark(p->car);
       x = p->cdr;
+      if (isShort(x))
+         break;
    }
 }
 

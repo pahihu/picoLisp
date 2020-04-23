@@ -424,7 +424,7 @@
             (from "\r\n\r\n")
             (out F (echo))
             (= Size (car (info F)))
-            `(if (== 64 64)
+            `(if (and *CPU (== 64 64))
                '(=0 (native "@" "rename" 'I F Dst))
                '(call "mv" F Dst) ) ) ) ) )
 

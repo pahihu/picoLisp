@@ -400,7 +400,7 @@ void initSymbols(void) {
    Quote = initSym(box(num(doQuote)), "quote");
    T     = initSym(Nil, "T"),  val(T) = T;  // Last protected symbol
 
-   mkExt(val(DB) = DbVal = consStr(DbTail = box('1')));
+   mkExt(val(DB) = DbVal = consStr(DbTail = BOX('1')));
    Extern['1'] = cons(DbVal, Nil);
 
    Solo   = initSym(Zero, "*Solo");

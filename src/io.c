@@ -265,7 +265,7 @@ static any rdNum(int cnt) {
 
    if ((n = getBin()) < 0)
       return NULL;
-   i = 0,  Push(c1, x = box(n));
+   i = 0,  Push(c1, x = BOX(n));
    if (--cnt == 62) {
       do {
          do {
@@ -359,14 +359,14 @@ static int numByte(any s) {
    if (s)
       i = 0,  n = unDig(x = s);
    else if (n >>= 8,  (++i & sizeof(word)-1) == 0)
-      n = unDig(x = cdr(numCell(x)));
+      n = unDig(x = nextDig(x));
    return n & 0xFF;
 }
 
 static void prNum(int t, any x) {
    int cnt, i;
 
-   if (!isNum(cdr(numCell(x))))
+   if (!isNum(nextDig(x)))
       prDig(t, unDig(x));
    else if ((cnt = numBytes(x)) < 63) {
       putBin(cnt*4+t);
@@ -505,7 +505,7 @@ int symByte(any s) {
       n = unDig(x);
    }
    else if ((n >>= 8) == 0) {
-      if (!isNum(cdr(numCell(x))))
+      if (!isNum(nextDig(x)))
          return 0;
       n = unDig(x = cdr(numCell(x)));
    }
@@ -537,8 +537,8 @@ int numBytes(any x) {
    int cnt;
    word n, m = MASK;
 
-   for (cnt = 1;  isNum(cdr(numCell(x)));  cnt += WORD)
-      x = cdr(numCell(x));
+   for (cnt = 1;  isNum(nextDig(x));  cnt += WORD)
+         x = cdr(numCell(x));
    for (n = unDig(x); n & (m <<= 8); ++cnt);
    return cnt;
 }
@@ -597,25 +597,25 @@ void byteSym(int c, int *i, any *p) {
    if ((*i += 8) < BITS)
       setDig(*p, unDig(*p) | ((word)(c & 0xFF)) << *i);
    else
-      *i = 0,  *p = cdr(numCell(*p)) = box(c & 0xFF);
+      *i = 0,  *p = cdr(numCell(*p)) = BOX(c & 0xFF);
 }
 
 /* Box first char of symbol name */
 any boxChar(int c, int *i, any *p) {
    *i = 0;
    if (c < 0x80)
-      *p = box(c);
+      *p = BOX(c);
    else if (c == TOP)
-      *p = box(0xFF);
+      *p = BOX(0xFF);
    else {
       if (c < 0x800)
-         *p = box(0xC0 | c>>6 & 0x1F);
+         *p = BOX(0xC0 | c>>6 & 0x1F);
       else if (c < 0x10000) {
-         *p = box(0xE0 | c>>12 & 0x0F);
+         *p = BOX(0xE0 | c>>12 & 0x0F);
          byteSym(0x80 | c>>6 & 0x3F, i, p);
       }
       else {
-         *p = box(0xF0 | c>>18 & 0x07);
+         *p = BOX(0xF0 | c>>18 & 0x07);
          byteSym(0x80 | c>>12 & 0x3F, i, p);
          byteSym(0x80 | c>>6 & 0x3F, i, p);
       }
@@ -902,8 +902,9 @@ void getStdin(void) {
 
       if (!isNum(Line))
          dig = isNum(Line = name(run(val(Led))))? unDig(Line) : '\n';
-      else if ((dig >>= 8) == 0)
-         dig = isNum(Line = cdr(numCell(Line)))? unDig(Line) : '\n';
+      else if ((dig >>= 8) == 0) {
+         dig = isNum(Line = nextDig(Line))? unDig(Line) : '\n';
+      }
       Chr = dig & 0xFF;
    }
 }
@@ -913,7 +914,7 @@ static void getParse(void) {
       Chr = -1;
    else if ((Env.parser->dig >>= 8) == 0) {
       Env.parser->dig =
-         isNum(Env.parser->name = cdr(numCell(Env.parser->name))) ?
+         isNum(Env.parser->name = nextDig(Env.parser->name)) ?
             unDig(Env.parser->name) : Env.parser->eof;
    }
 }
@@ -1156,7 +1157,7 @@ static any rdAtom(int c) {
    any x, y, *h;
    cell c1;
 
-   i = 0,  Push(c1, y = box(c));
+   i = 0,  Push(c1, y = BOX(c));
    while (Chr > 0 && !strchr(Delim, Chr)) {
       if (Chr == '\\')
          Env.get();
@@ -1310,7 +1311,7 @@ static any read0(bool top) {
          Env.get();
          return consSym(Nil,Nil);
       }
-      i = 0,  Push(c1, y = box(Chr));
+      i = 0,  Push(c1, y = BOX(Chr));
       while (Env.get(), Chr != '}') {
          if (Chr < 0)
             eofErr();
@@ -1365,7 +1366,7 @@ any token(any x, int c) {
       return Pop(c1);
    }
    if (Chr >= '0' && Chr <= '9') {
-      i = 0,  Push(c1, y = box(Chr));
+      i = 0,  Push(c1, y = BOX(Chr));
       while (Env.get(), Chr >= '0' && Chr <= '9' || Chr == '.')
          byteSym(Chr, &i, &y);
       return symToNum(Pop(c1), (int)unDig(val(Scl)) / 2, '.', 0);
@@ -1377,7 +1378,7 @@ any token(any x, int c) {
       if (Chr >= 'A' && Chr <= 'Z' || Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr)) {
          if (Chr == '\\')
             Env.get();
-         i = 0,  Push(c1, y = box(Chr));
+         i = 0,  Push(c1, y = BOX(Chr));
          while (Env.get(),
                Chr >= '0' && Chr <= '9' || Chr >= 'A' && Chr <= 'Z' ||
                Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr) ) {
@@ -1600,10 +1601,16 @@ long waitFd(any ex, int fd, long ms) {
       for (x = data(c2); isCell(x); x = cdr(x)) {
          if (!memq(car(x), taskSave)) {
             if (isNeg(caar(x))) {
-               if ((n = (int)(unDig(cadar(x)) / 2 - t)) > 0)
-                  setDig(cadar(x), (long)2*n);
-               else {
-                  setDig(cadar(x), unDig(caar(x)));
+               if ((n = (int)(unDig(cadar(x)) / 2 - t)) > 0) {
+                  if (isShort(cadar(x)))
+                     cadar(x) = box((long)2*n);
+                  else
+                     setDig(cadar(x), (long)2*n);
+               } else {
+                  if (isShort(cadar(x)))
+                     cadar(x) = box(unDig(caar(x)));
+                  else
+                     setDig(cadar(x), unDig(caar(x)));
                   val(At) = caar(x);
                   prog(cddar(x));
                }
@@ -2036,7 +2043,7 @@ static void putString(int c) {
    if (StrP)
       byteSym(c, &StrI, &StrP);
    else
-      StrI = 0,  data(StrCell) = StrP = box(c & 0xFF);
+      StrI = 0,  data(StrCell) = StrP = BOX(c & 0xFF);
 }
 
 void begString(void) {
@@ -2460,7 +2467,7 @@ void outName(any s) {
 }
 
 void outNum(any x) {
-   if (isNum(cdr(numCell(x)))) {
+   if (isNum(nextDig(x))) {
       cell c1;
 
       Push(c1, numToSym(x, 0, 0, 0));
@@ -2704,23 +2711,23 @@ any doRd(any x) {
    if ((cnt = unBox(x)) < 0) {
       if ((n = getBinary()) < 0)
          return Nil;
-      i = 0,  Push(c1, x = box(n));
+      i = 0,  Push(c1, x = BOX(n));
       while (++cnt) {
          if ((n = getBinary()) < 0)
             return Nil;
          byteSym(n, &i, &x);
       }
       zapZero(data(c1));
-      digMul2(data(c1));
+      data(c1) = digMul2(data(c1));
    }
    else {
       if ((n = getBinary()) < 0)
          return Nil;
-      i = 0,  Push(c1, x = box(n+n));
+      i = 0,  Push(c1, x = BOX(n+n));
       while (--cnt) {
          if ((n = getBinary()) < 0)
             return Nil;
-         digMul(data(c1), 256);
+         data(c1) = digMul(data(c1), 256);
          setDig(data(c1), unDig(data(c1)) | n+n);
       }
       zapZero(data(c1));
@@ -2818,7 +2825,7 @@ adr blk64(any x) {
    n = 0;
    if (isNum(x)) {
       w = unDig(x);
-      if (isNum(x = cdr(numCell(x))))
+      if (isNum(x = nextDig(x)))
          w |= (adr)unDig(x) << BITS32;
       do {
          if ((c = w & 0xFF) == '-')
@@ -3269,11 +3276,11 @@ any doId(any ex) {
       x = cdr(x);
       if (isNil(x = EVAL(car(x)))) {
          F = 0;
-         return mkId(unBoxWord2(y));
+         return mkId(isShort(y) ? unBox(y) : unBoxWord2(y));
       }
       F = (int)unDig(y)/2 - 1;
       NeedNum(ex,x);
-      return mkId(unBoxWord2(x));
+      return mkId(isShort(x) ? unBox(x) : unBoxWord2(x));
    }
    NeedExt(ex,y);
    n = blk64(name(y));
@@ -3281,7 +3288,7 @@ any doId(any ex) {
    if (isNil(EVAL(car(x))))
       return boxWord2(n);
    Push(c1, boxWord2(n));
-   data(c1) = cons(box((F + 1) * 2), data(c1));
+   data(c1) = cons(BOX((F + 1) * 2), data(c1));
    return Pop(c1);
 }
 

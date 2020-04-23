@@ -9,9 +9,10 @@ uint32_t ihash(any x) {
    uint32_t g, h;
    word n;
 
-   for (h = 0; isNum(x); x = cdr(numCell(x)))
+   for (h = 0; isNum(x); x = nextDig(x))
       for (n = unDig(x); n; n >>= 8)
          g = (h = (h<<4) + (n&0xFF)) & 0xF0000000,  h = (h ^ g>>24) & ~g;
+   ASSERT(isNil(x));
    return h % IHASH;
 }
 
@@ -20,7 +21,7 @@ uint32_t ehash(any x) {
    uint32_t h;
    word n;
 
-   for (h = 0; isNum(x); x = cdr(numCell(x)))
+   for (h = 0; isNum(x); x = nextDig(x))
       for (n = unDig(x); n; n >>= 11)
          h += n;
    return h % EHASH;
@@ -40,17 +41,23 @@ any findHash(any s, any *p) {
 
    if (isCell(h = *p)) {
       x = s,  y = name(car(h));
+      ASSERT(isBig(x));
+      ASSERT(isBig(y));
       while (unDig(x) == unDig(y)) {
-         x = cdr(numCell(x));
-         y = cdr(numCell(y));
+         x = nextDig(x);
+         y = nextDig(y);
          if (!isNum(x) && !isNum(y))
             return car(h);
+         if (!isNum(x) || !isNum(y))
+            break;
+         ASSERT(isBig(x));
+         ASSERT(isBig(y));
       }
       while (isCell(h = *(q = &cdr(h)))) {
          x = s,  y = name(car(h));
          while (unDig(x) == unDig(y)) {
-            x = cdr(numCell(x));
-            y = cdr(numCell(y));
+            x = nextDig(x);
+            y = nextDig(y);
             if (!isNum(x) && !isNum(y)) {
                *q = cdr(h),  cdr(h) = *p,  *p = h;
                return car(h);
@@ -75,6 +82,7 @@ void unintern(any s, any *p) {
 
 /* Get symbol name */
 any name(any s) {
+   ASSERT(isSym(s));
    for (s = tail1(s); isCell(s); s = cdr(s));
    return s;
 }
@@ -120,7 +128,7 @@ any mkChar(int c) {
             (0x80 | c>>6 & 0x3F) << 16  |
             (0x80 | c & 0x3F) << 24;
    }
-   return consStr(box(c));
+   return consStr(BOX(c));
 }
 
 /* Make name */
@@ -129,7 +137,7 @@ any mkName(char *s) {
    any nm;
    cell c1;
 
-   i = 0,  Push(c1, nm = box(*(byte*)s++));
+   i = 0,  Push(c1, nm = BOX(*(byte*)s++));
    while (*s)
       byteSym(*(byte*)s++, &i, &nm);
    return Pop(c1);
@@ -434,7 +442,7 @@ any doText(any x) {
             if (nm)
                byteSym(c, &i, &nm);
             else
-               i = 0,  Push(c1, nm = box(c & 0xFF));
+               i = 0,  Push(c1, nm = BOX(c & 0xFF));
          }
          else if (!(c = *p++))
             break;
@@ -442,7 +450,7 @@ any doText(any x) {
             if (nm)
                byteSym('@', &i, &nm);
             else
-               i = 0,  Push(c1, nm = box('@'));
+               i = 0,  Push(c1, nm = BOX('@'));
          }
          else if (c >= '1') {
             if ((c -= '1') > 8)
@@ -464,12 +472,12 @@ static bool pre(word n1, any y, word n2, any x) {
       if ((n1 & 0xFF) != (n2 & 0xFF))
          return NO;
       if ((n1 >>= 8) == 0) {
-         if (!isNum(y = cdr(numCell(y))))
+         if (!isNum(y = nextDig(y)))
             return YES;
          n1 = unDig(y);
       }
       if ((n2 >>= 8) == 0) {
-         if (!isNum(x = cdr(numCell(x))))
+         if (!isNum(x = nextDig(x)))
             return NO;
          n2 = unDig(x);
       }
@@ -488,7 +496,7 @@ bool subStr(any y, any x) {
       if (pre(unDig(y), y, n, x))
          return YES;
       if ((n >>= 8) == 0) {
-         if (!isNum(x = cdr(numCell(x))))
+         if (!isNum(x = nextDig(x)))
             return NO;
          n = unDig(x);
       }

@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* pil supports short numbers in 32bit/64bit versions
 * pil default target is 64bit, build the 32bit version with "make target=pil32"
   seed and rand is not compatible with 32bit build.
   The 64bit version passes the picoLisp tests except the seed and rand tests,

@@ -43,7 +43,7 @@
 
 
 ### byte ###
-(when (== 64 64)
+(when (and *CPU (== 64 64))
    (test (hex "12")
       (byte (>> -4 (adr (1)))) )
 

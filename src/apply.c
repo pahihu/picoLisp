@@ -573,18 +573,24 @@ any doSum(any ex) {
       while (isCell(data(c[0]))) {
          if (isNum(data(c1) = apply(ex, data(foo), YES, n, c))) {
             Save(c1);
-            if (isNeg(data(res))) {
-               if (isNeg(data(c1)))
-                  bigAdd(data(res),data(c1));
-               else
+            if (isShort(data(res)) && isShort(data(c1))) {
+               long a = unBox(data(res)), b = unBox(data(c1));
+               data(res) = boxLong(a + b);
+            } else {
+               data(res) = big(data(res)), data(c1) = big(data(c1));
+               if (isNeg(data(res))) {
+                  if (isNeg(data(c1)))
+                     bigAdd(data(res),data(c1));
+                  else
+                     bigSub(data(res),data(c1));
+                  if (!IsZero(data(res)))
+                     neg(data(res));
+               }
+               else if (isNeg(data(c1)))
                   bigSub(data(res),data(c1));
-               if (!IsZero(data(res)))
-                  neg(data(res));
+               else
+                  bigAdd(data(res),data(c1));
             }
-            else if (isNeg(data(c1)))
-               bigSub(data(res),data(c1));
-            else
-               bigAdd(data(res),data(c1));
             drop(c1);
          }
          for (i = 0; i < n; ++i)

@@ -6,7 +6,7 @@
 # crypt(3) algorithm, e.g. (setq *Salt (16 . "$6$@1$"))
 (de passwd (Str Salt)
    (if *Salt
-      `(if (== 64 64)
+      `(if (and *CPU (== 64 64))
          '(native "libcrypt.so" "crypt" 'S Str (or Salt (salt)))
          '(ext:Crypt Str (or Salt (salt))) )
       Str ) )
