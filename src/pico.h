@@ -165,22 +165,25 @@ typedef struct catchFrame {
 
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
+#define cellNum(x)      (num(x) & ~(2*WORD-1))
 #define cellPtr(x)      ((any)(num(x) & ~(2*WORD-1)))
 #define typeTag(x)      (num(x) & (2*WORD-2))
 #define T_NUM           (WORD/2)
 #define T_SYM           (WORD)
-#define T_SHORT         (T_NUM + T_SYM)
+#define T_SHORT         T_SYM
+#define T_SHORTNUM      (T_NUM+T_SHORT)
 #ifdef __LP64__
 #define TAGBITS         4
 #else
 #define TAGBITS         3
 #endif
 #define SHORTMAX        (num(1)<<(BITS-TAGBITS))
-#define LONGMIN         ((long)num(1)<<(BITS-1))
+#define OVFL            (num(1)<<(BITS-1))
+#define LONGMIN         ((long)OVFL)
 
 /* Number access */
 #define num(x)          ((word)(x))
-#define isNeg(x)        (unDig(x) & 1)
+#define isNeg(x)        (unDig(x) & num(1))
 #define BOX(n)          (consNum(n,Nil))
 #define lo(w)           num((w)&MASK)
 #define hi(w)           num((w)>>BITS)
@@ -190,7 +193,7 @@ typedef struct catchFrame {
 #define symPtr(x)       ((any)&(x)->cdr)
 #define val(x)          ((x)->car)
 #define tail(s)         (((s)-1)->cdr)
-#define tail1(s)        ((any)(num(tail(s)) & ~1))
+#define tail1(s)        ((any)(num(tail(s)) & ~num(1)))
 #define Tail(s,v)       (tail(s) = (any)(num(v) | num(tail(s)) & 1))
 #define ext(x)          ((any)(num(x) | 1))
 #define mkExt(s)        (*(word*)&tail(s) |= 1)
@@ -239,21 +242,29 @@ typedef struct catchFrame {
 
 /* Predicates */
 #define isNil(x)        ((x)==Nil)
-#define isNum(x)        (typeTag(x)&T_NUM)
-#define isShort(x)      (typeTag(x)==T_SHORT)
+#define isNum(x)        (num(x)&T_NUM)
+#define isShort(x)      (typeTag(x)==T_SHORTNUM)
 #define isSym(x)        (typeTag(x)==T_SYM)
 #define isCell(x)       (!typeTag(x))
 #define isExt(s)        (num(tail(s))&1)
-#define isBig(x)        (isNum(x)&&!isShort(x))
+#define shortLike(x)    (num(x)&T_SHORT)
+#define symLike(x)      (num(x)&T_SYM)
+#define isBig(x)        (isNum(x)&&!shortLike(x))
 
 /* Evaluation */
-#define EVAL(x)         (isNum(x)? x : isSym(x)? val(x) : evList(x))
-#define evSubr(f,x)     (*(fun)unDig(f))(x)
+#ifdef __LP64__
+#define boxFun(f)       (box(num(f)))
+#define unBoxFun(f)     (unDigShort(f))
+#else
+#define boxFun(f)       (BOX(num(f)))
+#define unBoxFun(f)     (unDigBig(f))
+#endif
+#define EVAL(x)         (isNum(x)? x : symLike(x) ? val(x) : evList(x))
+#define evSubr(f,x)     (*(fun)unBoxFun(f))(x)
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
 #define NeedCnt(ex,x)   if (!isNum(x) || isNum(nextDig(x))) cntError(ex,x)
-// #define NeedCnt(ex,x)   if (!isNum(x) || isNum(cdr(numCell(x)))) cntError(ex,x)
 #define NeedSym(ex,x)   if (!isSym(x)) symError(ex,x)
 #define NeedExt(ex,x)   if (!isSym(x) || !isExt(x)) extError(ex,x)
 #define NeedPair(ex,x)  if (!isCell(x)) pairError(ex,x)
@@ -291,6 +302,9 @@ extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern bool Break;
 extern sig_atomic_t Signal[NSIG];
 
+// since a shortNum is a ptr, we add 1 as a ptr
+static const word ShortOne = (num(1)<<(/*TAGBITS*/+1));
+
 /* Prototypes */
 void *alloc(void*,size_t);
 any apply(any,any,bool,int,cell*);
@@ -300,6 +314,7 @@ void begString(void);
 void bigAdd(any,any);
 int bigCompare(any,any);
 any bigCopy(any);
+#define copyNum(x)      (shortLike(x) ? (x) : bigCopy(x))
 void bigSub(any,any);
 void binPrint(int,any);
 any binRead(int);
@@ -815,42 +830,84 @@ static inline any numCell(any n) {
    return (any)(num(n)-T_NUM);
 }
 
+static inline word unDigBig(any x) {
+   ASSERT(isBig(x));
+   return num(car(numCell(x)));
+}
+
+// shortNum
+static inline word unDigShort(any x) {
+   ASSERT(isShort(x));
+   return num(x) >> TAGBITS;
+}
+
+static inline long unBoxShort(any x) {
+   ASSERT(isShort(x));
+   word u = unDigShort(x);
+   long n = u / 2L;
+   return u & num(1)? -n : n;
+}
+
+static inline any posShort(any x) {
+   ASSERT(isShort(x));
+   return (any)(num(x) & ~(num(1)<<TAGBITS));
+}
+
+static inline any negShort(any x) {
+   ASSERT(isShort(x));
+   return (any)(num(x) ^ (num(1)<<TAGBITS));
+}
+
+static inline int shortCompare(any x, any y) {
+   long a, b;
+
+   ASSERT(isShort(x));
+   ASSERT(isShort(y));
+
+   a = unBoxShort(x), b = unBoxShort(y);
+   if (a < b)
+      return -1;
+   else if (a > b)
+      return +1;
+   return 0;
+}
+
 // shortNum/bigNum
 static inline any box(word n) {
    if (n < SHORTMAX)
-      return (any)((n << TAGBITS) + T_SHORT);
+      return (any)((n << TAGBITS) + T_SHORTNUM);
    return BOX(n);
 }
 
 static inline word unDig(any x) {
    ASSERT(isNum(x));
-   if (isShort(x))
-      return num(x) >> TAGBITS;
+   if (shortLike(x))
+      return unDigShort(x);
    return num(car(numCell(x)));
 }
 
 static inline any big(any x) {
    ASSERT(isNum(x));
-   if (isShort(x))
-      return BOX(unDig(x));
+   if (shortLike(x))
+      return BOX(unDigShort(x));
    return x;
+}
+
+static inline any nextDigBig(any x) {
+   ASSERT(isBig(x));
+   return cdr(numCell(x));
 }
 
 static inline any nextDig(any x) {
    ASSERT(isNum(x));
-   return isShort(x) ? Nil : cdr(numCell(x));
+   return shortLike(x) ? Nil : nextDigBig(x);
 }
 
 static inline int IsZero(any x) {
-   word d;
-
    ASSERT(isNum(x));
-   d = unDig(x);
-   if (d)
-      return 0;
-   if (isShort(x))
-      return 1;
-   return !isNum(cdr(numCell(x)));
+   if (shortLike(x))
+      return 0 == num(cellPtr(x));
+   return !unDigBig(x) && !isNum(nextDigBig(x));
 }
 
 // bigNum only
@@ -874,19 +931,9 @@ static inline any neg(any x) {
 
 static inline long unBox(any x) {
    ASSERT(isNum(x));
-   long n = unDig(x) / 2L;
-   return unDig(x) & num(1)? -n : n;
-}
-
-// shortNum
-static inline any posShort(any x) {
-   ASSERT(isShort(x));
-   return (any)(num(x) & ~(num(1)<<TAGBITS));
-}
-
-static inline any negShort(any x) {
-   ASSERT(isShort(x));
-   return (any)(num(x) ^ (num(1)<<TAGBITS));
+   word u = unDig(x);
+   long n = u / 2L;
+   return u & num(1)? -n : n;
 }
 
 // short/bigNum
@@ -894,7 +941,7 @@ static inline any boxLong(long n) {
    any x;
    cell c1;
 
-   if (LONGMIN == n) {
+   if (n == LONGMIN) {
       Push(c1, BOX(1));
       x = consNum(0, data(c1));
       drop(c1);

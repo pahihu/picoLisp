@@ -367,8 +367,10 @@ any doRange(any ex) {
          argError(ex,x);
    }
    Push(c4, x = cons(data(c1), Nil));
-   if (isShort(data(c1)) && isShort(data(c2)) && isShort(data(c3))) {
-      long n1 = unBox(data(c1)), n2 = unBox(data(c2)), n3 = unBox(data(c3));
+   if (shortLike(data(c1)) && shortLike(data(c2)) && shortLike(data(c3))) {
+      long n1 = unBoxShort(data(c1)),
+           n2 = unBoxShort(data(c2)),
+           n3 = unBoxShort(data(c3));
       if (n2 >= n1) {
          for (;;) {
             n1 += n3;

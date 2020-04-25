@@ -9,9 +9,11 @@ picoFiles = main.c gc.c apply.c flow.c sym.c subr.c big.c io.c net.c tab.c
 CC = gcc
 # CCLD is the cc (compiler frontend) to use for the link step.
 CCLD = gcc
+GCCLD = gcc-mp-8
 
 ifeq ($(target),pil32)
         M32=-m32
+        GCCLD=gcc
 endif
 
 ifeq ($(debug),yes)
@@ -24,17 +26,19 @@ else
         STRIP = strip
 endif
 
-CFLAGS = -c $(OPT) -pipe \
+BFLAGS = -pipe \
 	-falign-functions=32 -fno-strict-aliasing \
 	-W -Wimplicit -Wreturn-type -Wunused -Wformat \
 	-Wuninitialized -Wstrict-prototypes \
 	-D_GNU_SOURCE  -D_FILE_OFFSET_BITS=64
 
+CFLAGS = -c $(OPT) $(BFLAGS)
+
 DYNAMIC-CC-FLAGS=
 
 ifeq ($(shell uname), Linux)
 	OS = Linux
-	CFLAGS += ${M32} -fPIC
+	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
 	LIB-FLAGS = -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
@@ -42,7 +46,7 @@ ifeq ($(shell uname), Linux)
 else
 ifeq ($(shell uname), OpenBSD)
 	OS = OpenBSD
-	CFLAGS += ${M32}
+	BFLAGS += ${M32}
 	PICOLISP-FLAGS = ${M32} -rdynamic -Wl,-E
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = -Wl,-E -Wl,-shared
@@ -52,7 +56,7 @@ ifeq ($(shell uname), FreeBSD)
 	OS = FreeBSD
 	CC = gcc
 	CCLD = clang
-	CFLAGS += ${M32} -fPIC
+	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
@@ -60,7 +64,7 @@ ifeq ($(shell uname), FreeBSD)
 else
 ifeq ($(shell uname), NetBSD)
 	OS = NetBSD
-	CFLAGS += ${M32}
+	BFLAGS += ${M32}
 	PICOLISP-FLAGS = ${M32} -rdynamic
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
@@ -68,7 +72,7 @@ ifeq ($(shell uname), NetBSD)
 else
 ifeq ($(shell uname), Darwin)
 	OS = Darwin
-	CFLAGS += ${M32} -mmacosx-version-min=10.6
+	BFLAGS += ${M32} -mmacosx-version-min=10.6
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS = -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
@@ -78,7 +82,7 @@ ifeq ($(shell uname), Darwin)
 else
 ifeq ($(shell uname), SunOS)
 	OS = SunOS
-	CFLAGS += ${M32}
+	BFLAGS += ${M32}
 	PICOLISP-FLAGS =
 	LIB-FLAGS = -lm -lnsl -lsocket
 	DYNAMIC-LIB-FLAGS = -G
@@ -86,7 +90,7 @@ ifeq ($(shell uname), SunOS)
 else
 ifeq ($(shell uname), AIX)
 	OS = AIX
-	CFLAGS += -maix32
+	BFLAGS += -maix32
 	PICOLISP-FLAGS = -maix32 -Wl,-brtl -Wl,-bexpall
 	LIB-FLAGS = -lm
 	DYNAMIC-LIB-FLAGS = -maix32 -Wl,-G -shared -lm
@@ -94,7 +98,7 @@ ifeq ($(shell uname), AIX)
 else
 ifeq ($(shell uname), HP-UX)
 	OS = HP-UX
-	CFLAGS +=
+	BFLAGS +=
 	PICOLISP-FLAGS = ${M32} -rdynamic
 	LIB-FLAGS = -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
@@ -102,13 +106,13 @@ ifeq ($(shell uname), HP-UX)
 else
 ifeq ($(shell uname), IRIX64)
 	OS = IRIX64
-	CFLAGS += -std=gnu99
+	BFLAGS += -std=gnu99
 	DYNAMIC-LIB-FLAGS = -shared
 	STRIP-FLAGS = -f
 else
 ifeq ($(shell uname -o | egrep -q "Cygwin|Msys" ; echo $$?), 0)
 	OS = Cygwin
-	CFLAGS += ${M32}
+	BFLAGS += ${M32}
 	DYNAMIC-LIB-FLAGS = -shared
 	PICOLISP-FLAGS =
 	DLL-DEFS = $(bin)/picolisp.dll
@@ -126,18 +130,20 @@ endif
 endif
 endif
 
+BFLAGS += -D_OS='"$(OS)"'
 
-picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+
+picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 tools: $(bin)/lat1 $(bin)/utf2 $(bin)/balance
 gate: $(bin)/ssl $(bin)/httpGate
 
 all: picolisp tools gate
 
 .c.o:
-	$(CC) $(CFLAGS) -D_OS='"$(OS)"' $*.c
+	$(CC) $(CFLAGS) $*.c
 
 ext.o ht.o: pico.h
-	$(CC) $(CFLAGS) -D_OS='"$(OS)"' $*.c $(DYNAMIC-CC-FLAGS)
+	$(CC) $(CFLAGS) $*.c $(DYNAMIC-CC-FLAGS)
 
 $(picoFiles:.c=.o) ext.o ht.o: pico.h
 main.o: vers.h
@@ -155,6 +161,11 @@ $(bin)/picolisp: $(picoFiles:.c=.o) $(bin)/picolisp$(dll) start.o
 	$(STRIP) $(STRIP-FLAGS) $(bin)/picolisp$(exe)
 
 else
+
+$(bin)/picolispx: $(picoFiles)
+	mkdir -p $(bin) $(lib)
+	$(GCCLD) -O3 -fomit-frame-pointer $(BFLAGS) -o $(bin)/picolispx$(exe) $(PICOLISP-FLAGS) $(picoFiles) $(LIB-FLAGS)
+	$(STRIP) $(STRIP-FLAGS) $(bin)/picolispx$(exe)
 
 $(bin)/picolisp: $(picoFiles:.c=.o)
 	mkdir -p $(bin) $(lib)

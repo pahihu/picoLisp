@@ -1602,13 +1602,13 @@ long waitFd(any ex, int fd, long ms) {
          if (!memq(car(x), taskSave)) {
             if (isNeg(caar(x))) {
                if ((n = (int)(unDig(cadar(x)) / 2 - t)) > 0) {
-                  if (isShort(cadar(x)))
+                  if (shortLike(cadar(x)))
                      cadar(x) = box((long)2*n);
                   else
                      setDig(cadar(x), (long)2*n);
                } else {
-                  if (isShort(cadar(x)))
-                     cadar(x) = box(unDig(caar(x)));
+                  if (shortLike(cadar(x)))
+                     cadar(x) = box(unDigShort(caar(x)));
                   else
                      setDig(cadar(x), unDig(caar(x)));
                   val(At) = caar(x);
@@ -3276,11 +3276,11 @@ any doId(any ex) {
       x = cdr(x);
       if (isNil(x = EVAL(car(x)))) {
          F = 0;
-         return mkId(isShort(y) ? unBox(y) : unBoxWord2(y));
+         return mkId(shortLike(y) ? (unDigShort(y) / num(2)) : unBoxWord2(y));
       }
       F = (int)unDig(y)/2 - 1;
       NeedNum(ex,x);
-      return mkId(isShort(x) ? unBox(x) : unBoxWord2(x));
+      return mkId(shortLike(x) ? (unDigShort(x) / num(2)) : unBoxWord2(x));
    }
    NeedExt(ex,y);
    n = blk64(name(y));

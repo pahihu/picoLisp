@@ -1124,7 +1124,8 @@ any doDo(any x) {
          drop(c1);
          return Nil;
       }
-      data(c1) = bigCopy(data(c1));
+      if (!shortLike(data(c1)))
+         data(c1) = bigCopy(data(c1));
    }
    x = cdr(x),  z = Nil;
    for (;;) {
@@ -1177,13 +1178,13 @@ any doAt(any ex) {
    NeedCnt(ex,car(x));
    NeedCnt(ex,cdr(x));
    n = unDig(car(x))+2;
-   if (isShort(car(x)))
+   if (shortLike(car(x)))
       car(x) = box(n);
    else
       setDig(car(x), n);
    if (n < unDig(cdr(x)))
       return Nil;
-   if (isShort(car(x)))
+   if (shortLike(car(x)))
       car(x) = box(0);
    else
       setDig(car(x), 0);
@@ -1201,7 +1202,10 @@ any doFor(any x) {
       int i, cnt;
       struct {any sym; any val;} bnd[2];
    } f;
+   int shortC1;
+   long C1;
 
+   C1 = 0; shortC1 = 0;
    f.link = Env.bind,  Env.bind = (bindFrame*)&f;
    f.i = 0;
    if (!isCell(y = car(x = cdr(x))) || !isCell(cdr(y))) {
@@ -1220,19 +1224,29 @@ any doFor(any x) {
       }
       y = Nil;
       x = cdr(x),  Push(c1, EVAL(car(x)));
-      if (isNum(data(c1)))
+      if (isNum(data(c1))) {
          val(f.bnd[0].sym) = Zero;
+         if ((shortC1  = shortLike(data(c1))))
+            C1 = unBoxShort(data(c1));
+      }
       body = x = cdr(x);
       for (;;) {
          if (isNum(data(c1))) {
-            val(f.bnd[0].sym) = bigCopy(val(f.bnd[0].sym));
-            val(f.bnd[0].sym) = digAdd(val(f.bnd[0].sym), 2);
-            if (isBig(val(f.bnd[0].sym)) || isBig(data(c1))) {
-               val(f.bnd[0].sym) = big(val(f.bnd[0].sym));
-               data(c1) = big(data(c1));
+            any v = val(f.bnd[0].sym);
+            if (isShort(v) && shortC1) {
+               long VAL;
+               val(f.bnd[0].sym) = boxLong(VAL = unBoxShort(v) + 1);
+               if (VAL > C1)
+                  break;
             }
-            if (bigCompare(val(f.bnd[0].sym), data(c1)) > 0)
-               break;
+            else {
+               v = val(f.bnd[0].sym) = big(v), data(c1) = big(data(c1));
+               shortC1 = 0;
+               v = val(f.bnd[0].sym) = bigCopy(v);
+               v = val(f.bnd[0].sym) = digAdd(v, 2);
+               if (bigCompare(v, data(c1)) > 0)
+                  break;
+            }
          }
          else {
             if (!isCell(data(c1)))
@@ -1242,8 +1256,13 @@ any doFor(any x) {
                data(c1) = Nil;
          }
          if (f.cnt == 2) {
-            val(f.bnd[1].sym) = bigCopy(val(f.bnd[1].sym));
-            val(f.bnd[1].sym) = digAdd(val(f.bnd[1].sym), 2);
+            any v = val(f.bnd[1].sym);
+            if (isShort(v))
+              val(f.bnd[1].sym) = boxLong(unBoxShort(v) + 1);
+            else {
+              v = val(f.bnd[1].sym) = bigCopy(v);
+              val(f.bnd[1].sym) = digAdd(v, 2);
+            }
          }
          do {
             if (!isNum(y = car(x))) {
@@ -1301,8 +1320,13 @@ any doFor(any x) {
    body = x = cdr(x);
    for (;;) {
       if (f.cnt == 2) {
-         val(f.bnd[1].sym) = bigCopy(val(f.bnd[1].sym));
-         val(f.bnd[1].sym) = digAdd(val(f.bnd[1].sym), 2);
+         any v = val(f.bnd[1].sym);
+         if (isShort(v))
+            val(f.bnd[1].sym) = boxLong(unBoxShort(v) + 1);
+         else {
+            v = val(f.bnd[1].sym) = bigCopy(v);
+            val(f.bnd[1].sym) = digAdd(v, 2);
+         }
       }
       if (isNil(a = EVAL(cond)))
          break;
@@ -1574,12 +1598,12 @@ any doTick(any ex) {
    n2 = (tim.tms_stime - n2) - (ticks2 - save2);
    {
       any p = cadr(ex);
-      if (isShort(car(p)))
-         car(p) = box(unDig(car(p)) + 2*n1);
+      if (shortLike(car(p)))
+         car(p) = box(unDigShort(car(p)) + 2*n1);
       else
          setDig(car(p), unDig(car(p)) + 2*n1);
-      if (isShort(cdr(p)))
-         cdr(p) = box(unDig(cdr(p)) + 2*n2);
+      if (shortLike(cdr(p)))
+         cdr(p) = box(unDigShort(cdr(p)) + 2*n2);
       else
          setDig(cdr(p), unDig(cdr(p)) + 2*n2);
    }

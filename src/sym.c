@@ -2010,8 +2010,8 @@ static int16_t Lower[] = {
    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 };
 
-#define MAXBLOCKS       (sizeof(Blocks) / sizeof(Blocks[0]))
-#define MAXDATA         (sizeof(Data) / sizeof(Data[0]))
+#define MAXBLOCKS       ((int)(sizeof(Blocks) / sizeof(Blocks[0])))
+#define MAXDATA         ((int)(sizeof(Data) / sizeof(Data[0])))
 #define BLOCKS(x)       ((x) < MAXBLOCKS ? Blocks[x] : 0)
 #define DATA(x)         ((x) <   MAXDATA ?   Data[x] : 0)
 #define DATABLOCKS(c)   (DATA(BLOCKS((c)>>5)+(c) & 0xFFFF))

@@ -498,8 +498,9 @@ int compare(any x, any y) {
    if (isNum(x)) {
       if (!isNum(y))
          return isNil(y)? +1 : -1;
-      if (isBig(x) || isBig(y))
-        x = big(x), y = big(y);
+      if (shortLike(x) && shortLike(y))
+         return shortCompare(x,y);
+      x = big(x), y = big(y);
       return bigCompare(x,y);
    }
    if (isSym(x)) {
@@ -844,7 +845,7 @@ bool sharedLib(any x) {
       }
       if (!(h = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL))  ||  !(h = dlsym(h,p)))
          return NO;
-      val(x) = box(num(h));
+      val(x) = boxFun(num(h));
    }
    return YES;
 }
@@ -890,8 +891,9 @@ any evList(any ex) {
          return ex;
       if (*Signal)
          sighandler(ex);
-      if (isNum(foo = evList(foo)))
+      if (isNum(foo = evList(foo))) {
          return evSubr(foo,ex);
+      }
       return evList2(foo,ex);
    }
    for (;;) {

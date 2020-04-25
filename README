@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* added gcc -O3 target, run with pilx
 * fixed SIGSEGV on UTF-8 character tables
 * added build scripts m and m32 in src/ dir
 * pil supports short numbers in 32bit/64bit versions
@@ -14,7 +15,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 21 / 4 / 2020
+pahihu 25 / 4 / 2020
 
 
 

@@ -396,8 +396,8 @@ void initSymbols(void) {
       Extern[i] = Nil;
    initSym(mkStr(_OS), "*OS");
    DB    = initSym(Nil, "*DB");
-   Meth  = initSym(box(num(doMeth)), "meth");
-   Quote = initSym(box(num(doQuote)), "quote");
+   Meth  = initSym(boxFun(doMeth), "meth");
+   Quote = initSym(boxFun(doQuote), "quote");
    T     = initSym(Nil, "T"),  val(T) = T;  // Last protected symbol
 
    mkExt(val(DB) = DbVal = consStr(DbTail = BOX('1')));
@@ -429,6 +429,10 @@ void initSymbols(void) {
    Fork   = initSym(Nil, "*Fork");
    Bye    = initSym(Nil, "*Bye");  // Last unremovable symbol
 
-   for (i = 0; i < (int)(sizeof(Symbols)/sizeof(symInit)); ++i)
-      initSym(box(num(Symbols[i].code)), Symbols[i].name);
+   for (i = 0; i < (int)(sizeof(Symbols)/sizeof(symInit)); ++i) {
+      any x = boxFun(Symbols[i].code);
+      // if (isShort(x) || (Symbols[i].code == 0x0000001001ddc40c))
+      //      fprintf(stderr,"short %s (%p)\n",Symbols[i].name,Symbols[i].code);
+      initSym(x, Symbols[i].name);
+   }
 }

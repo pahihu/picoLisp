@@ -573,8 +573,8 @@ any doSum(any ex) {
       while (isCell(data(c[0]))) {
          if (isNum(data(c1) = apply(ex, data(foo), YES, n, c))) {
             Save(c1);
-            if (isShort(data(res)) && isShort(data(c1))) {
-               long a = unBox(data(res)), b = unBox(data(c1));
+            if (shortLike(data(res)) && shortLike(data(c1))) {
+               long a = unBoxShort(data(res)), b = unBoxShort(data(c1));
                data(res) = boxLong(a + b);
             } else {
                data(res) = big(data(res)), data(c1) = big(data(c1));
