@@ -9,11 +9,10 @@ picoFiles = main.c gc.c apply.c flow.c sym.c subr.c big.c io.c net.c tab.c
 CC = gcc
 # CCLD is the cc (compiler frontend) to use for the link step.
 CCLD = gcc
-GCCLD = gcc-mp-8
+GCCLD = gcc
 
 ifeq ($(target),pil32)
         M32=-m32
-        GCCLD=gcc
 endif
 
 ifeq ($(debug),yes)
@@ -71,6 +70,7 @@ ifeq ($(shell uname), NetBSD)
 	LCRYPT = -lcrypto
 else
 ifeq ($(shell uname), Darwin)
+	GCCLD = gcc-mp-8
 	OS = Darwin
 	BFLAGS += ${M32} -mmacosx-version-min=10.6
 	PICOLISP-FLAGS = ${M32}
