@@ -128,7 +128,7 @@ any mkChar(int c) {
             (0x80 | c>>6 & 0x3F) << 16  |
             (0x80 | c & 0x3F) << 24;
    }
-   return consStr(BOX(c));
+   return consStr(mkShort(c));
 }
 
 /* Make name */

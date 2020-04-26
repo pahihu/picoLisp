@@ -388,9 +388,9 @@ void initSymbols(void) {
 
    Nil = symPtr(Avail),  Avail = Avail->car->car;  // Allocate 2 cells for NIL
    val(Nil) = tail(Nil) = val(Nil+1) = tail(Nil+1) = Nil;
-   Zero = box(0);
-   One = box(2);
-   Two = box(4);
+   Zero = SHORT(0);
+   One = SHORT(1);
+   Two = SHORT(2);
    for (i = 0; i < IHASH; ++i)
       Intern[i] = Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)

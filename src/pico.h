@@ -182,6 +182,7 @@ typedef struct catchFrame {
 #define SHORTMAX        (num(1)<<(BITS-TAGBITS))
 #define OVFL            (num(1)<<(BITS-1))
 #define LONGMIN         ((long)OVFL)
+#define SHORT(x)        (mkShort(2*(x)))
 
 /* Number access */
 #define num(x)          ((word)(x))
@@ -1008,7 +1009,7 @@ static inline any boxWord(word n) {
 }
 
 // always bigNum
-static inline any boxCnt(long n) { return BOX(n>=0?  n*2 : -n*2+1); }
+static inline any boxCnt(long n) { return box(n>=0?  n*2 : -n*2+1); }
 
 /* List element access */
 static inline any nCdr(int n, any x) {

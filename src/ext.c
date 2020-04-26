@@ -55,7 +55,7 @@ any Snx(any ex) {
    if (c >= 'a' && c <= 'z' || c == 128 || c >= 224 && c < 255)
       c &= ~0x20;
    Push(c2, boxChar(last = c, &i, &nm));
-   while (c = symChar(NULL))
+   while ((c = symChar(NULL)))
       if (c > ' ') {
          if ((c -= SNXBASE) < 0 || c >= SNXSIZE || !(c = SnxTab[c]))
             last = 0;

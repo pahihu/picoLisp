@@ -489,6 +489,8 @@ bool equal(any x, any y) {
 int compare(any x, any y) {
    any a, b;
 
+   // printf("compare: x="); fflush(stdout);
+   // print(x); printf(" y="); fflush(stdout); print(y); newline();
    if (x == y)
       return 0;
    if (isNil(x))
