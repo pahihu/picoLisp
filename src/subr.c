@@ -367,55 +367,22 @@ any doRange(any ex) {
          argError(ex,x);
    }
    Push(c4, x = cons(data(c1), Nil));
-   if (shortLike(data(c1)) && shortLike(data(c2)) && shortLike(data(c3))) {
-      long n1 = unBoxShort(data(c1)),
-           n2 = unBoxShort(data(c2)),
-           n3 = unBoxShort(data(c3));
-      if (n2 >= n1) {
-         for (;;) {
-            n1 += n3;
-            if (n2 < n1)
-               break;
-            x = cdr(x) = cons(boxLong(n1), Nil);
-         }
-      } else
-         for (;;) {
-            n1 -= n3;
-            if (n2 > n1)
-               break;
-            x = cdr(x) = cons(boxLong(n1), Nil);
-         }
-   } else {
-      data(c1) = big(data(c1)), data(c2) = big(data(c2)), data(c3) = big(data(c3));
-      if (bigCompare(data(c2), data(c1)) >= 0) {
-         for (;;) {
-            data(c1) = bigCopy(data(c1));
-            if (!isNeg(data(c1)))
-               bigAdd(data(c1), data(c3));
-            else {
-               bigSub(data(c1), data(c3));
-               if (!IsZero(data(c1)))
-                  neg(data(c1));
-            }
-            if (bigCompare(data(c2), data(c1)) < 0)
-               break;
-            x = cdr(x) = cons(data(c1), Nil);
-         }
+   if (CMP(data(c2), data(c1)) >= 0) {
+      for (;;) {
+         data(c1) = CPY(data(c1));
+         data(c1) = ADD(data(c1),data(c3));
+         if (CMP(data(c2), data(c1)) < 0)
+            break;
+         x = cdr(x) = cons(data(c1), Nil);
       }
-      else {
-         for (;;) {
-            data(c1) = bigCopy(data(c1));
-            if (!isNeg(data(c1)))
-               bigSub(data(c1), data(c3));
-            else {
-               bigAdd(data(c1), data(c3));
-               if (!IsZero(data(c1)))
-                  neg(data(c1));
-            }
-            if (bigCompare(data(c2), data(c1)) > 0)
-               break;
-            x = cdr(x) = cons(data(c1), Nil);
-         }
+   }
+   else {
+      for (;;) {
+         data(c1) = CPY(data(c1));
+         data(c1) = SUB(data(c1),data(c3));
+         if (CMP(data(c2), data(c1)) > 0)
+            break;
+         x = cdr(x) = cons(data(c1), Nil);
       }
    }
    drop(c1);
@@ -1226,7 +1193,7 @@ any doMmeq(any x) {
    x = cdr(x),  Push(c1, EVAL(car(x)));
    x = cdr(x),  y = EVAL(car(x));
    for (x = Pop(c1);  isCell(x);  x = cdr(x))
-      if (z = memq(car(x), y))
+      if ((z = memq(car(x), y)))
          return z;
    return Nil;
 }
@@ -1517,12 +1484,12 @@ static any fill(any x, any s) {
       cdr(y) = fill(cdr(x), s) ?: cdr(x);
       return Pop(c1);
    }
-   if (y = fill(car(x), s)) {
+   if ((y = fill(car(x), s))) {
       Push(c1,y);
       y = fill(cdr(x), s);
       return cons(Pop(c1), y ?: cdr(x));
    }
-   if (y = fill(cdr(x), s))
+   if ((y = fill(cdr(x), s)))
       return cons(car(x), y);
    return NULL;
 }
@@ -1533,7 +1500,7 @@ any doFill(any x) {
 
    x = cdr(x),  Push(c1, EVAL(car(x)));
    x = cdr(x),  Push(c2, EVAL(car(x)));
-   if (x = fill(data(c1), data(c2))) {
+   if ((x = fill(data(c1), data(c2)))) {
       drop(c1);
       return x;
    }

@@ -34,7 +34,7 @@ static void gc(long c) {
       do
          *(word*)&cdr(p) |= 1;
       while (--p >= h->cells);
-   } while (h = h->next);
+   } while ((h = h->next));
    /* Mark */
    mark(Nil+1);
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
@@ -80,7 +80,7 @@ static void gc(long c) {
             if (num(p->cdr) & 1)
                Free(p),  --c;
          while (--p >= h->cells);
-      } while (h = h->next);
+      } while ((h = h->next));
       while (c >= 0)
          heapAlloc(),  c -= CELLS;
    }

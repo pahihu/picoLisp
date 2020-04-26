@@ -31,7 +31,7 @@ outFile *OutFile, **OutFiles;
 int (*getBin)(void);
 void (*putBin)(int);
 any TheKey, TheCls, Thrown;
-any Alarm, Sigio, Line, Zero, One;
+any Alarm, Sigio, Line, Zero, One, Two;
 any Intern[IHASH], Transient[IHASH], Extern[EHASH];
 any ApplyArgs, ApplyBody, DbVal, DbTail;
 any Nil, DB, Meth, Quote, T;
@@ -271,7 +271,7 @@ any doHeap(any x) {
       heap *h = Heaps;
       do
          ++n;
-      while (h = h->next);
+      while ((h = h->next));
       return boxCnt(n);
    }
    for (x = Avail;  x;  x = car(x))
@@ -498,10 +498,7 @@ int compare(any x, any y) {
    if (isNum(x)) {
       if (!isNum(y))
          return isNil(y)? +1 : -1;
-      if (shortLike(x) && shortLike(y))
-         return shortCompare(x,y);
-      x = big(x), y = big(y);
-      return bigCompare(x,y);
+      return CMP(x,y);
    }
    if (isSym(x)) {
       int b1, b2;
@@ -538,7 +535,7 @@ int compare(any x, any y) {
    for (;;) {
       int n;
 
-      if (n = compare(car(x),car(y)))
+      if ((n = compare(car(x),car(y))))
          return n;
       if (!isCell(x = cdr(x)))
          return compare(x, cdr(y));
@@ -594,7 +591,7 @@ void err(any ex, any x, char *fmt, ...) {
 
       val(Msg) = mkStr(msg);
       for (p = CatchPtr;  p;  p = p->link)
-         if (y = p->tag)
+         if ((y = p->tag))
             while (isCell(y)) {
                if (subStr(car(y), val(Msg))) {
                   Thrown = isNil(car(y))? val(Msg) : car(y);
@@ -670,8 +667,8 @@ void unwind(catchFrame *catch) {
    bindFrame *p;
    catchFrame *q;
 
-   while (q = CatchPtr) {
-      while (p = Env.bind) {
+   while ((q = CatchPtr)) {
+      while ((p = Env.bind)) {
          if ((i = p->i) < 0) {
             j = i, n = 0;
             while (++n, ++j && (p = p->link))
@@ -1180,7 +1177,7 @@ any doFile(any ex __attribute__((unused))) {
       return Nil;
    Push(c1, boxCnt(InFile->src));
    s = strdup(InFile->name);
-   if (p = strrchr(s, '/')) {
+   if ((p = strrchr(s, '/'))) {
       data(c1) = cons(mkStr(p+1), data(c1));
       *(p+1) = '\0';
       data(c1) = cons(mkStr(s), data(c1));
@@ -1218,7 +1215,7 @@ any doDir(any x) {
       }
    } while (isNil(x) && p->d_name[0] == '.');
    Push(c1, y = cons(mkStr(p->d_name), Nil));
-   while (p = readdir(dp))
+   while ((p = readdir(dp)))
       if (!isNil(x) || p->d_name[0] != '.')
          y = cdr(y) = cons(mkStr(p->d_name), Nil);
    closedir(dp);

@@ -327,13 +327,13 @@ any binRead(int extn) {
    if (c == EXTERN) {
       if (extn)
          y = extOffs(extn, y);
-      if (x = findHash(y, h = Extern + ehash(y)))
+      if ((x = findHash(y, h = Extern + ehash(y))))
          return x;
       mkExt(x = consSym(Nil,y));
       *h = cons(x,*h);
       return x;
    }
-   if (x = findHash(y, h = Intern + ihash(y)))
+   if ((x = findHash(y, h = Intern + ihash(y))))
       return x;
    x = consSym(Nil,y);
    *h = cons(x,*h);
@@ -559,7 +559,7 @@ int pathSize(any x) {
 void bufString(any x, char *p) {
    int c = symByte(name(x));
 
-   while (*p++ = c)
+   while ((*p++ = c))
       c = symByte(NULL);
 }
 
@@ -570,14 +570,14 @@ void pathString(any x, char *p) {
    if ((c = symByte(name(x))) == '+')
       *p++ = c,  c = symByte(NULL);
    if (c != '@')
-      while (*p++ = c)
+      while ((*p++ = c))
          c = symByte(NULL);
    else {
-      if (h = Home)
+      if ((h = Home))
          do
             *p++ = *h++;
          while (*h);
-      while (*p++ = symByte(NULL));
+      while ((*p++ = symByte(NULL)));
    }
 }
 
@@ -1137,7 +1137,7 @@ static any anonymous(any s) {
    if ((c = symByte(s)) != '$')
       return NULL;
    n = 0;
-   while (c = symByte(NULL)) {
+   while ((c = symByte(NULL))) {
       if (c < '0' || c > '9')
          return NULL;
       n = n * 10 + c - '0';
@@ -1147,7 +1147,7 @@ static any anonymous(any s) {
    do
       if ((any)n >= h->cells  &&  (any)n < h->cells + CELLS)
          return symPtr((any)n);
-   while (h = h->next);
+   while ((h = h->next));
    return NULL;
 }
 
@@ -1167,11 +1167,11 @@ static any rdAtom(int c) {
    y = Pop(c1);
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
       return Nil;
-   if (x = symToNum(y, (int)unDig(val(Scl)) / 2, '.', 0))
+   if ((x = symToNum(y, (int)unDig(val(Scl)) / 2, '.', 0)))
       return x;
-   if (x = anonymous(y))
+   if ((x = anonymous(y)))
       return x;
-   if (x = findHash(y, h = Intern + ihash(y)))
+   if ((x = findHash(y, h = Intern + ihash(y))))
       return x;
    x = consSym(Nil,y);
    *h = cons(x,*h);
@@ -1299,7 +1299,7 @@ static any read0(bool top) {
          charSym(Chr, &i, &y);
       }
       y = Pop(c1),  Env.get();
-      if (x = findHash(y, h = Transient + ihash(y)))
+      if ((x = findHash(y, h = Transient + ihash(y))))
          return x;
       x = consStr(y);
       *h = cons(x,*h);
@@ -1318,7 +1318,7 @@ static any read0(bool top) {
          byteSym(Chr, &i, &y);
       }
       y = Pop(c1),  Env.get();
-      if (x = findHash(y, h = Extern + ehash(y)))
+      if ((x = findHash(y, h = Extern + ehash(y))))
          return x;
       mkExt(x = consSym(Nil,y));
       *h = cons(x,*h);
@@ -1389,7 +1389,7 @@ any token(any x, int c) {
          y = Pop(c1);
          if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
             return Nil;
-         if (x = findHash(y, h = Intern + ihash(y)))
+         if ((x = findHash(y, h = Intern + ihash(y))))
             return x;
          x = consSym(Nil,y);
          *h = cons(x,*h);
@@ -1601,7 +1601,7 @@ long waitFd(any ex, int fd, long ms) {
       for (x = data(c2); isCell(x); x = cdr(x)) {
          if (!memq(car(x), taskSave)) {
             if (isNeg(caar(x))) {
-               if ((n = (int)(unDig(cadar(x)) / 2 - t)) > 0) {
+               if ((n = (int)(unDig(cadar(x)) / num(2) - t)) > 0) {
                   if (shortLike(cadar(x)))
                      cadar(x) = box((long)2*n);
                   else
@@ -1927,7 +1927,7 @@ any doLine(any ex) {
    if (eol())
       return Nil;
    x = cdr(ex);
-   if (pack = !isNil(EVAL(car(x))))
+   if ((pack = !isNil(EVAL(car(x)))))
       Push(c1, boxChar(getChar(), &i, &z));
    else
       Push(c1, cons(mkChar(getChar()), Nil));
@@ -1986,7 +1986,7 @@ any doLines(any x) {
          char nm[pathSize(y)];
 
          pathString(y, nm);
-         if (fp = fopen(nm, "r")) {
+         if ((fp = fopen(nm, "r"))) {
             flg = YES;
             while ((c = getc_unlocked(fp)) >= 0)
                if (c == '\n')
@@ -2028,7 +2028,7 @@ static any parse(any x, bool skp, any s) {
          x = Nil;
       else {
          Push(c2, y = cons(x,Nil));
-         while (x = token(s,0))
+         while ((x = token(s,0)))
             y = cdr(y) = cons(x,Nil);
          x = Pop(c2);
       }
@@ -2456,13 +2456,13 @@ void outString(char *s) {
 static void outSym(int c) {
    do
       Env.put(c);
-   while (c = symByte(NULL));
+   while ((c = symByte(NULL)));
 }
 
 void outName(any s) {
    int c;
 
-   if (c = symByte(name(s)))
+   if ((c = symByte(name(s))))
       outSym(c);
 }
 
@@ -2518,7 +2518,7 @@ void print1(any x) {
                if (c == '\\' || strchr(Delim, c))
                   Env.put('\\');
                Env.put(c);
-            } while (c = symByte(NULL));
+            } while ((c = symByte(NULL)));
          }
       }
       else {
@@ -2531,7 +2531,7 @@ void print1(any x) {
             else if (c < ' ')
                Env.put('^'),  c |= 0x40;
             Env.put(c);
-         } while (c = symByte(NULL));
+         } while ((c = symByte(NULL)));
          Env.put('"');
       }
    }
@@ -2799,7 +2799,7 @@ any new64(adr n, any x) {
          c += 6;
       w = w << 8 | c + '0';
    } while (n >>= 6);
-   if (i = F) {
+   if ((i = F)) {
       ++i;
       w = w << 8 | '-';
       do {
@@ -3256,7 +3256,7 @@ static any mkId(adr n) {
    any x, y, *h;
 
    x = new64(n, Nil);
-   if (y = findHash(x, h = Extern + ehash(x)))
+   if ((y = findHash(x, h = Extern + ehash(x))))
       return y;
    mkExt(y = consSym(Nil,x));
    *h = cons(y,*h);
@@ -3278,7 +3278,7 @@ any doId(any ex) {
          F = 0;
          return mkId(shortLike(y) ? (unDigShort(y) / num(2)) : unBoxWord2(y));
       }
-      F = (int)unDig(y)/2 - 1;
+      F = (int)unDig(y)/num(2) - 1;
       NeedNum(ex,x);
       return mkId(shortLike(x) ? (unDigShort(x) / num(2)) : unBoxWord2(x));
    }
@@ -3485,7 +3485,7 @@ any doCommit(any ex) {
          }
       }
       for (F = 0; F < Files; ++F) {
-         if (i = Fluse[F]) {
+         if ((i = Fluse[F])) {
             rdBlock(0);                               // Save Block 0
             while (logBlock(),  BlkLink && --i >= 0)  // and free list
                rdBlock(BlkLink);
@@ -3501,7 +3501,7 @@ any doCommit(any ex) {
       note = NO,  extn = EXTERN64;  // Undocumented 64-bit DB export
    else {
       extn = 0;
-      if (note = !isNil(data(c1)) && (Tell || Children))
+      if ((note = !isNil(data(c1)) && (Tell || Children)))
          tellBeg(&pbSave, &ppSave, buf),  prTell(data(c1));
    }
    for (i = 0; i < EHASH; ++i) {
@@ -3765,7 +3765,7 @@ any doDbck(any ex) {
       x = Pop(c1);
    }
 done:
-   if (Jnl = jnl)
+   if ((Jnl = jnl))
       fflush(Jnl),  lockFile(fileno(Jnl), F_SETLK, F_UNLCK);
    rwUnlock(1);
    --Env.protect;

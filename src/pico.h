@@ -165,9 +165,11 @@ typedef struct catchFrame {
 
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
-#define cellNum(x)      (num(x) & ~(2*WORD-1))
-#define cellPtr(x)      ((any)(num(x) & ~(2*WORD-1)))
-#define typeTag(x)      (num(x) & (2*WORD-2))
+#define TAG             (2*WORD-1)
+#define SIGN            (2*WORD)
+#define cellNum(x)      (num(x) & ~TAG)
+#define cellPtr(x)      ((any)cellNum(x))
+#define typeTag(x)      (num(x) & (TAG-1))
 #define T_NUM           (WORD/2)
 #define T_SYM           (WORD)
 #define T_SHORT         T_SYM
@@ -293,7 +295,7 @@ extern outFile *OutFile, **OutFiles;
 extern int (*getBin)(void);
 extern void (*putBin)(int);
 extern any TheKey, TheCls, Thrown;
-extern any Alarm, Sigio, Line, Zero, One;
+extern any Alarm, Sigio, Line, Zero, One, Two;
 extern any Intern[IHASH], Transient[IHASH], Extern[EHASH];
 extern any ApplyArgs, ApplyBody, DbVal, DbTail;
 extern any Nil, DB, Meth, Quote, T;
@@ -311,11 +313,13 @@ any apply(any,any,bool,int,cell*);
 void argError(any,any) __attribute__ ((noreturn));
 void atomError(any,any) __attribute__ ((noreturn));
 void begString(void);
-void bigAdd(any,any);
-int bigCompare(any,any);
 any bigCopy(any);
-#define copyNum(x)      (shortLike(x) ? (x) : bigCopy(x))
-void bigSub(any,any);
+#define CPY(x)      (shortLike(x) ? (x) : bigCopy(x))
+any ADD(any,any);
+any SUB(any,any);
+any INC(any);
+any DEC(any);
+int CMP(any,any);
 void binPrint(int,any);
 any binRead(int);
 int binSize(any);
@@ -820,27 +824,59 @@ any doYoke(any);
 any doZap(any);
 any doZero(any);
 
-// bigNum only
+/* Numerics */
 static inline any numPtr(any x) {
    return (any)(num(x)+T_NUM);
 }
 
+/* --- bigNums ---------------------------------------------- */
 static inline any numCell(any n) {
    ASSERT(isBig(n));
    return (any)(num(n)-T_NUM);
 }
 
+/* First bigNum digit */
 static inline word unDigBig(any x) {
    ASSERT(isBig(x));
    return num(car(numCell(x)));
 }
 
-// shortNum
+/* Next bigNum digit */
+static inline any nextDigBig(any x) {
+   ASSERT(isBig(x));
+   return cdr(numCell(x));
+}
+
+/* Set bigNum digit */
+static inline any setDig(any x,word v) {
+   ASSERT(isBig(x));
+   car(numCell(x))=(any)(v);
+   return (any)v;
+}
+
+/* Make bigNum positive */
+static inline any posBig(any x) {
+   ASSERT(isBig(x));
+   car(numCell(x)) = (any)(unDigBig(x) & ~num(1));
+   return x;
+}
+
+/* Negate bigNum */
+static inline any negBig(any x) {
+   ASSERT(isBig(x));
+   car(numCell(x)) = (any)(unDigBig(x) ^ num(1));
+   return x;
+}
+
+/* --- shortNums -------------------------------------------- */
+
+/* First shortNum digit */
 static inline word unDigShort(any x) {
    ASSERT(isShort(x));
    return num(x) >> TAGBITS;
 }
 
+/* Unbox signed shortNum */
 static inline long unBoxShort(any x) {
    ASSERT(isShort(x));
    word u = unDigShort(x);
@@ -848,16 +884,19 @@ static inline long unBoxShort(any x) {
    return u & num(1)? -n : n;
 }
 
+/* Make shortNum positive */
 static inline any posShort(any x) {
    ASSERT(isShort(x));
-   return (any)(num(x) & ~(num(1)<<TAGBITS));
+   return (any)(num(x) & ~SIGN);
 }
 
+/* Negate shortNum */
 static inline any negShort(any x) {
    ASSERT(isShort(x));
-   return (any)(num(x) ^ (num(1)<<TAGBITS));
+   return (any)(num(x) ^ SIGN);
 }
 
+/* Compare shortNumbers */
 static inline int shortCompare(any x, any y) {
    long a, b;
 
@@ -872,18 +911,21 @@ static inline int shortCompare(any x, any y) {
    return 0;
 }
 
-// shortNum/bigNum
+/* Make shortNum */
+static inline any mkShort(word n) {
+   return (any)((n << TAGBITS) + T_SHORTNUM);
+}
+
+/* Box word, returns either shortNum/bigNum */
 static inline any box(word n) {
    if (n < SHORTMAX)
-      return (any)((n << TAGBITS) + T_SHORTNUM);
+      return mkShort(n);
    return BOX(n);
 }
 
 static inline word unDig(any x) {
    ASSERT(isNum(x));
-   if (shortLike(x))
-      return unDigShort(x);
-   return num(car(numCell(x)));
+   return shortLike(x) ? unDigShort(x) : unDigBig(x);
 }
 
 static inline any big(any x) {
@@ -893,16 +935,23 @@ static inline any big(any x) {
    return x;
 }
 
-static inline any nextDigBig(any x) {
-   ASSERT(isBig(x));
-   return cdr(numCell(x));
+static inline any shorten(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x) || isNum(nextDigBig(x)))
+      return x;
+   /* Single digit bigNum */
+   if (unDigBig(x) / num(2) < SHORTMAX)
+      return mkShort(unDigBig(x));
+   return x;
 }
 
+/* Next digit */
 static inline any nextDig(any x) {
    ASSERT(isNum(x));
    return shortLike(x) ? Nil : nextDigBig(x);
 }
 
+/* Zero number? */
 static inline int IsZero(any x) {
    ASSERT(isNum(x));
    if (shortLike(x))
@@ -910,25 +959,19 @@ static inline int IsZero(any x) {
    return !unDigBig(x) && !isNum(nextDigBig(x));
 }
 
-// bigNum only
-static inline any setDig(any x,word v) {
-   ASSERT(isBig(x));
-   car(numCell(x))=(any)(v);
-   return (any)v;
+/* Make number positive */
+static inline any ABS(any x) {
+   ASSERT(isNum(x));
+   return shortLike(x) ? posShort(x) : posBig(x);
 }
 
-static inline any pos(any x) {
-   ASSERT(isBig(x));
-   car(numCell(x)) = (any)(unDig(x) & ~num(1));
-   return x;
+/* Negate number */
+static inline any NEG(any x) {
+   ASSERT(isNum(x));
+   return shortLike(x) ? negShort(x) : negBig(x);
 }
 
-static inline any neg(any x) {
-   ASSERT(isBig(x));
-   car(numCell(x)) = (any)(unDig(x) ^ num(1));
-   return x;
-}
-
+/* Unbox low digit of x */
 static inline long unBox(any x) {
    ASSERT(isNum(x));
    word u = unDig(x);
@@ -936,7 +979,7 @@ static inline long unBox(any x) {
    return u & num(1)? -n : n;
 }
 
-// short/bigNum
+/* Box signed long */
 static inline any boxLong(long n) {
    any x;
    cell c1;
@@ -950,6 +993,7 @@ static inline any boxLong(long n) {
    return box(n>=0?  n*2 : -n*2+1);
 }
 
+/* Box unsigned word */
 static inline any boxWord(word n) {
    any x;
    cell c1;
@@ -981,7 +1025,7 @@ static inline any nth(int n, any x) {
 
 static inline any getn(any x, any y) {
    if (isNum(x)) {
-      long n = unDig(x) / 2;
+      long n = unDig(x) / num(2);
 
       if (isNeg(x)) {
          while (--n)

@@ -102,7 +102,7 @@ any doEval(any x) {
             if (p->cnt  &&  p->bnd[0].sym == At  &&  !--j)
                break;
          }
-      } while (p = p->link);
+      } while ((p = p->link));
       while (isCell(x)) {
          for (p = Env.bind, j = n; ; p = p->link) {
             if (p->i < 0)
@@ -167,7 +167,7 @@ any doRun(any x) {
                if (p->cnt  &&  p->bnd[0].sym == At  &&  !--j)
                   break;
             }
-         } while (p = p->link);
+         } while ((p = p->link));
          while (isCell(x)) {
             for (p = Env.bind, j = n; ; p = p->link) {
                if (p->i < 0)
@@ -362,7 +362,7 @@ any method(any x) {
             return NULL;
       }
       do
-         if (x = method(car(TheCls = y)))
+         if ((x = method(car(TheCls = y))))
             return x;
       while (isCell(y = cdr(y)));
    }
@@ -388,7 +388,7 @@ any doNew(any ex) {
          data(c1) = consSym(Nil,Nil);
       else {
          y = newId(ex, isNum(y)? (int)unDig(y)/2 : 1);
-         if (data(c1) = findHash(y, h = Extern + ehash(y)))
+         if ((data(c1) = findHash(y, h = Extern + ehash(y))))
             tail(data(c1)) = y;
          else
             *h = cons(data(c1) = consSym(Nil,y), *h);
@@ -398,7 +398,7 @@ any doNew(any ex) {
       x = cdr(x),  val(data(c1)) = EVAL(car(x));
    }
    TheKey = T,  TheCls = NULL;
-   if (y = method(data(c1)))
+   if ((y = method(data(c1))))
       evMethod(data(c1), y, cdr(x));
    else {
       Push(c2, Nil);
@@ -508,7 +508,7 @@ any doMeth(any ex) {
          err(ex, TheKey, "Bad message");
       if (isNum(val(TheKey))) {
          TheCls = NULL;
-         if (y = method(data(c1))) {
+         if ((y = method(data(c1)))) {
             x = evMethod(data(c1), y, cdr(x));
             drop(c1);
             return x;
@@ -529,7 +529,7 @@ any doSend(any ex) {
    NeedSym(ex,data(c2));
    Fetch(ex,data(c2));
    TheKey = data(c1),  TheCls = NULL;
-   if (y = method(data(c2))) {
+   if ((y = method(data(c2)))) {
       x = evMethod(data(c2), y, cdr(x));
       drop(c1);
       return x;
@@ -552,7 +552,7 @@ any doTry(any ex) {
          db(ex,data(c2),1);
       }
       TheKey = data(c1),  TheCls = NULL;
-      if (y = method(data(c2))) {
+      if ((y = method(data(c2)))) {
          x = evMethod(data(c2), y, cdr(x));
          drop(c1);
          return x;
@@ -571,7 +571,7 @@ any doSuper(any ex) {
    while (isCell(car(x)))
       x = cdr(x);
    while (isCell(x)) {
-      if (y = method(car(TheCls = x))) {
+      if ((y = method(car(TheCls = x)))) {
          cls = Env.cls,  Env.cls = TheCls;
          key = Env.key,  Env.key = TheKey;
          x = evExpr(y, cdr(ex));
@@ -590,7 +590,7 @@ static any extra(any x) {
    while (isCell(x)) {
       if (x == Env.cls  ||  !(y = extra(car(x)))) {
          while (isCell(x = cdr(x)))
-            if (y = method(car(TheCls = x)))
+            if ((y = method(car(TheCls = x))))
                return y;
          return NULL;
       }
@@ -1124,8 +1124,7 @@ any doDo(any x) {
          drop(c1);
          return Nil;
       }
-      if (!shortLike(data(c1)))
-         data(c1) = bigCopy(data(c1));
+      data(c1) = CPY(data(c1));
    }
    x = cdr(x),  z = Nil;
    for (;;) {
@@ -1134,7 +1133,7 @@ any doDo(any x) {
             drop(c1);
             return z;
          }
-         data(c1) = digSub1(data(c1));
+         data(c1) = DEC(data(c1));
       }
       y = x;
       do {
@@ -1185,7 +1184,7 @@ any doAt(any ex) {
    if (n < unDig(cdr(x)))
       return Nil;
    if (shortLike(car(x)))
-      car(x) = box(0);
+      car(x) = Zero;
    else
       setDig(car(x), 0);
    return prog(cddr(ex));
@@ -1202,10 +1201,7 @@ any doFor(any x) {
       int i, cnt;
       struct {any sym; any val;} bnd[2];
    } f;
-   int shortC1;
-   long C1;
 
-   C1 = 0; shortC1 = 0;
    f.link = Env.bind,  Env.bind = (bindFrame*)&f;
    f.i = 0;
    if (!isCell(y = car(x = cdr(x))) || !isCell(cdr(y))) {
@@ -1224,29 +1220,15 @@ any doFor(any x) {
       }
       y = Nil;
       x = cdr(x),  Push(c1, EVAL(car(x)));
-      if (isNum(data(c1))) {
+      if (isNum(data(c1)))
          val(f.bnd[0].sym) = Zero;
-         if ((shortC1  = shortLike(data(c1))))
-            C1 = unBoxShort(data(c1));
-      }
       body = x = cdr(x);
       for (;;) {
          if (isNum(data(c1))) {
-            any v = val(f.bnd[0].sym);
-            if (isShort(v) && shortC1) {
-               long VAL;
-               val(f.bnd[0].sym) = boxLong(VAL = unBoxShort(v) + 1);
-               if (VAL > C1)
+            val(f.bnd[0].sym) = CPY(val(f.bnd[0].sym));
+            val(f.bnd[0].sym) = INC(val(f.bnd[0].sym));
+            if (CMP(val(f.bnd[0].sym), data(c1)) > 0)
                   break;
-            }
-            else {
-               v = val(f.bnd[0].sym) = big(v), data(c1) = big(data(c1));
-               shortC1 = 0;
-               v = val(f.bnd[0].sym) = bigCopy(v);
-               v = val(f.bnd[0].sym) = digAdd(v, 2);
-               if (bigCompare(v, data(c1)) > 0)
-                  break;
-            }
          }
          else {
             if (!isCell(data(c1)))
@@ -1256,13 +1238,8 @@ any doFor(any x) {
                data(c1) = Nil;
          }
          if (f.cnt == 2) {
-            any v = val(f.bnd[1].sym);
-            if (isShort(v))
-              val(f.bnd[1].sym) = boxLong(unBoxShort(v) + 1);
-            else {
-              v = val(f.bnd[1].sym) = bigCopy(v);
-              val(f.bnd[1].sym) = digAdd(v, 2);
-            }
+            val(f.bnd[1].sym) = CPY(val(f.bnd[1].sym));
+            val(f.bnd[1].sym) = INC(val(f.bnd[1].sym));
          }
          do {
             if (!isNum(y = car(x))) {
@@ -1320,13 +1297,8 @@ any doFor(any x) {
    body = x = cdr(x);
    for (;;) {
       if (f.cnt == 2) {
-         any v = val(f.bnd[1].sym);
-         if (isShort(v))
-            val(f.bnd[1].sym) = boxLong(unBoxShort(v) + 1);
-         else {
-            v = val(f.bnd[1].sym) = bigCopy(v);
-            val(f.bnd[1].sym) = digAdd(v, 2);
-         }
+         val(f.bnd[1].sym) = CPY(val(f.bnd[1].sym));
+         val(f.bnd[1].sym) = INC(val(f.bnd[1].sym));
       }
       if (isNil(a = EVAL(cond)))
          break;
@@ -1601,11 +1573,11 @@ any doTick(any ex) {
       if (shortLike(car(p)))
          car(p) = box(unDigShort(car(p)) + 2*n1);
       else
-         setDig(car(p), unDig(car(p)) + 2*n1);
+         setDig(car(p), unDigBig(car(p)) + 2*n1);
       if (shortLike(cdr(p)))
          cdr(p) = box(unDigShort(cdr(p)) + 2*n2);
       else
-         setDig(cdr(p), unDig(cdr(p)) + 2*n2);
+         setDig(cdr(p), unDigBig(cdr(p)) + 2*n2);
    }
    ticks1 += n1,  ticks2 += n2;
    return x;

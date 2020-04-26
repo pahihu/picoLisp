@@ -55,7 +55,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          NeedSym(ex,o);
          Fetch(ex,o);
          TheCls = NULL,  TheKey = foo;
-         if (expr = method(o)) {
+         if ((expr = method(o))) {
             int i;
             any cls = Env.cls, key = Env.key;
             /* XXX struct {any sym; any val;} bnd[length(x = car(expr))+3]; */
@@ -573,24 +573,7 @@ any doSum(any ex) {
       while (isCell(data(c[0]))) {
          if (isNum(data(c1) = apply(ex, data(foo), YES, n, c))) {
             Save(c1);
-            if (shortLike(data(res)) && shortLike(data(c1))) {
-               long a = unBoxShort(data(res)), b = unBoxShort(data(c1));
-               data(res) = boxLong(a + b);
-            } else {
-               data(res) = big(data(res)), data(c1) = big(data(c1));
-               if (isNeg(data(res))) {
-                  if (isNeg(data(c1)))
-                     bigAdd(data(res),data(c1));
-                  else
-                     bigSub(data(res),data(c1));
-                  if (!IsZero(data(res)))
-                     neg(data(res));
-               }
-               else if (isNeg(data(c1)))
-                  bigSub(data(res),data(c1));
-               else
-                  bigAdd(data(res),data(c1));
-            }
+            data(res) = ADD(data(res),data(c1));
             drop(c1);
          }
          for (i = 0; i < n; ++i)

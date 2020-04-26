@@ -390,6 +390,7 @@ void initSymbols(void) {
    val(Nil) = tail(Nil) = val(Nil+1) = tail(Nil+1) = Nil;
    Zero = box(0);
    One = box(2);
+   Two = box(4);
    for (i = 0; i < IHASH; ++i)
       Intern[i] = Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)
@@ -431,8 +432,6 @@ void initSymbols(void) {
 
    for (i = 0; i < (int)(sizeof(Symbols)/sizeof(symInit)); ++i) {
       any x = boxFun(Symbols[i].code);
-      // if (isShort(x) || (Symbols[i].code == 0x0000001001ddc40c))
-      //      fprintf(stderr,"short %s (%p)\n",Symbols[i].name,Symbols[i].code);
       initSym(x, Symbols[i].name);
    }
 }
