@@ -40,6 +40,9 @@ word2 unBoxWord2(any x) {
 
    ASSERT(isBig(x));
 
+   // shift left 1bit
+   digDiv2(x);
+
    // this is the low-order word
    n = unDig(x);
 
@@ -47,8 +50,26 @@ word2 unBoxWord2(any x) {
    if (isNum(x = cdr(numCell(x))))
       n = ((word2)unDig(x) << BITS) + n; 
 
-   // reduces to 63bits unsigned
-   return n / num(2);
+   return n;
+}
+
+/* Box unsigned double word */
+/* boxWord2() boxes word2 and shifts right */
+/* This really boxes a word2 as a bigNum   */
+static any box2Word(word2 t) {
+   any x, y;
+   cell c1;
+
+   Push(c1, BOX(2*num(t)));
+   x = data(c1);
+   t >>= (BITS-1);
+   do {
+      y = consNum(2*num(t), Nil);
+      t >>= (BITS-1);
+      cdr(x) = y;
+      x = y;
+   } while (t);
+   return Pop(c1);
 }
 
 /* Bignum copy */
@@ -578,21 +599,13 @@ static any MULU(any x, any y) {
       if (shortLike(y)) {
          word2 w;
          w = (word2)(unDigShort(x) / num(2)) * (unDigShort(y) / num(2));
-         if (!hi(w))
-            /* High bit not set and fits */
-            if (!(num(w) & OVFL) && (num(w) < (SHORTMAX / num(2))))
-               return mkShort(2*num(w));
-         return boxWord2(w);
+         return hi(w) ? box2Word(w) : boxWord(num(w));
       }
       y = copyBig(y);
       return digMul(y, unDigShort(x) & ~num(1));
    }
-   if (shortLike(y)) {
-      word v = unDigShort(y) & ~SIGN;
-      if (2 == (v / 2L))
-         return digMul2(x);
-      return digMul(x, v);
-   }
+   if (shortLike(y))
+      return digMul(x, unDigShort(y) / num(2));
    return bigMul(x, y);
 }
 
@@ -729,7 +742,7 @@ any symToNum(any s, int scl, int sep, int ign) {
          return NULL;
       }
       if (c >= 5)
-         data(c2) = ADDU(data(c2), SHORT(1));
+         data(c2) = ADDU(data(c2), One);
       while ((c = symByte(NULL))) {
          if ((c -= '0') > 9) {
             drop(c1);
@@ -1212,7 +1225,7 @@ any doShift(any ex) {
          a <<= -n;
       if (!a)
          sign = 0;
-      data(c1) = hi(a) ? boxWord2(a) : boxWord(num(a)); 
+      data(c1) = hi(a) ? box2Word(a) : boxWord(num(a)); 
       if (sign)
          data(c1) = NEG(data(c1));
       return data(c1);
@@ -1450,8 +1463,12 @@ any doSqrt(any ex) {
    if (isNum(y))
       x = data(c1) = MULU(x, y);
 
-   if (shortLike(x))
-      return boxWord(sqrt(unDigShort(x) / num(2)) + (isNil(y) ? 0.0 : 0.5));
+   if (shortLike(x)) {
+      word u = unDigShort(x) / num(2);
+      if (BITS-bitCount(u) < 53)
+         return boxWord(sqrt(u) + (isNil(y) ? 0.0 : 0.5));
+      x = data(c1) = big(x);
+   }
 
    Push(c3, y = BOX(unDig(x)));  // Number copy
    Push(c4, z = BOX(2));  // Mask

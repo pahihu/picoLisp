@@ -999,8 +999,8 @@ static inline any boxWord(word n) {
    any x;
    cell c1;
 
-   if (n&(num(1)<<(BITS-1))) {          // MSB set?
-      Push(c1, BOX(1));                 // take MSB alone
+   if (n&OVFL) {                        // MSB set?
+      Push(c1, BOX(2));                 // take MSB alone
       x = consNum(2*n, data(c1));       // shift n and store
       drop(c1);
       return x;
