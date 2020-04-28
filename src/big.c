@@ -41,6 +41,9 @@ word2 unBoxWord2(any x) {
 
    ASSERT(isBig(x));
 
+   // shift right 1bit
+   digDiv2(x);
+
    // this is the low-order word
    n = unDig(x);
 
@@ -48,8 +51,7 @@ word2 unBoxWord2(any x) {
    if (isNum(x = cdr(numCell(x))))
       n = ((word2)unDig(x) << BITS) + n; 
 
-   // reduces to 63bits unsigned
-   return n / num(2);
+   return n;
 }
 
 /* Bignum copy */
@@ -986,11 +988,10 @@ any doMul(any ex) {
       return Nil;
    NeedNum(ex,y);
    if (shortLike(y)) {
-      word2 a;
-      word  cnt = 0;
+      word a;
       if (sign = isNeg(y))
          y = posShort(y);
-      a = (word2) unDigShort(y) / num(2);
+      a = unDigShort(y) / num(2);
       while (isCell(x = cdr(x))) {
          y = EVAL(car(x));
          if (isNil(y))
@@ -998,19 +999,19 @@ any doMul(any ex) {
          NeedNum(ex,y);
          sign ^= isNeg(y);
          if (shortLike(y)) {
-            word2 u = a * (unDigShort(y) / num(2));
-            if (++cnt > 1)
-               if (u < a)
-                  goto ovfl;
-            a = u;
+            word2 u = (word2)a * (unDigShort(y) / num(2));
+            if (hi(u)) {
+               Push(c1, boxWord2(u));
+               goto mul2;
+            }
+            a = lo(u);
             continue;
          }
-ovfl:
-         Push(c1, big(hi(a) ? boxWord2(a) : boxWord(num(a))));
-         Push(c2, big(y));
+         Push(c1, big(boxLong(a)));
+         Push(c2, y);
          goto mul1;
       }
-      x = hi(a) ? boxWord2(a) : boxWord(num(a));
+      x = boxWord(num(a));
       if (sign & !IsZero(x)) {
          if (shortLike(x))
             x = negShort(x);
@@ -1034,9 +1035,9 @@ ovfl:
       sign ^= isNeg(data(c2));
       if (shortLike(data(c2)))
          data(c2) = big(data(c2));
-mul1:
-      data(c1) = bigMul(data(c1),data(c2));
+mul1: data(c1) = bigMul(data(c1),data(c2));
       drop(c2);
+mul2: ;
    }
    if (sign && !IsZero(data(c1)))
       neg(data(c1));
@@ -1516,8 +1517,13 @@ any doSqrt(any ex) {
       x = data(c1) = bigMul(x, y);
    }
 
-   if (shortLike(x))
-      return boxWord(sqrt(unDigShort(x) / num(2)) + (isNil(y) ? 0.0 : 0.5));
+   if (shortLike(x)) {
+      word u = unDigShort(x) / num(2);
+#ifdef __LP64__
+      if (BITS - __builtin_clz(u) < 53)
+#endif
+      return boxWord(sqrt(u) + (isNil(y) ? 0.0 : 0.5));
+   }
    x = data(c1) = big(x), y = data(c2) = isNum(y) ? big(y) : y;
 
    Push(c3, y = BOX(unDig(x)));  // Number copy

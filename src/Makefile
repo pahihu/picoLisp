@@ -70,9 +70,13 @@ ifeq ($(shell uname), NetBSD)
 	LCRYPT = -lcrypto
 else
 ifeq ($(shell uname), Darwin)
+ifeq ($(target), pil32)
+	GCCLD = gcc
+else
 	GCCLD = gcc-mp-8
+endif
 	OS = Darwin
-	BFLAGS += ${M32} -mmacosx-version-min=10.6
+	BFLAGS += ${M32} -mmacosx-version-min=10.6 -Wno-parentheses
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS = -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
