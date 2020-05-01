@@ -583,7 +583,7 @@ any doSum(any ex) {
                      bigAdd(data(res),data(c1));
                   else
                      bigSub(data(res),data(c1));
-                  if (!IsZero(data(res)))
+                  if (!IsZeroBig(data(res)))
                      neg(data(res));
                }
                else if (isNeg(data(c1)))

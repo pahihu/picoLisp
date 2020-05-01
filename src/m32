@@ -7,4 +7,5 @@ then
 fi
 rm -f ../bin/picolisp ../bin/picolispx
 $GNUMAKE clean
+# $GNUMAKE debug=yes target=pil32 2>&1 | tee make.log
 $GNUMAKE target=pil32 2>&1 | tee make.log

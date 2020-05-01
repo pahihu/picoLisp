@@ -41,6 +41,7 @@ any findHash(any s, any *p) {
 
    if (isCell(h = *p)) {
       x = s,  y = name(car(h));
+      x = big(x), y = big(y);
       ASSERT(isBig(x));
       ASSERT(isBig(y));
       while (unDig(x) == unDig(y)) {
@@ -128,7 +129,7 @@ any mkChar(int c) {
             (0x80 | c>>6 & 0x3F) << 16  |
             (0x80 | c & 0x3F) << 24;
    }
-   return consStr(BOX(c));
+   return consStr(box(c));
 }
 
 /* Make name */

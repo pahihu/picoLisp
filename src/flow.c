@@ -1203,7 +1203,7 @@ any doFor(any x) {
       struct {any sym; any val;} bnd[2];
    } f;
    int shortC1;
-   long C1;
+   word C1;
 
    C1 = 0; shortC1 = 0;
    f.link = Env.bind,  Env.bind = (bindFrame*)&f;
@@ -1226,43 +1226,93 @@ any doFor(any x) {
       x = cdr(x),  Push(c1, EVAL(car(x)));
       if (isNum(data(c1))) {
          val(f.bnd[0].sym) = Zero;
-         if ((shortC1  = shortLike(data(c1))))
-            C1 = unBoxShort(data(c1));
+         if ((shortC1 = shortLike(data(c1))))
+            C1 = num(data(c1));
       }
       body = x = cdr(x);
+      if (isNum(data(c1)))
       for (;;) {
-         if (isNum(data(c1))) {
-            any v = val(f.bnd[0].sym);
-            if (isShort(v) && shortC1) {
-               long VAL;
-               val(f.bnd[0].sym) = boxLong(VAL = unBoxShort(v) + 1);
-               if (VAL > C1)
-                  break;
-            }
-            else {
-               v = val(f.bnd[0].sym) = big(v), data(c1) = big(data(c1));
-               shortC1 = 0;
-               v = val(f.bnd[0].sym) = bigCopy(v);
-               v = val(f.bnd[0].sym) = digAdd(v, 2);
-               if (bigCompare(v, data(c1)) > 0)
-                  break;
-            }
+         word VAL;
+         any v = val(f.bnd[0].sym);
+#ifdef __LP64__
+         val(f.bnd[0].sym) = (any)(VAL = (num(v) + ShortOne));
+         if (VAL > C1)
+            break;
+#else
+         if (shortC1 && isShort(v) && num(v) != ShortMax) {
+            val(f.bnd[0].sym) = (any)(VAL = num(v) + ShortOne);
+            if (VAL > C1)
+               break;
          }
          else {
-            if (!isCell(data(c1)))
+            v = val(f.bnd[0].sym) = big(v), data(c1) = big(data(c1));
+            shortC1 = 0;
+            v = val(f.bnd[0].sym) = bigCopy(v);
+            v = val(f.bnd[0].sym) = digAdd(v, 2);
+            if (bigCompare(v, data(c1)) > 0)
                break;
-            val(f.bnd[0].sym) = car(data(c1));
-            if (!isCell(data(c1) = cdr(data(c1))))
-               data(c1) = Nil;
          }
+#endif
          if (f.cnt == 2) {
             any v = val(f.bnd[1].sym);
-            if (isShort(v))
-              val(f.bnd[1].sym) = boxLong(unBoxShort(v) + 1);
+#ifdef __LP64__
+            val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
+#else
+            if (isShort(v) && num(v) != ShortMax)
+              val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
             else {
-              v = val(f.bnd[1].sym) = bigCopy(v);
+              v = val(f.bnd[1].sym) = copyNum(v);
               val(f.bnd[1].sym) = digAdd(v, 2);
             }
+#endif
+         }
+         do {
+            if (!isNum(y = car(x))) {
+               if (isSym(y))
+                  y = val(y);
+               else if (isNil(car(y))) {
+                  y = cdr(y);
+                  if (isNil(a = EVAL(car(y)))) {
+                     y = prog(cdr(y));
+                     goto for1;
+                  }
+                  val(At) = a;
+                  y = Nil;
+               }
+               else if (car(y) == T) {
+                  y = cdr(y);
+                  if (!isNil(a = EVAL(car(y)))) {
+                     val(At) = a;
+                     y = prog(cdr(y));
+                     goto for1;
+                  }
+                  y = Nil;
+               }
+               else
+                  y = evList(y);
+            }
+         } while (isCell(x = cdr(x)));
+         x = body;
+      }
+      else
+      for (;;) {
+         if (!isCell(data(c1)))
+            break;
+         val(f.bnd[0].sym) = car(data(c1));
+         if (!isCell(data(c1) = cdr(data(c1))))
+            data(c1) = Nil;
+         if (f.cnt == 2) {
+            any v = val(f.bnd[1].sym);
+#ifdef __LP64__
+            val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
+#else
+            if (isShort(v) && num(v) != ShortMax)
+              val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
+            else {
+              v = val(f.bnd[1].sym) = copyNum(v);
+              val(f.bnd[1].sym) = digAdd(v, 2);
+            }
+#endif
          }
          do {
             if (!isNum(y = car(x))) {
@@ -1321,12 +1371,16 @@ any doFor(any x) {
    for (;;) {
       if (f.cnt == 2) {
          any v = val(f.bnd[1].sym);
-         if (isShort(v))
-            val(f.bnd[1].sym) = boxLong(unBoxShort(v) + 1);
+#ifdef __LP64__
+         val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
+#else
+         if (isShort(v) && num(v) != ShortMax)
+            val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
          else {
-            v = val(f.bnd[1].sym) = bigCopy(v);
+            v = val(f.bnd[1].sym) = copyNum(v);
             val(f.bnd[1].sym) = digAdd(v, 2);
          }
+#endif
       }
       if (isNil(a = EVAL(cond)))
          break;

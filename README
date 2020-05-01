@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* optimized arithmetic operations
 * added gcc -O3 target, run with pilx
 * fixed SIGSEGV on UTF-8 character tables
 * added build scripts m and m32 in src/ dir

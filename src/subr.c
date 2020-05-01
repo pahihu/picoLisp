@@ -394,7 +394,7 @@ any doRange(any ex) {
                bigAdd(data(c1), data(c3));
             else {
                bigSub(data(c1), data(c3));
-               if (!IsZero(data(c1)))
+               if (!IsZeroBig(data(c1)))
                   neg(data(c1));
             }
             if (bigCompare(data(c2), data(c1)) < 0)
@@ -409,7 +409,7 @@ any doRange(any ex) {
                bigSub(data(c1), data(c3));
             else {
                bigAdd(data(c1), data(c3));
-               if (!IsZero(data(c1)))
+               if (!IsZeroBig(data(c1)))
                   neg(data(c1));
             }
             if (bigCompare(data(c2), data(c1)) > 0)

@@ -165,9 +165,11 @@ typedef struct catchFrame {
 
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
-#define cellNum(x)      (num(x) & ~(2*WORD-1))
-#define cellPtr(x)      ((any)(num(x) & ~(2*WORD-1)))
-#define typeTag(x)      (num(x) & (2*WORD-2))
+#define TAG             num(2*WORD-1)
+#define SSIGN           num(2*WORD)
+#define cellNum(x)      (num(x) & ~TAG)
+#define cellPtr(x)      ((any)(num(x) & ~TAG))
+#define typeTag(x)      (num(x) & (TAG-1))
 #define T_NUM           (WORD/2)
 #define T_SYM           (WORD)
 #define T_SHORT         T_SYM
@@ -302,8 +304,8 @@ extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern bool Break;
 extern sig_atomic_t Signal[NSIG];
 
-// since a shortNum is a ptr, we add 1 as a ptr
-static const word ShortOne = (num(1)<<(/*TAGBITS*/+1));
+static const word ShortOne = ((2*num(1))<<TAGBITS);
+static const word ShortMax = (~num(2*TAG+1));
 
 /* Prototypes */
 void *alloc(void*,size_t);
@@ -873,9 +875,13 @@ static inline int shortCompare(any x, any y) {
 }
 
 // shortNum/bigNum
+static inline any mkShort(word n) {
+   return (any)((n << TAGBITS) + T_SHORTNUM);
+}
+
 static inline any box(word n) {
    if (n < SHORTMAX)
-      return (any)((n << TAGBITS) + T_SHORTNUM);
+      return mkShort(n);
    return BOX(n);
 }
 
@@ -903,17 +909,22 @@ static inline any nextDig(any x) {
    return shortLike(x) ? Nil : nextDigBig(x);
 }
 
+static inline int IsZeroBig(any x) {
+   ASSERT(isBig(x));
+   return !unDigBig(x) && !isNum(nextDigBig(x));
+}
+
 static inline int IsZero(any x) {
    ASSERT(isNum(x));
    if (shortLike(x))
       return 0 == num(cellPtr(x));
-   return !unDigBig(x) && !isNum(nextDigBig(x));
+   return IsZeroBig(x);
 }
 
 // bigNum only
 static inline any setDig(any x,word v) {
    ASSERT(isBig(x));
-   car(numCell(x))=(any)(v);
+   car(numCell(x))=(any)v;
    return (any)v;
 }
 
@@ -964,7 +975,7 @@ static inline any boxWord(word n) {
 }
 
 // always bigNum
-static inline any boxCnt(long n) { return BOX(n>=0?  n*2 : -n*2+1); }
+static inline any boxCnt(long n) { return box(n>=0?  n*2 : -n*2+1); }
 
 /* List element access */
 static inline any nCdr(int n, any x) {
@@ -1070,3 +1081,4 @@ static inline any run(any x) {
    val(At) = Pop(at);
    return y;
 }
+

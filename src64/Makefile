@@ -157,12 +157,12 @@ x86-64.openBsd: $(sFiles)
 x86-64.sunOs: $(sFiles)
 emu: picolisp
 
-picolisp: $(bin)/picolisp $(lib)/ext $(lib)/ht
+picolisp: $(bin)/picolisp64 $(lib)/ext $(lib)/ht
 
 ### Link ###
-$(bin)/picolisp: $(ARCH)$(SYS).base.o
-	$(CC) -o $(bin)/picolisp $(ARCH)$(SYS).base.o $(LD-MAIN) $(PIE)
-	$(STRIP) $(bin)/picolisp
+$(bin)/picolisp64: $(ARCH)$(SYS).base.o
+	$(CC) -o $(bin)/picolisp64 $(ARCH)$(SYS).base.o $(LD-MAIN) $(PIE)
+	$(STRIP) $(bin)/picolisp64
 
 $(lib)/ext: $(ARCH)$(SYS).ext.o
 	$(CC) -o $(lib)/ext $(ARCH)$(SYS).ext.o $(LD-SHARED)
