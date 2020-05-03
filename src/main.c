@@ -659,7 +659,12 @@ void lstError(any ex, any x) {err(ex, x, "List expected");}
 void varError(any ex, any x) {err(ex, x, "Variable expected");}
 void protError(any ex, any x) {err(ex, x, "Protected symbol");}
 
-void pipeError(any ex, char *s) {err(ex, NULL, "Pipe %s error", s);}
+void pipeError(any ex, char *s) {
+// XXX   char buf[128];
+// XXX   sprintf(buf, "Pipe %s error [%s]", s, strerror(errno));
+// XXX   err(ex, NULL, buf);
+   err(ex, NULL, "Pipe %s error", s);
+}
 
 void unwind(catchFrame *catch) {
    any x;

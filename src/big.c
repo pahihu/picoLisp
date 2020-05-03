@@ -26,27 +26,12 @@ static void divErr(any ex) {err(ex,NULL,"Div/0");}
 
 /* Box double word */
 any boxWord2(word2 t) {
-   cell c1, c2;
    word u;
-   any x;
 
-   // what if GC hits in-between ???
-   // XXX Push(c1, hi(t)? consNum(num(t), BOX(hi(t))) : BOX(num(t)));
-
-   if (hi(t)) {
-      Push(c1, hi(t) & OVFL? BOX(1) : Nil);
-      t <<= 1;
-      Push(c2, consNum(hi(t), data(c1)));
-      x = consNum(num(t), data(c2));
-      drop(c1);
-      return x;
-   }
+   if (hi(t))
+      return consNum(num(t<<1), consNum(hi(t<<1), hi(t) & OVFL? BOX(1) : Nil));
    u = num(t);
-   Push(c1, u & OVFL? BOX(1) : Nil);
-   u <<= 1;
-   x = consNum(u, data(c1));
-   drop(c1);
-   return x;
+   return consNum(u << 1, u & OVFL? BOX(1) : Nil);
 }
 
 word2 unBoxWord2(any x) {
@@ -197,12 +182,15 @@ void digAdd(any x, word n) {
 }
 
 static any DADD(any x, word n) {
+   cell c1;
    ASSERT(isNum(x));
 
    if (shortLike(x)) {
       if (n < SHORTMAX)
          return box(unDigShort(x) + n);
-      x = big(x);
+      Push(c1, big(x));
+      digAdd(data(c1), n);
+      return Pop(c1);
    }
    return digAdd(x, n), x;
 }
@@ -962,13 +950,13 @@ static inline any DIVREMU(any x, any y, bool rem) {
       return shorten(rem ? data(c1) : z);
    }
    if (shortLike(y)) {
-      Push(c1, BOX(unDigShort(y) ^ 1));
+      Push(c1, big(posShort(y)));
       z = bigDiv(x, data(c1), rem);
       drop(c1);
       return shorten(rem ? x : z);
    }
    z = bigDiv(x, y, rem);
-   return rem ? x : z;
+   return shorten(rem ? x : z);
 }
 
 any ADD(any x, any y) {
@@ -1042,10 +1030,9 @@ any doSub(any ex) {
    if (!isCell(x = cdr(x))) {
       if (IsZero(data(c1)))
          return data(c1);
-      Push(c1, data(c1));
+      Push(c1, CPY(data(c1)));
       // SHARE or NOT TO SHARE
       // data(c1) = consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
-      data(c1) = CPY(data(c1));
       data(c1) = NEG(data(c1));
       return Pop(c1);
    }
@@ -1360,8 +1347,7 @@ any doAbs(any ex) {
       return posShort(x);
    // SHARE or NOT TO SHARE
    // return consNum(unDigBig(x) & ~1, cdr(numCell(x)));
-   Push(c1, x);
-   data(c1) = CPY(data(c1));
+   Push(c1, CPY(x));
    data(c1) = NEG(data(c1));
    return Pop(c1);
 }
@@ -1430,10 +1416,7 @@ any doBitAnd(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   if (shortLike(data(c1)))
-      data(c1) = posShort(data(c1));
-   else
-      pos(data(c1));
+   data(c1) = ABS(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(z = EVAL(car(x)))) {
          drop(c1);
@@ -1474,10 +1457,7 @@ any doBitOr(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   if (shortLike(data(c1)))
-      data(c1) = posShort(data(c1));
-   else
-      pos(data(c1));
+   data(c1) = ABS(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1520,10 +1500,7 @@ any doBitXor(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   if (shortLike(data(c1)))
-      data(c1) = posShort(data(c1));
-   else
-      pos(data(c1));
+   data(c1) = ABS(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1575,8 +1552,11 @@ any doSqrt(any ex) {
    Push(c1, x);  // num
    y = cddr(ex);
    Push(c2, y = EVAL(car(y)));  // flg|num
-   if (isNum(y))
-      x = data(c1) = MULU(x, y);
+   if (isNum(y)) {
+      // CPY is necessary, because MULU modifies the first arg
+      data(c1) = CPY(x);
+      x = data(c1) = MULU(data(c1), y);
+   }
 
    if (shortLike(x)) {
       word u = unDigShort(x) / num(2);

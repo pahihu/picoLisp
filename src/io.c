@@ -1624,6 +1624,7 @@ long waitFd(any ex, int fd, long ms) {
             }
             else if ((n = (int)unDig(caar(x)) / 2) != fd) {
                if (isSet(n, &rdSet)) {
+// XXX fprintf(stderr,"*** waitFd %d ***\n",n);
                   val(At) = caar(x);
                   prog(cdar(x));
                }
@@ -2271,6 +2272,7 @@ any doPipe(any ex) {
       err(ex, NULL, "Can't pipe");
    closeOnExec(ex, pfd[0]), closeOnExec(ex, pfd[1]);
    if ((f.in.pid = forkLisp(ex)) == 0) {
+// XXX char errOut[32];
       close(pfd[0]);
       if (isCell(cddr(ex)))
          setpgid(0,0);
@@ -2283,13 +2285,17 @@ any doPipe(any ex) {
       pushOutFiles(&f.out);
       OutFile->tty = NO;
       val(Led) = val(Run) = Nil;
+// XXX sprintf(errOut,"%d.stderr", getpid());
+// XXX freopen(errOut,"w",stderr);
       EVAL(cadr(ex));
+// XXX fprintf(stderr,"*** finished ***\n");
       bye(0);
    }
    close(pfd[1]);
    initInFile(f.in.fd = pfd[0], NULL);
    if (!isCell(cddr(ex))) {
       initOutFile(pfd[0]);
+// XXX fprintf(stderr,"*** pipe %d ***\n",pfd[0]);
       return boxCnt(pfd[0]);
    }
    setpgid(f.in.pid,0);
@@ -2325,12 +2331,15 @@ any doClose(any ex) {
 
    x = cdr(ex),  x = EVAL(car(x)),  fd = (int)xCnt(ex,x);
    while (close(fd)) {
-      if (errno != EINTR)
+      if (errno != EINTR) {
+// XXX fprintf(stderr,"*** close ERROR %d (%d) ***\n",fd,errno);
          return Nil;
+      }
       if (*Signal)
          sighandler(ex);
    }
    closeInFile(fd),  closeOutFile(fd);
+// XXX fprintf(stderr,"*** close %d ***\n",fd);
    return x;
 }
 
@@ -2709,13 +2718,16 @@ any doRd(any x) {
 
    x = cdr(x),  x = EVAL(car(x));
    if (!isNum(x)) {
+// XXX fprintf(stderr,"*** rd sym ***\n");
       Push(c1,x);
       getBin = getBinary;
       x = binRead(ExtN) ?: data(c1);
       drop(c1);
+// XXX fprintf(stderr,"*** %p ***\n",x);
       return x;
    }
    if ((cnt = unBox(x)) < 0) {
+// XXX fprintf(stderr,"*** rd %ld ***\n", cnt);
       if ((n = getBinary()) < 0)
          return Nil;
       i = 0,  Push(c1, x = BOX(n));
@@ -2728,6 +2740,7 @@ any doRd(any x) {
       digMul2(data(c1));
    }
    else {
+// XXX fprintf(stderr,"*** rd %ld ***\n", cnt);
       if ((n = getBinary()) < 0)
          return Nil;
       i = 0,  Push(c1, x = BOX(BIG(n)));
@@ -2739,6 +2752,8 @@ any doRd(any x) {
       }
       zapZero(data(c1));
    }
+   data(c1) = shorten(data(c1));
+// XXX fprintf(stderr,"*** %p ***\n",data(c1));
    return Pop(c1);
 }
 

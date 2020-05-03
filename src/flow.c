@@ -1167,6 +1167,7 @@ any doDo(any x) {
 
 // (at '(cnt1 . cnt2|NIL) . prg) -> any
 any doAt(any ex) {
+   cell c1;
    any x, n;
 
    x = cdr(ex),  x = EVAL(car(x));
@@ -1175,7 +1176,9 @@ any doAt(any ex) {
       return Nil;
    NeedCnt(ex,car(x));
    NeedCnt(ex,cdr(x));
-   car(x) = n = DADDU1(car(x));
+   Push(c1, car(x));
+   car(x) = n = DADDU1(data(c1));
+   drop(c1);
 /*
    n = unDig(car(x))+BIG(1);
    if (shortLike(car(x)))
@@ -1580,9 +1583,16 @@ any doTick(any ex) {
    n1 = (tim.tms_utime - n1) - (ticks1 - save1);
    n2 = (tim.tms_stime - n2) - (ticks2 - save2);
    {
+      cell c1;
+
       any p = cadr(ex);
-      car(p) = DADDU(car(p),BIG(n1));
-      cdr(p) = DADDU(cdr(p),BIG(n2));
+      Push(c1, car(p));
+      car(p) = DADDU(data(c1), BIG(n1));
+      drop(c1);
+      Push(c1, cdr(p));
+      cdr(p) = DADDU(data(c1), BIG(n2));
+      drop(c1);
+
 /*
       if (shortLike(car(p)))
          car(p) = box(unDigShort(car(p)) + 2*n1);

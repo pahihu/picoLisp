@@ -49,8 +49,7 @@ void myAssert(int,const char*,const char*,int);
 #define BITS (8*WORD)
 #define BITS32 ((int)32)
 #define MASK ((word)-1)
-// #define CELLS (1024*1024/sizeof(cell)) // Heap allocation unit 1MB
-#define CELLS (32*1024/sizeof(cell)) // Heap allocation unit 1MB
+#define CELLS (1024*1024/sizeof(cell)) // Heap allocation unit 1MB
 #define IHASH 4999                     // Internal hash table size (should be prime)
 #define EHASH 49999                    // External hash table size (should be prime)
 #define TOP 0x110000                   // Character Top
