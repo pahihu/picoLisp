@@ -821,8 +821,10 @@ any doSub(any ex) {
          return y;
       if (shortLike(y))
          return negShort(y);
-      Push(c1, y);
-      data(c1) = consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
+      Push(c1, bigCopy(y));
+      // --- NO STRUCTURE SHARING ---
+      // data(c1) = consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
+      neg(data(c1));
       return Pop(c1);
    }
    if (shortLike(y)) {
@@ -1354,6 +1356,7 @@ any doGt0(any x) {
 
 // (abs 'num) -> num
 any doAbs(any ex) {
+   cell c1;
    any x;
 
    x = cdr(ex);
@@ -1364,7 +1367,11 @@ any doAbs(any ex) {
       return x;
    if (shortLike(x))
       return posShort(x);
-   return consNum(unDigBig(x) & ~1, cdr(numCell(x)));
+   // --- NO STRUCTURE SHARING ---
+   // return consNum(unDigBig(x) & ~1, cdr(numCell(x)));
+   Push(c1, bigCopy(x));
+   pos(data(c1));
+   return Pop(c1);
 }
 
 // (bit? 'num ..) -> num | NIL
@@ -1576,8 +1583,10 @@ any doSqrt(any ex) {
    Push(c1, x);  // num
    y = cddr(ex);
    Push(c2, y = EVAL(car(y)));  // flg|num
-   if (isNum(y))
+   if (isNum(y)) {
+      x = data(c1) = copyNum(x);
       x = data(c1) = MULU(x, y);
+   }
 
    if (shortLike(x)) {
       word u = unDigShort(x) / num(2);
