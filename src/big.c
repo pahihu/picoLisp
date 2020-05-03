@@ -6,6 +6,7 @@
 
 #define MAX    MASK                    // Max digit size    0xFFFF....
 // #define OVFL   (num(1)<<(BITS-1))      // Carry/Overflow    0x8000....
+#define SIGN(x) (num(x)&OVFL)
 
 // For Solaris 10
 #ifdef __SVR4
@@ -13,26 +14,39 @@
 static int isinf(double x) {return !finite(x) && x==x;}
 #endif
 
+void digAdd(any,word);
+void digDiv2(any);
+void digSub1(any);
+void bigAdd(any,any);
+void bigSub(any,any);
+any bigCopy(any);
+static inline any NEG(any);
 
 static void divErr(any ex) {err(ex,NULL,"Div/0");}
 
 /* Box double word */
 any boxWord2(word2 t) {
    cell c1, c2;
+   word u;
+   any x;
 
    // what if GC hits in-between ???
    // XXX Push(c1, hi(t)? consNum(num(t), BOX(hi(t))) : BOX(num(t)));
 
    if (hi(t)) {
-      Push(c1, BOX(hi(t)));
-      Push(c2, consNum(num(t), data(c1)));
-      data(c2) = digMul2(data(c2));
+      Push(c1, hi(t) & OVFL? BOX(1) : Nil);
+      t <<= 1;
+      Push(c2, consNum(hi(t), data(c1)));
+      x = consNum(num(t), data(c2));
       drop(c1);
-      return data(c2);
+      return x;
    }
-   Push(c1, BOX(num(t)));
-   data(c1) = digMul2(data(c1));
-   return Pop(c1);
+   u = num(t);
+   Push(c1, u & OVFL? BOX(1) : Nil);
+   u <<= 1;
+   x = consNum(u, data(c1));
+   drop(c1);
+   return x;
 }
 
 word2 unBoxWord2(any x) {
@@ -40,36 +54,28 @@ word2 unBoxWord2(any x) {
 
    ASSERT(isBig(x));
 
-   // shift left 1bit
+   // shift right 1bit
    digDiv2(x);
 
    // this is the low-order word
-   n = unDig(x);
+   n = unDigBig(x);
 
    // cdr(x) is the high-order word
    if (isNum(x = cdr(numCell(x))))
-      n = ((word2)unDig(x) << BITS) + n; 
+      n = ((word2)unDigBig(x) << BITS) + n; 
 
    return n;
 }
 
-/* Box unsigned double word */
-/* boxWord2() boxes word2 and shifts right */
-/* This really boxes a word2 as a bigNum   */
-static any box2Word(word2 t) {
-   any x, y;
-   cell c1;
+any shorten(any x) {
+   ASSERT(isNum(x));
 
-   Push(c1, BOX(2*num(t)));
-   x = data(c1);
-   t >>= (BITS-1);
-   do {
-      y = consNum(2*num(t), Nil);
-      t >>= (BITS-1);
-      cdr(x) = y;
-      x = y;
-   } while (t);
-   return Pop(c1);
+   if (!shortLike(x) && isNil(cdr(numCell(x)))) {
+      word u = unDigBig(x);
+      if (u < SHORTMAX)
+         return mkShort(u);
+   }
+   return x;
 }
 
 /* Bignum copy */
@@ -80,22 +86,11 @@ any bigCopy(any x) {
    ASSERT(isBig(x));
 
    Push(c1, x);
-   Push(c2, y = BOX(unDig(x)));
+   Push(c2, y = BOX(unDigBig(x)));
    while (isNum(x = cdr(numCell(x))))
-      y = cdr(numCell(y)) = BOX(unDig(x));
+      y = cdr(numCell(y)) = BOX(unDigBig(x));
    drop(c1);
    return data(c2);
-}
-
-/* Safe bigNum copy */
-static any copyBig(any x) {
-   cell c1;
-
-   ASSERT(isBig(x));
-
-   Push(c1, x);
-   data(c1) = bigCopy(x);
-   return Pop(c1);
 }
 
 /* Remove leading zero words */
@@ -105,29 +100,26 @@ void zapZero(any x) {
    ASSERT(isBig(x));
 
    while (isNum(x = cdr(numCell(x))))
-      if (unDig(x))
+      if (unDigBig(x))
          r = x;
    cdr(numCell(r)) = x;
 }
 
 /* Multiply a (positive) bignum by 2 */
-any digMul2(any x) {
+void digMul2(any x) {
    any y;
    word n, carry;
-   any arg = x;
 
    ASSERT(isBig(x));
 
-   n = unDig(x),  setDig(x, n + n),  carry = n & OVFL;
+   n = unDigBig(x),  setDig(x, n + n),  carry = n & OVFL;
    while (isNum(x = cdr(numCell(y = x)))) {
-      n = unDig(x);
+      n = unDigBig(x);
       setDig(x, n + n + (carry? 1 : 0));
       carry = n & OVFL;
    }
    if (carry)
       cdr(numCell(y)) = BOX(1);
-
-   return arg;
 }
 
 /* Shift right by one bit */
@@ -137,14 +129,14 @@ void digDiv2(any x) {
    ASSERT(isBig(x));
 
    r = NULL;
-   setDig(x, unDig(x) / num(2));
+   setDig(x, unDigBig(x) / num(2));
    while (isNum(x = cdr(numCell(y = x)))) {
-      if (unDig(x) & 1)
-         setDig(y, unDig(y) | OVFL);
-      setDig(x, unDig(x) / num(2));
+      if (unDigBig(x) & 1)
+         setDig(y, unDigBig(y) | OVFL);
+      setDig(x, unDigBig(x) / num(2));
       r = y;
    }
-   if (r  &&  unDig(y) == 0)
+   if (r  &&  unDigBig(y) == 0)
       cdr(numCell(r)) = x;
 }
 
@@ -155,7 +147,7 @@ void bigAdd(any dst, any src) {
 
    ASSERT(isBig(dst) && isBig(src));
 
-   carry = (unDig(src) & ~1) > num(setDig(dst, (unDig(src) & ~1) + (unDig(dst) & ~1)));
+   carry = (unDigBig(src) & ~1) > num(setDig(dst, (unDigBig(src) & ~1) + (unDigBig(dst) & ~1)));
    src = cdr(numCell(src));
    dst = cdr(numCell(x = dst));
    for (;;) {
@@ -163,20 +155,20 @@ void bigAdd(any dst, any src) {
          while (isNum(dst)) {
             if (!carry)
                return;
-            carry = 0 == num(setDig(dst, 1 + unDig(dst)));
+            carry = 0 == num(setDig(dst, 1 + unDigBig(dst)));
             dst = cdr(numCell(x = dst));
          }
          break;
       }
       if (!isNum(dst)) {
          do {
-            carry = unDig(src) > (n = carry + unDig(src));
+            carry = unDigBig(src) > (n = carry + unDigBig(src));
             x = cdr(numCell(x)) = BOX(n);
          } while (isNum(src = cdr(numCell(src))));
          break;
       }
-      if ((n = carry + unDig(src)) >= carry) {
-         carry = unDig(dst) > (n += unDig(dst));
+      if ((n = carry + unDigBig(src)) >= carry) {
+         carry = unDigBig(dst) > (n += unDigBig(dst));
          setDig(dst,n);
       }
       src = cdr(numCell(src));
@@ -187,23 +179,66 @@ void bigAdd(any dst, any src) {
 }
 
 /* Add digit to a (positive) bignum */
-any digAdd(any x, word n) {
+void digAdd(any x, word n) {
    any y;
    word carry;
-   any arg = x;
 
-   ASSERT(isBig(x) && !isNeg(x));
+   ASSERT(isBig(x));
 
-   carry = n > num(setDig(x, n + unDig(x)));
+   carry = n > num(setDig(x, n + unDigBig(x)));
    while (carry) {
       if (isNum(x = cdr(numCell(y = x))))
-         carry = 0 == num(setDig(x, 1 + unDig(x)));
+         carry = 0 == num(setDig(x, 1 + unDigBig(x)));
       else {
-         cdr(numCell(y)) = BOX(1); // why 1 ???
+         cdr(numCell(y)) = BOX(1);
          break;
       }
    }
-   return arg;
+}
+
+static any DADD(any x, word n) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+      if (n < SHORTMAX)
+         return box(unDigShort(x) + n);
+      x = big(x);
+   }
+   return digAdd(x, n), x;
+}
+
+/* Add 1 to x, wrap around */
+any DADDU1(any x) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+#ifdef __LP64__
+      return (any)(num(x) + ShortOne);
+#else
+      if ((num(x) & ~TAG) != ShortMax)
+         return (any)(num(x) + ShortOne);
+      return BOX((ShortMax >> TAGBITS) + BIG(1));
+#endif
+   }
+   setDig(x, unDigBig(x) + BIG(1));
+   return shorten(x);
+}
+
+any DADDU(any x, word n) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+#ifdef __LP64__
+      return (any)(num(x) + n);
+#else
+      word z;
+      if (__builtin_uaddl_overflow(num(x), n, &z))
+         return BOX(unDigShort(x) + n);
+      return (any)z;
+#endif
+   }
+   setDig(x, unDigBig(x) + n);
+   return shorten(x);
 }
 
 /* Subtract two (positive) bignums */
@@ -213,7 +248,7 @@ void bigSub(any dst, any src) {
 
    ASSERT(isBig(dst) && isBig(src));
 
-   borrow = MAX - (unDig(src) & ~1) < num(setDig(dst, (unDig(dst) & ~1) - (unDig(src) & ~1)));
+   borrow = MAX - (unDigBig(src) & ~1) < num(setDig(dst, (unDigBig(dst) & ~1) - (unDigBig(src) & ~1)));
    y = dst;
    for (;;) {
       src = cdr(numCell(src));
@@ -222,7 +257,7 @@ void bigSub(any dst, any src) {
          while (isNum(dst)) {
             if (!borrow)
                return;
-            borrow = MAX == num(setDig(dst, unDig(dst) - 1));
+            borrow = MAX == num(setDig(dst, unDigBig(dst) - 1));
             dst = cdr(numCell(x = dst));
          }
          break;
@@ -230,89 +265,51 @@ void bigSub(any dst, any src) {
       if (!isNum(dst)) {
          do {
             if (borrow)
-               n = MAX - unDig(src);
+               n = MAX - unDigBig(src);
             else
-               borrow = 0 != (n = -unDig(src));
+               borrow = 0 != (n = -unDigBig(src));
             x = cdr(numCell(x)) = BOX(n);
          } while (isNum(src = cdr(numCell(src))));
          break;
       }
-      if ((n = unDig(dst) - borrow) > MAX - borrow)
-         setDig(dst, MAX - unDig(src));
+      if ((n = unDigBig(dst) - borrow) > MAX - borrow)
+         setDig(dst, MAX - unDigBig(src));
       else
-         borrow = num(setDig(dst, n - unDig(src))) > MAX - unDig(src);
+         borrow = num(setDig(dst, n - unDigBig(src))) > MAX - unDigBig(src);
    }
    if (borrow) {
       dst = y;
-      borrow = 0 != (n = -unDig(dst));
+      borrow = 0 != (n = -unDigBig(dst));
       setDig(dst, n | 1);  /* Negate */
       while (dst != x) {
          dst = cdr(numCell(dst));
          if (borrow)
-            setDig(dst, MAX - unDig(dst));
+            setDig(dst, MAX - unDigBig(dst));
          else
-            borrow = 0 != num(setDig(dst, -unDig(dst)));
+            borrow = 0 != num(setDig(dst, -unDigBig(dst)));
       }
    }
-   if (unDig(x) == 0)
+   if (unDigBig(x) == 0)
       zapZero(y);
-}
-
-/* Subtract digit from (positive) bignum */
-any digSub(any dst, word n) {
-   any x, y;
-   word borrow;
-   any arg = dst; 
-
-   ASSERT(isBig(dst));
-
-   borrow = MAX - n < num(setDig(dst, (unDig(dst) & ~1) - n));
-   y = dst;
-   dst = cdr(numCell(x = dst));
-   while (isNum(dst)) {
-      if (!borrow)
-         return arg;
-      borrow = MAX == num(setDig(dst, unDig(dst) - 1));
-      dst = cdr(numCell(x = dst));
-   }
-   if (borrow) {
-      dst = y;
-      borrow = 0 != (n = -unDig(dst));
-      setDig(dst, n | 1);  /* Negate */
-      while (dst != x) {
-         dst = cdr(numCell(dst));
-         if (borrow)
-            setDig(dst, MAX - unDig(dst));
-         else
-            borrow = 0 != num(setDig(dst, -unDig(dst)));
-      }
-   }
-   if (unDig(x) == 0)
-      zapZero(y);
-
-   return arg;
 }
 
 /* Subtract 1 from a (positive) bignum */
-any digSub1(any x) {
+void digSub1(any x) {
    any r, y;
    word borrow;
-   any arg = x;
 
    ASSERT(isBig(x));
 
    r = NULL;
-   borrow = MAX-1 == num(setDig(x, unDig(x) - num(2)));
+   borrow = MAX-1 == num(setDig(x, unDigBig(x) - num(2)));
    while (isNum(x = cdr(numCell(y = x)))) {
       if (!borrow)
-         return arg;
-      borrow = MAX == num(setDig(x, unDig(x) - 1));
+         return;
+      borrow = MAX == num(setDig(x, unDigBig(x) - 1));
       r = y;
    }
-   if (r  &&  unDig(y) == 0)
+   if (r  &&  unDigBig(y) == 0)
       cdr(numCell(r)) = x;
-
-   return arg;
 }
 
 /* Multiply two (positive) bignums */
@@ -322,23 +319,22 @@ static any bigMul(any x1, any x2) {
    word2 t;
    cell c1;
 
-   ASSERT(isBig(x1));
-   ASSERT(isBig(x2));
+   ASSERT(isBig(x1) && isBig(x2));
 
    Push(c1, x = y = BOX(0));
    for (;;) {
-      n = unDig(x2) / num(2);
-      if (isNum(x2 = cdr(numCell(x2)))  &&  unDig(x2) & 1)
+      n = unDigBig(x2) / num(2);
+      if (isNum(x2 = cdr(numCell(x2)))  &&  unDigBig(x2) & 1)
          n |= OVFL;
-      t = (word2)n * unDig(z = x1);  // x += n * x1
-      carry = (lo(t) > num(setDig(y, unDig(y) + lo(t)))) + hi(t);
+      t = (word2)n * unDigBig(z = x1);  // x += n * x1
+      carry = (lo(t) > num(setDig(y, unDigBig(y) + lo(t)))) + hi(t);
       while (isNum(z = cdr(numCell(z)))) {
          if (!isNum(cdr(numCell(y))))
             cdr(numCell(y)) = BOX(0);
          y = cdr(numCell(y));
-         t = (word2)n * unDig(z);
-         carry = carry > num(setDig(y, carry + unDig(y)));
-         if (lo(t) > num(setDig(y, unDig(y) + lo(t))))
+         t = (word2)n * unDigBig(z);
+         carry = carry > num(setDig(y, carry + unDigBig(y)));
+         if (lo(t) > num(setDig(y, unDigBig(y) + lo(t))))
             ++carry;
          carry += hi(t);
       }
@@ -354,26 +350,70 @@ static any bigMul(any x1, any x2) {
    return Pop(c1);
 }
 
+static inline any MULU(any x, any y) {
+   cell c1;
+   ASSERT(isNum(x) && isNum(y));
+
+   if (shortLike(x)) {
+      word u = unDigShort(x) / num(2);
+      if (shortLike(y)) {
+         word2 t = (word2)u * (unDigShort(y) / num(2));
+         return hi(t) ? boxWord2(t) : boxWord(num(t));
+      }
+      if (!u)
+         return Zero;
+      Push(c1, bigCopy(y));
+      pos(data(c1));
+      if (2 == u) {
+         digMul2(data(c1));
+         zapZero(data(c1));
+      }
+      else
+         digMul(data(c1), u);
+      return Pop(c1);
+   }
+   if (shortLike(y)) {
+      word v = unDigShort(y) / num(2);
+      if (!v)
+         return Zero;
+      if (2 == v) {
+         digMul2(x);
+         zapZero(x);
+      }
+      else
+         digMul(x, v);
+      return x;
+   }
+   return bigMul(x, y);
+}
+
 /* Multiply digit with a (positive) bignum */
-any digMul(any x, word n) {
+void digMul(any x, word n) {
    word2 t;
    any y;
-   any arg = x;
 
-   ASSERT(isBig(x) && !isNeg(x));
+   ASSERT(isBig(x));
 
-   t = (word2)n * unDig(x);
+   t = (word2)n * unDigBig(x);
    for (;;) {
       setDig(x, num(t));
       t = hi(t);
       if (!isNum(x = cdr(numCell(y = x))))
          break;
-      t += (word2)n * unDig(x);
+      t += (word2)n * unDigBig(x);
    }
    if (t)
       cdr(numCell(y)) = BOX(num(t));
+}
 
-   return arg;
+static any DMUL(any x, word n) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+      word2 t = (word2) (unDigShort(x) / num(2)) * n;
+      return hi(t) ? boxWord2(t) : boxWord(num(t));
+   }
+   return digMul(x, n), x;
 }
 
 /* (Positive) Bignum comparison */
@@ -387,11 +427,11 @@ static int bigCmp(any x, any y) {
    for (;;) {
       if ((x2 = cdr(numCell(x))) == (y2 = cdr(numCell(y)))) {
          for (;;) {
-            if (unDig(x) < unDig(y)) {
+            if (unDigBig(x) < unDigBig(y)) {
                res = -1;
                break;
             }
-            if (unDig(x) > unDig(y)) {
+            if (unDigBig(x) > unDigBig(y)) {
                res = +1;
                break;
             }
@@ -437,14 +477,14 @@ static any bigDiv(any u, any v, bool rem) {
       y = x,  x = cdr(numCell(x)),  ++n,  --m;
    if (m < 0) {
       if (rem)
-         u = digMul2(u);
-      return box(0);
+         digMul2(u);
+      return BOX(0);
    }
    cdr(numCell(z)) = BOX(0);
-   for (d = 0;  (unDig(x) & OVFL) == 0;  ++d)
-      u = digMul2(u),  v = digMul2(v);
-   v1 = unDig(x);
-   v2 = y? unDig(y) : 0;
+   for (d = 0;  (unDigBig(x) & OVFL) == 0;  ++d)
+      digMul2(u),  digMul2(v);
+   v1 = unDigBig(x);
+   v2 = y? unDigBig(y) : 0;
    Push(c1, Nil);
    do {
       for (i = m, x = u;  --i >= 0;  x = cdr(numCell(x)));  // Index x -> u
@@ -452,7 +492,7 @@ static any bigDiv(any u, any v, bool rem) {
       y = x;
       u1 = u2 = 0;
       do
-         u3 = u2,  u2 = u1,  u1 = unDig(y),  y = cdr(numCell(y));
+         u3 = u2,  u2 = u1,  u1 = unDigBig(y),  y = cdr(numCell(y));
       while (--i >= 0);
 
       t = ((word2)u1 << BITS) + u2;                         // Calculate q
@@ -462,43 +502,43 @@ static any bigDiv(any u, any v, bool rem) {
          --q,  r += v1;
 
       z = x;                                                // x -= q*v
-      t = (word2)q * unDig(y = v);
-      borrow = (MAX - lo(t) < num(setDig(z, unDig(z) - lo(t)))) + hi(t);
+      t = (word2)q * unDigBig(y = v);
+      borrow = (MAX - lo(t) < num(setDig(z, unDigBig(z) - lo(t)))) + hi(t);
       while (isNum(y = cdr(numCell(y)))) {
          z = cdr(numCell(z));
-         t = (word2)q * unDig(y);
-         borrow = MAX - borrow < num(setDig(z, unDig(z) - borrow));
-         if (MAX - lo(t) < num(setDig(z, unDig(z) - lo(t))))
+         t = (word2)q * unDigBig(y);
+         borrow = MAX - borrow < num(setDig(z, unDigBig(z) - borrow));
+         if (MAX - lo(t) < num(setDig(z, unDigBig(z) - lo(t))))
             ++borrow;
          borrow += hi(t);
       }
       if (borrow) {
          z = cdr(numCell(z));
-         if (MAX - borrow < num(setDig(z, unDig(z) - borrow))) {
+         if (MAX - borrow < num(setDig(z, unDigBig(z) - borrow))) {
             word n, carry;                                  // x += v
 
             --q;
             if (m || rem) {
                y = v;
-               carry = unDig(y) > num(setDig(x, unDig(y) + unDig(x)));
+               carry = unDigBig(y) > num(setDig(x, unDigBig(y) + unDigBig(x)));
                while (x = cdr(numCell(x)),  isNum(y = cdr(numCell(y)))) {
-                  if ((n = carry + unDig(y)) >= carry) {
-                     carry = unDig(x) > (n += unDig(x));
+                  if ((n = carry + unDigBig(y)) >= carry) {
+                     carry = unDigBig(x) > (n += unDigBig(x));
                      setDig(x,n);
                   }
                }
-               setDig(x, carry + unDig(x));
+               setDig(x, carry + unDigBig(x));
             }
          }
       }
       data(c1) = consNum(q, data(c1));                      // Store result
    } while (--m >= 0);
    if (!rem)
-      zapZero(data(c1)),  data(c1) = digMul2(data(c1));
+      zapZero(data(c1)),  digMul2(data(c1));
    else {
       zapZero(u);
       if (!d)
-         u = digMul2(u);
+         digMul2(u);
       else
          while (--d)
             digDiv2(u);
@@ -506,12 +546,29 @@ static any bigDiv(any u, any v, bool rem) {
    return Pop(c1);
 }
 
-static int CMPU(any x, any y) {
+/* Compare two numbers */
+#if 0
+static int bigCompare(any x, any y) {
+   ASSERT(isBig(x) && isBig(y));
+
+   if (isNeg(x)) {
+      if (!isNeg(y))
+         return -1;
+      return bigCmp(y,x);
+   }
+   if (isNeg(y))
+      return +1;
+   return bigCmp(x,y);
+}
+#endif
+
+static inline int CMPU(any x, any y) {
    if (shortLike(x)) {
       if (shortLike(y)) {
-         if (num(x) < num(y))
+         word a = num(x) & ~SSIGN, b = num(y) & ~SSIGN;
+         if (a < b)
             return -1;
-         else if (num(x) > num(y))
+         else if (b < a)
             return +1;
          return 0;
       }
@@ -519,16 +576,10 @@ static int CMPU(any x, any y) {
    }
    if (shortLike(y))
       return +1;
-   return bigCmp(x, y);
+   return bigCmp(x,y);
 }
 
-/* Compare two numbers */
 int CMP(any x, any y) {
-   ASSERT(isNum(x) && isNum(y));
-
-   // if (isShort(x) && isShort(y)) {
-   //    fprintf(stderr,"x=%d y=%d\n",unBoxShort(x),unBoxShort(y));
-   // }
    if (isNeg(x)) {
       if (!isNeg(y))
          return -1;
@@ -537,164 +588,6 @@ int CMP(any x, any y) {
    if (isNeg(y))
       return +1;
    return CMPU(x,y);
-}
-
-static any ADDU(any x, any y) {
-   ASSERT(isNum(x) && isNum(y) && !isNeg(x));
-
-   if (shortLike(x)) {
-      if (shortLike(y)) {
-         word u, w;
-         w = (u = num(x)) + (num(y) & ~(SIGN+TAG));
-         if (w < u) {
-            any z;
-            cell c1;
-            Push(c1, BOX(2));
-            z = consNum(unDigShort((any)w), data(c1));
-            drop(c1);
-            return z;
-         }
-         return (any)w;
-      }
-      y = posBig(copyBig(y));
-      return digAdd(y, unDigShort(x));
-   }
-   if (shortLike(y))
-      return digAdd(x, unDigShort(y) & ~num(1));
-   bigAdd(x, y);
-   return x;
-}
-
-static any SUBU(any x, any y) {
-   ASSERT(isNum(x) && isNum(y) && !isNeg(x));
-
-   if (shortLike(x)) {
-      if (shortLike(y)) {
-         word w;
-         y = posShort(y);
-         if (num(x) >= num(y))
-            w = num(x) - (num(y) & ~TAG);
-         else {
-            w = num(posShort(y)) - (num(x) & ~TAG);
-            w = num(negShort((any)w));
-         }
-         return (any)w;
-      }
-      y = posBig(copyBig(y));
-      y = digSub(y, unDigShort(x));
-      if (!IsZero(y))
-         y = negBig(y);
-      return shorten(y);
-   }
-   if (shortLike(y))
-      return shorten(digSub(x, unDigShort(y) & ~num(1)));
-   bigSub(x, y);
-   return shorten(x);
-}
-
-static any MULU(any x, any y) {
-   ASSERT(isNum(x) && isNum(y));
-
-   if (shortLike(x)) {
-      if (shortLike(y)) {
-         word2 w;
-         w = (word2)(unDigShort(x) / num(2)) * (unDigShort(y) / num(2));
-         return hi(w) ? box2Word(w) : boxWord(num(w));
-      }
-      y = copyBig(y);
-      return digMul(y, unDigShort(x) & ~num(1));
-   }
-   if (shortLike(y))
-      return digMul(x, unDigShort(y) / num(2));
-   return bigMul(x, y);
-}
-
-static any DIVREMU(any x, any y, bool rem) {
-   ASSERT(isNum(x) && isNum(y) && !isNeg(x));
-
-   if (shortLike(x)) {
-      word u = unDigShort(x) / num(2);          // ignore sign
-      if (shortLike(y)) {
-         word w, v = unDigShort(y) / num(2);    // ignore sign
-         w = rem ? u % v : u / v;
-         return mkShort(2*w);                   // w <= max(u,v)
-      }
-      if (isNum(cdr(numCell(y)))                // big Y, has tail?
-         || (u < (unDigBig(y) / num(2)))) {     // OR u < Y
-         return rem ? x : Zero;
-      }
-      return shorten(bigDiv(big(x), y, rem));   // make x big and divide
-   }
-   return shorten(bigDiv(x, big(y), rem));      // make y big, and divide
-}
-
-static any DIVU2(any x) {
-   ASSERT(isNum(x));
-
-   if (shortLike(x)) {
-      word w = unDigShort(x) / 4L;
-      return mkShort(2*w);
-   }
-   return DIVREMU(x, Two, NO);
-}
-
-any ADD(any x, any y) {
-   if (isNeg(x)) {
-      if (isNeg(y))
-         x = ADDU(x,y);
-      else
-         x = SUBU(x,y);
-      if (!IsZero(x))
-         x = NEG(x);
-      return x;
-   }
-   else if (isNeg(y))
-      x = SUBU(x,y);
-   else
-      x = ADDU(x,y);
-   return x;
-}
-
-any SUB(any x, any y) {
-   if (isNeg(x)) {
-      if (isNeg(y))
-         x = SUBU(x,y);
-      else
-         x = ADDU(x,y);
-      if (!IsZero(x))
-         x = NEG(x);
-      return x;
-   }
-   else if (isNeg(y))
-      x = ADDU(x,y);
-   else
-      x = SUBU(x,y);
-   return x;
-}
-
-any INC(any x) {
-   if (!isNeg(x))
-      x = ADDU(x, One);
-   else {
-      x = ABS(x);
-      x = SUBU(x, One);
-      if (!IsZero(x))
-         x = NEG(x);
-   }
-   return x;
-}
-
-any DEC(any x) {
-   if (isNeg(x)) {
-      x = ABS(x);
-      x = ADDU(x, One);
-      x = NEG(x);
-   }
-   else if (IsZero(x))
-      x = negShort(One);
-   else
-      x = SUBU(x, One);
-   return x;
 }
 
 /* Make number from symbol */
@@ -716,7 +609,7 @@ any symToNum(any s, int scl, int sep, int ign) {
       return NULL;
    frac = NO;
    Push(c1, s);
-   Push(c2, SHORT(c));
+   Push(c2, box(BIG(c)));
    while ((c = symChar(NULL))  &&  (!frac || scl)) {
       if ((int)c == sep) {
          if (frac) {
@@ -730,8 +623,8 @@ any symToNum(any s, int scl, int sep, int ign) {
             drop(c1);
             return NULL;
          }
-         data(c2) = MULU(data(c2), SHORT(10));
-         data(c2) = ADDU(data(c2), SHORT(c));
+         data(c2) = DMUL(data(c2), 10);
+         data(c2) = DADD(data(c2), BIG(c));
          if (frac)
             --scl;
       }
@@ -742,8 +635,8 @@ any symToNum(any s, int scl, int sep, int ign) {
          return NULL;
       }
       if (c >= 5)
-         data(c2) = ADDU(data(c2), One);
-      while ((c = symByte(NULL))) {
+         data(c2) = DADD(data(c2), BIG(1));
+      while (c = symByte(NULL)) {
          if ((c -= '0') > 9) {
             drop(c1);
             return NULL;
@@ -752,7 +645,7 @@ any symToNum(any s, int scl, int sep, int ign) {
    }
    if (frac)
       while (--scl >= 0)
-         data(c2) = MULU(data(c2), SHORT(10));
+         data(c2) = DMUL(data(c2), 10);
    if (sign && !IsZero(data(c2)))
       data(c2) = NEG(data(c2));
    drop(c1);
@@ -795,7 +688,7 @@ any numToSym(any x, int scl, int sep, int ign) {
             do {
                if (ta < p)
                   *++ta = 0;
-               if ((c = (*p += *q + c) > NINES))
+               if (c = (*p += *q + c) > NINES)
                   *p -= (NINES + 1);
             } while (++p, ++q <= ti);
             if (c)
@@ -803,7 +696,7 @@ any numToSym(any x, int scl, int sep, int ign) {
          }
          c = 0,  q = inc;
          do
-            if ((c = (*q += *q + c) > NINES))
+            if (c = (*q += *q + c) > NINES)
                *q -= (NINES + 1);
          while (++q <= ti);
          if (c)
@@ -860,9 +753,9 @@ any doubleToNum(double d) {
    Push(c1, x = BOX((word)fmod(d,DMAX)));
    while (d > DMAX)
       x = cdr(numCell(x)) = BOX((word)fmod(d /= DMAX, DMAX));
-   data(c1) = digMul2(data(c1));
-   if (sign && !IsZero(data(c1)))
-      data(c1) = NEG(data(c1));
+   digMul2(data(c1));
+   if (sign && !IsZeroBig(data(c1)))
+      neg(data(c1));
    return Pop(c1);
 }
 
@@ -918,6 +811,202 @@ any doFormat(any ex) {
    return Pop(c1);
 }
 
+static inline any INC(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x)) {
+      if (isNeg(x)) {
+         x = (any)(num(x) - ShortOne);
+         // 00..01SN.r
+         if (num(x) <= (TAG+1+T_SHORTNUM))
+           x = (any)(num(x) ^ SSIGN);
+         return x;
+      }
+      else
+         x = (any)(num(x) + ShortOne);
+      if (num(x) & 1)
+         return BOX((ShortMax >> TAGBITS) + 2);
+      return x;
+   }
+   if (!isNeg(x))
+      return digAdd(x, 2), x;
+   pos(x), digSub1(x);
+   if (!IsZeroBig(x)) {
+      neg(x);
+      x = shorten(x);
+   }
+   else
+      x = Zero;
+   return x;
+}
+
+any DEC(any x) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+      if (num(x) & SSIGN)
+         return (any)(num(x) + ShortOne);
+      if (x == Zero)
+         return mkShort(3);
+      return (any)(num(x) - ShortOne);
+   }
+   if (isNeg(x))
+      return digAdd(x, 2), x;
+   else if (IsZero(x))
+      return mkShort(3);
+   return digSub1(x), shorten(x);
+}
+
+static inline any ABS(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x))
+      return (any)(num(x) & ~SSIGN);
+   return pos(x), x;
+}
+
+static inline any NEG(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x))
+      return (any)(num(x) ^ SSIGN);
+   return neg(x), x;
+}
+
+static inline any ADDU(any x, any y) {
+   cell c1;
+
+   ASSERT(isNum(x) && isNum(y));
+   if (shortLike(x)) {
+      if (shortLike(y)) {
+         word a = num(x) & ~SSIGN, b = num(y) & ~(SSIGN+TAG), c;
+         if (__builtin_uaddl_overflow(a, b, &c)) {
+            return BOX((a >> TAGBITS) + (b >> TAGBITS));
+         }
+         return (any)c;
+      }
+      Push(c1, bigCopy(y));
+      pos(data(c1));
+      digAdd(data(c1), unDigShort(x) & ~1);
+      return Pop(c1);
+   }
+   if (shortLike(y)) {
+      // x may be negative
+      pos(x);
+      return digAdd(x, unDigShort(y) & ~1), x;
+   }
+   return bigAdd(x, y), x;
+}
+
+static inline any SUBU(any x, any y) {
+   cell c1;
+
+   ASSERT(isNum(x) && isNum(y));
+   if (shortLike(x)) {
+      if (shortLike(y)) {
+         word a = num(x) & ~(SSIGN+TAG), b = num(y) & ~(SSIGN+TAG);
+         if (a >= b)
+            return (any)(a - b + T_SHORTNUM);
+         return (any)(b - a + T_SHORTNUM + SSIGN);
+      }
+      Push(c1, big(x));
+      bigSub(data(c1), y);
+      data(c1) = shorten(data(c1));
+      return Pop(c1);
+   }
+   if (shortLike(y)) {
+      Push(c1, big(posShort(y)));
+      bigSub(x, data(c1));
+      drop(c1);
+      return x;
+   }
+   bigSub(x, y);
+   return shorten(x);
+}
+
+static inline any DIVU2(any x) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+      word a = unDigShort(x) / 4;
+      return mkShort(2 * a);
+   }
+   return digDiv2(x), shorten(x);
+}
+
+static inline any MULU2(any x) {
+   ASSERT(isNum(x));
+
+   if (shortLike(x)) {
+      word a = 2 * (unDigShort(x) / 2);
+      return box(2 * a);
+   }
+   return digMul2(x), x;
+}
+
+static inline any DIVREMU(any x, any y, bool rem) {
+   any z;
+   cell c1;
+   word a, b;
+   ASSERT(isNum(x) && isNum(y));
+
+   if (shortLike(x)) {
+      a = unDigShort(x) / 2;
+      if (shortLike(y)) {
+         b = unDigShort(y) / 2;
+         return mkShort(2 * (rem ? a % b : a / b));
+      }
+      if (isNum(nextDigBig(y))) {
+         return rem ? x : Zero;
+      }
+      Push(c1, BOX(2 * a));
+      z = bigDiv(data(c1), y, rem);
+      drop(c1);
+      return shorten(rem ? data(c1) : z);
+   }
+   if (shortLike(y)) {
+      Push(c1, BOX(unDigShort(y) ^ 1));
+      z = bigDiv(x, data(c1), rem);
+      drop(c1);
+      return shorten(rem ? x : z);
+   }
+   z = bigDiv(x, y, rem);
+   return rem ? x : z;
+}
+
+any ADD(any x, any y) {
+   ASSERT(isNum(x) && isNum(y));
+
+   if (isNeg(x)) {
+      if (isNeg(y))
+         x = ADDU(x,y);
+      else
+         x = SUBU(x,y);
+      if (!IsZero(x))
+         x = NEG(x);
+   }
+   else if (isNeg(y))
+      x = SUBU(x,y);
+   else
+      x = ADDU(x,y);
+   return x;
+}
+
+any SUB(any x, any y) {
+   ASSERT(isNum(x) && isNum(y));
+
+   if (isNeg(x)) {
+      if (isNeg(y))
+         x = SUBU(x,y);
+      else
+         x = ADDU(x,y);
+      if (!IsZero(x))
+         x = NEG(x);
+   }
+   else if (isNeg(y))
+      x = ADDU(x,y);
+   else
+      x = SUBU(x,y);
+   return x;
+}
+
 // (+ 'num ..) -> num
 any doAdd(any ex) {
    any x;
@@ -935,7 +1024,7 @@ any doAdd(any ex) {
          return Nil;
       }
       NeedNum(ex,data(c2));
-      data(c1) = ADD(data(c1), data(c2));
+      data(c1) = ADD(data(c1),data(c2));
       drop(c2);
    }
    return Pop(c1);
@@ -953,9 +1042,12 @@ any doSub(any ex) {
    if (!isCell(x = cdr(x))) {
       if (IsZero(data(c1)))
          return data(c1);
-      if (shortLike(data(c1)))
-         return negShort(data(c1));
-      return consNum(unDig(data(c1)) ^ 1, cdr(numCell(data(c1))));
+      Push(c1, data(c1));
+      // SHARE or NOT TO SHARE
+      // data(c1) = consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
+      data(c1) = CPY(data(c1));
+      data(c1) = NEG(data(c1));
+      return Pop(c1);
    }
    Push(c1, CPY(data(c1)));
    do {
@@ -1004,9 +1096,9 @@ any doInc(any ex) {
          return Nil;
       }
       NeedNum(ex,val(data(c1)));
-      val(data(c1)) = CPY(val(data(c1)));
       NeedNum(ex,data(c2));
-      val(data(c1)) = ADD(val(data(c1)),data(c2));
+      val(data(c1)) = CPY(val(data(c1)));
+      val(data(c1)) = ADD(val(data(c1)), data(c2));
    }
    return val(Pop(c1));
 }
@@ -1044,8 +1136,8 @@ any doDec(any ex) {
          return Nil;
       }
       NeedNum(ex,val(data(c1)));
-      val(data(c1)) = CPY(val(data(c1)));
       NeedNum(ex,data(c2));
+      val(data(c1)) = CPY(val(data(c1)));
       val(data(c1)) = SUB(val(data(c1)),data(c2));
    }
    return val(Pop(c1));
@@ -1062,9 +1154,8 @@ any doMul(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   sign = isNeg(data(c1));
-   if (sign)
-         data(c1) = ABS(data(c1));
+   if ((sign = isNeg(data(c1))))
+      data(c1) = ABS(data(c1));
    while (isCell(x = cdr(x))) {
       Push(c2, EVAL(car(x)));
       if (isNil(data(c2))) {
@@ -1073,7 +1164,7 @@ any doMul(any ex) {
       }
       NeedNum(ex,data(c2));
       sign ^= isNeg(data(c2));
-      data(c1) = MULU(data(c1),data(c2));
+      data(c1) = MULU(data(c1), data(c2));
       drop(c2);
    }
    if (sign && !IsZero(data(c1)))
@@ -1092,8 +1183,7 @@ any doMulDiv(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   sign = isNeg(data(c1));
-   if (sign)
+   if ((sign = isNeg(data(c1))))
       data(c1) = ABS(data(c1));
    Push(c2, Nil);
    for (;;) {
@@ -1106,7 +1196,7 @@ any doMulDiv(any ex) {
       sign ^= isNeg(data(c2));
       if (!isCell(cdr(x)))
          break;
-      data(c1) = MULU(data(c1),data(c2));
+      data(c1) = MULU(data(c1), data(c2));
    }
    if (IsZero(data(c2)))
       divErr(ex);
@@ -1115,9 +1205,8 @@ any doMulDiv(any ex) {
    data(c1) = ADDU(data(c1),data(c3));
    data(c2) = CPY(data(c2));
    data(c1) = DIVREMU(data(c1),data(c2),NO);
-   if (sign && !IsZero(data(c1))) {
+   if (sign && !IsZero(data(c1)))
       data(c1) = NEG(data(c1));
-   }
    return Pop(c1);
 }
 
@@ -1132,8 +1221,7 @@ any doDiv(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   sign = isNeg(data(c1));
-   if (sign)
+   if ((sign = isNeg(data(c1))))
       data(c1) = ABS(data(c1));
    while (isCell(x = cdr(x))) {
       Push(c2, EVAL(car(x)));
@@ -1145,7 +1233,7 @@ any doDiv(any ex) {
       sign ^= isNeg(data(c2));
       if (IsZero(data(c2)))
          divErr(ex);
-      data(c2) = CPY(data(c2));
+      data(c2) = CPY(data(c2)); 
       data(c1) = DIVREMU(data(c1),data(c2),NO);
       drop(c2);
    }
@@ -1182,8 +1270,7 @@ any doRem(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   sign = isNeg(data(c1));
-   if (sign)
+   if ((sign = isNeg(data(c1))))
       data(c1) = ABS(data(c1));
    while (isCell(x = cdr(x))) {
       Push(c2, EVAL(car(x)));
@@ -1215,34 +1302,18 @@ any doShift(any ex) {
    if (isNil(data(c1) = EVAL(car(x))))
       return Nil;
    NeedNum(ex,data(c1));
-   if (shortLike(data(c1)) && labs(n)<=(BITS+TAGBITS+1)) {
-      word2 a;
-      sign = isNeg(data(c1));
-      a = unDigShort(data(c1)) / num(2);
-      if (n > 0)
-         a >>= n;
-      else if (n < 0)
-         a <<= -n;
-      if (!a)
-         sign = 0;
-      data(c1) = hi(a) ? box2Word(a) : boxWord(num(a)); 
-      if (sign)
-         data(c1) = NEG(data(c1));
-      return data(c1);
-   }
-   data(c1) = big(data(c1));
    Push(c1, CPY(data(c1)));
    sign = isNeg(data(c1));
    if (n > 0) {
       do
-         digDiv2(data(c1));
+         data(c1) = DIVU2(data(c1));
       while (--n);
       data(c1) = ABS(data(c1));
    }
    else if (n < 0) {
       data(c1) = ABS(data(c1));
       do
-         data(c1) = digMul2(data(c1));
+         data(c1) = MULU2(data(c1));
       while (++n);
    }
    if (sign && !IsZero(data(c1)))
@@ -1277,6 +1348,7 @@ any doGt0(any x) {
 // (abs 'num) -> num
 any doAbs(any ex) {
    any x;
+   cell c1;
 
    x = cdr(ex);
    if (isNil(x = EVAL(car(x))))
@@ -1286,22 +1358,32 @@ any doAbs(any ex) {
       return x;
    if (shortLike(x))
       return posShort(x);
-   return consNum(unDig(x) & ~1, cdr(numCell(x)));
+   // SHARE or NOT TO SHARE
+   // return consNum(unDigBig(x) & ~1, cdr(numCell(x)));
+   Push(c1, x);
+   data(c1) = CPY(data(c1));
+   data(c1) = NEG(data(c1));
+   return Pop(c1);
 }
 
 // (bit? 'num ..) -> num | NIL
 any doBitQ(any ex) {
    any x, y, z;
    cell c1;
+   int short1;
+   word u1;
 
    x = cdr(ex),  Push(c1, EVAL(car(x)));
    NeedNum(ex,data(c1));
    if (isNeg(data(c1))) {
-      if (shortLike(data(c1)))
+      if (shortLike(data(c1))) {
          data(c1) = posShort(data(c1));
+      }
       else
-         data(c1) = consNum(unDig(data(c1)) & ~num(1), cdr(numCell(data(c1))));
+         data(c1) = consNum(unDigBig(data(c1)) & ~num(1), cdr(numCell(data(c1))));
    }
+   if ((short1 = shortLike(data(c1))))
+      u1 = unDigShort(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(z = EVAL(car(x)))) {
          drop(c1);
@@ -1309,20 +1391,29 @@ any doBitQ(any ex) {
       }
       NeedNum(ex,z);
       y = data(c1);
-      if ((unDig(y) & unDig(z) & ~num(1)) != unDig(y)) {
-         drop(c1);
-         return Nil;
-      }
-      for (;;) {
-         if (!isNum(y = nextDig(y)))
-            break;
-         if (!isNum(z = nextDig(z))) {
+      if (short1) {
+         if ((u1 & unDig(z) & ~num(1)) != u1) {
             drop(c1);
             return Nil;
          }
-         if ((unDig(y) & unDig(z)) != unDig(y)) {
+      }
+      else {
+         z = big(z);
+         if ((unDigBig(y) & unDigBig(z) & ~num(1)) != unDigBig(y)) {
             drop(c1);
             return Nil;
+         }
+         for (;;) {
+            if (!isNum(y = nextDigBig(y)))
+               break;
+            if (!isNum(z = nextDigBig(z))) {
+               drop(c1);
+               return Nil;
+            }
+            if ((unDigBig(y) & unDigBig(z)) != unDigBig(y)) {
+               drop(c1);
+               return Nil;
+            }
          }
       }
    }
@@ -1339,7 +1430,10 @@ any doBitAnd(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   data(c1) = ABS(data(c1));
+   if (shortLike(data(c1)))
+      data(c1) = posShort(data(c1));
+   else
+      pos(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(z = EVAL(car(x)))) {
          drop(c1);
@@ -1347,29 +1441,32 @@ any doBitAnd(any ex) {
       }
       NeedNum(ex,z);
       y = data(c1);
-      if (shortLike(y))
-         data(c1) = y = box(unDigShort(y) & unDig(z) & ~num(1));
-      else
-         setDig(y, unDig(y) & unDig(z) & ~num(1));
-      for (;;) {
-         if (!isNum(z = nextDig(z))) {
-            if (isBig(data(c1)))
+      if (shortLike(y) && shortLike(z))
+         data(c1) = y = (any)(num(y) & num(z));
+      else {
+         data(c1) = y = big(data(c1)); z = big(z);
+         setDig(y, unDigBig(y) & unDigBig(z) /*& ~num(1)*/);
+         for (;;) {
+            if (!isNum(z = nextDigBig(z))) {
                cdr(numCell(y)) = Nil;
-            break;
+               break;
+            }
+            if (!isNum(y = nextDigBig(y)))
+               break;
+            setDig(y, unDigBig(y) & unDigBig(z));
          }
-         if (!isNum(y = nextDig(y)))
-            break;
-         setDig(y, unDig(y) & unDig(z));
       }
    }
-   if (isBig(data(c1)))
+   if (isBig(data(c1))) {
       zapZero(data(c1));
+      data(c1) = shorten(data(c1));
+   }
    return Pop(c1);
 }
 
 // (| 'num ..) -> num
 any doBitOr(any ex) {
-   any x, y;
+   any x, y, z;
    cell c1, c2;
 
    x = cdr(ex);
@@ -1377,7 +1474,10 @@ any doBitOr(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   data(c1) = ABS(data(c1));
+   if (shortLike(data(c1)))
+      data(c1) = posShort(data(c1));
+   else
+      pos(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1386,19 +1486,24 @@ any doBitOr(any ex) {
       NeedNum(ex,data(c2));
       y = data(c1);
       Save(c2);
-      if (isBig(data(c1)) || isBig(data(c2))) {
+      if (shortLike(data(c1)) && shortLike(data(c2)))
+         data(c1) = y = (any)(num(y) | num(data(c2)) & ~SSIGN);
+      else {
          y = data(c1) = big(data(c1)), data(c2) = big(data(c2));
-         setDig(y, unDig(y) | unDig(data(c2)) & ~1);
-      }
-      else
-         data(c1) = y = box(unDigShort(y) | unDigShort(data(c2)) & ~num(1));
-      for (;;) {
-         if (!isNum(data(c2) = nextDig(data(c2))))
-            break;
-         if (!isNum(nextDig(y)))
-            cdr(numCell(y)) = BOX(0);
-         y = nextDig(y);
-         setDig(y, unDig(y) | unDig(data(c2)));
+         setDig(y, unDigBig(y) | unDigBig(data(c2)) & ~num(1));
+         for (;;) {
+            if (!isNum(data(c2) = nextDigBig(data(c2))))
+               break;
+            z = nextDigBig(y);
+            if (!isNum(z)) {
+               cdr(numCell(y)) = z = BOX(unDigBig(data(c2)));
+               y = z;
+            }
+            else {
+               y = z;
+               setDig(y, unDigBig(y) | unDigBig(data(c2)));
+            }
+         }
       }
       drop(c2);
    }
@@ -1407,7 +1512,7 @@ any doBitOr(any ex) {
 
 // (x| 'num ..) -> num
 any doBitXor(any ex) {
-   any x, y;
+   any x, y, z;
    cell c1, c2;
 
    x = cdr(ex);
@@ -1415,7 +1520,10 @@ any doBitXor(any ex) {
       return Nil;
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
-   data(c1) = ABS(data(c1));
+   if (shortLike(data(c1)))
+      data(c1) = posShort(data(c1));
+   else
+      pos(data(c1));
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1424,24 +1532,31 @@ any doBitXor(any ex) {
       NeedNum(ex,data(c2));
       y = data(c1);
       Save(c2);
-      if (isBig(data(c1)) || isBig(data(c2))) {
+      if (shortLike(data(c1)) && shortLike(data(c2)))
+         data(c1) = y = (any)((num(y) ^ num(data(c2)) & ~SSIGN) + T_SHORTNUM);
+      else {
          y = data(c1) = big(data(c1)), data(c2) = big(data(c2));
-         setDig(y, unDig(y) ^ unDig(data(c2)) & ~num(1));
-      }
-      else
-         data(c1) = y = box(unDigShort(y) ^ unDigShort(data(c2)) & ~num(1));
-      for (;;) {
-         if (!isNum(data(c2) = nextDig(data(c2))))
-            break;
-         if (!isNum(nextDig(y)))
-            cdr(numCell(y)) = BOX(0);
-         y = nextDig(y);
-         setDig(y, unDig(y) ^ unDig(data(c2)));
+         setDig(y, unDigBig(y) ^ unDigBig(data(c2)) & ~num(1));
+         for (;;) {
+            if (!isNum(data(c2) = nextDigBig(data(c2))))
+               break;
+            z = nextDigBig(y);
+            if (!isNum(z)) {
+               cdr(numCell(y)) = z = BOX(unDigBig(data(c2)));
+               y = z;
+            }
+            else {
+               y = z;
+               setDig(y, unDigBig(y) ^ unDigBig(data(c2)));
+            }
+         }
       }
       drop(c2);
    }
-   if (isBig(data(c1)))
+   if (isBig(data(c1))) {
       zapZero(data(c1));
+      data(c1) = shorten(data(c1));
+   }
    return Pop(c1);
 }
 
@@ -1465,19 +1580,21 @@ any doSqrt(any ex) {
 
    if (shortLike(x)) {
       word u = unDigShort(x) / num(2);
-      if (BITS-bitCount(u) < 53)
-         return boxWord(sqrt(u) + (isNil(y) ? 0.0 : 0.5));
-      x = data(c1) = big(x);
+#ifdef __LP64__
+      if (BITS - __builtin_clz(u) < 53)
+#endif
+      return boxWord(sqrt(u) + (isNil(y) ? 0.0 : 0.5));
    }
+   x = data(c1) = big(x), y = data(c2) = isNum(y) ? big(y) : y;
 
-   Push(c3, y = BOX(unDig(x)));  // Number copy
+   Push(c3, y = BOX(unDigBig(x)));  // Number copy
    Push(c4, z = BOX(2));  // Mask
    while (isNum(x = cdr(numCell(x)))) {
-      y = cdr(numCell(y)) = BOX(unDig(x));
+      y = cdr(numCell(y)) = BOX(unDigBig(x));
       data(c4) = consNum(0, data(c4));
    }
-   while (unDig(y) >= unDig(z))
-      if (!setDig(z, unDig(z) << 2)) {
+   while (unDigBig(y) >= unDigBig(z))
+      if (!setDig(z, unDigBig(z) << 2)) {
          z = cdr(numCell(z)) = BOX(2);
          break;
       }
@@ -1490,11 +1607,11 @@ any doSqrt(any ex) {
          bigSub(data(c3),data(c5)),  bigAdd(data(c5),data(c4));
       digDiv2(data(c5));
       digDiv2(data(c4)),  digDiv2(data(c4));
-   } while (!IsZero(data(c4)));
+   } while (!IsZeroBig(data(c4)));
    if (!isNil(data(c2)) && bigCmp(data(c3),data(c5)) > 0)
-      data(c5) = digAdd(data(c5), 2);
+      digAdd(data(c5), BIG(1));
    drop(c1);
-   return data(c5);
+   return shorten(data(c5));
 }
 
 /* Random numbers */
@@ -1546,7 +1663,7 @@ any doRand(any ex) {
    if (x == T)
       return hi64(Seed) & 1 ? T : Nil;
    n = xCnt(ex,x);
-   if ((m = evCnt(ex, cddr(ex)) + 1 - n))
+   if (m = evCnt(ex, cddr(ex)) + 1 - n)
       n += hi64(Seed) % m;
    return boxCnt(n);
 }

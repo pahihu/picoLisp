@@ -7,5 +7,5 @@ then
 fi
 rm -f ../bin/picolisp ../bin/picolispx
 $GNUMAKE clean
-$GNUMAKE debug=yes 2>&1 | tee make.log
-# $GNUMAKE 2>&1 | tee make.log
+# $GNUMAKE debug=yes 2>&1 | tee make.log
+$GNUMAKE 2>&1 | tee make.log

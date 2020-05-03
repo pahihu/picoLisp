@@ -21,7 +21,7 @@ ifeq ($(debug),yes)
 	OPT = -DPICODEBUG=1
         STRIP = :
 else
-	OPT = -O2 -fomit-frame-pointer
+	OPT = -O2 -fomit-frame-pointer #-DPICODEBUG=1
         STRIP = strip
 endif
 
@@ -70,9 +70,13 @@ ifeq ($(shell uname), NetBSD)
 	LCRYPT = -lcrypto
 else
 ifeq ($(shell uname), Darwin)
+ifeq ($(target), pil32)
+	GCCLD = gcc
+else
 	GCCLD = gcc-mp-8
+endif
 	OS = Darwin
-	BFLAGS += ${M32} -mmacosx-version-min=10.6
+	BFLAGS += ${M32} -mmacosx-version-min=10.6 -Wno-parentheses
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS = -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
@@ -133,8 +137,8 @@ endif
 BFLAGS += -D_OS='"$(OS)"'
 
 
-# picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
-picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+# picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 tools: $(bin)/lat1 $(bin)/utf2 $(bin)/balance
 gate: $(bin)/ssl $(bin)/httpGate
 

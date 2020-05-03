@@ -55,7 +55,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          NeedSym(ex,o);
          Fetch(ex,o);
          TheCls = NULL,  TheKey = foo;
-         if ((expr = method(o))) {
+         if (expr = method(o)) {
             int i;
             any cls = Env.cls, key = Env.key;
             /* XXX struct {any sym; any val;} bnd[length(x = car(expr))+3]; */
@@ -547,7 +547,7 @@ any doCnt(any ex) {
       while (isCell(x = cdr(x)));
       while (isCell(data(c[0]))) {
          if (!isNil(apply(ex, data(foo), YES, n, c)))
-            res += 2;
+            res += BIG(1);
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
@@ -561,7 +561,7 @@ any doSum(any ex) {
    any x = cdr(ex);
    cell res, foo, c1;
 
-   Push(res, box(0));
+   Push(res, Zero);
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;

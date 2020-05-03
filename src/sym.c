@@ -41,6 +41,7 @@ any findHash(any s, any *p) {
 
    if (isCell(h = *p)) {
       x = s,  y = name(car(h));
+      x = big(x), y = big(y);
       ASSERT(isBig(x));
       ASSERT(isBig(y));
       while (unDig(x) == unDig(y)) {
@@ -128,7 +129,7 @@ any mkChar(int c) {
             (0x80 | c>>6 & 0x3F) << 16  |
             (0x80 | c & 0x3F) << 24;
    }
-   return consStr(mkShort(c));
+   return consStr(box(c));
 }
 
 /* Make name */
@@ -149,7 +150,7 @@ any intern(char *s) {
    if (!*s)
       return Nil;
    nm = mkName(s);
-   if ((x = findHash(nm, h = Intern + ihash(nm))))
+   if (x = findHash(nm, h = Intern + ihash(nm)))
       return x;
    *h = cons(x = consStr(nm), *h);
    return x;
@@ -235,7 +236,7 @@ any doIntern(any ex) {
       return Nil;
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
       return Nil;
-   if ((z = findHash(y, h = Intern + ihash(y))))
+   if (z = findHash(y, h = Intern + ihash(y)))
       return z;
    *h = cons(x,*h);
    return x;
@@ -338,7 +339,7 @@ any doChop(any x) {
       return Nil;
    Push(c1, x);
    Push(c2, x = cons(mkChar(c), Nil));
-   while ((c = symChar(NULL)))
+   while (c = symChar(NULL))
       x = cdr(x) = cons(mkChar(c), Nil);
    drop(c1);
    return data(c2);
@@ -360,11 +361,11 @@ void pack(any x, int *i, any *nm, cell *p) {
             charSym(c, i, nm);
          else
             Tuck(*p, c1, boxChar(c, i, nm));
-         while ((c = symChar(NULL)))
+         while (c = symChar(NULL))
             charSym(c, i, nm);
          drop(c1);
       }
-      else if ((c = symChar(name(x)))) {
+      else if (c = symChar(name(x))) {
          if (*nm) {
             if (isExt(x))
                charSym('{', i, nm);
@@ -376,7 +377,7 @@ void pack(any x, int *i, any *nm, cell *p) {
             Push(*p, boxChar('{', i, nm));
             charSym(c, i, nm);
          }
-         while ((c = symChar(NULL)))
+         while (c = symChar(NULL))
             charSym(c, i, nm);
          if (isExt(x))
             charSym('}', i, nm);
@@ -1050,7 +1051,7 @@ any doLup(any x) {
          data(c1) = cadr(data(c1));
       else if (!isCell(car(data(c1))))
          data(c1) = cddr(data(c1));
-      else if ((n = compare(data(c2), caar(data(c1)))))
+      else if (n = compare(data(c2), caar(data(c1))))
          data(c1) = n < 0? cadr(data(c1)) : cddr(data(c1));
       else {
          drop(c1);
@@ -2056,7 +2057,7 @@ any doLowc(any x) {
       return x;
    Push(c1, x);
    Push(c2, boxChar(toLowerCase(c), &i, &nm));
-   while ((c = symChar(NULL)))
+   while (c = symChar(NULL))
       charSym(toLowerCase(c), &i, &nm);
    drop(c1);
    return consStr(data(c2));
@@ -2073,7 +2074,7 @@ any doUppc(any x) {
       return x;
    Push(c1, x);
    Push(c2, boxChar(toUpperCase(c), &i, &nm));
-   while ((c = symChar(NULL)))
+   while (c = symChar(NULL))
       charSym(toUpperCase(c), &i, &nm);
    drop(c1);
    return consStr(data(c2));
@@ -2094,7 +2095,7 @@ any doFold(any ex) {
    Push(c1, x);
    n = isCell(x = cddr(ex))? evCnt(ex,x) : 0;
    Push(c2, boxChar(toLowerCase(c), &i, &nm));
-   while ((c = symChar(NULL)))
+   while (c = symChar(NULL))
       if (isLetterOrDigit(c)) {
          if (!--n)
             break;

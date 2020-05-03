@@ -102,7 +102,7 @@ any doListen(any ex) {
    for (;;) {
       if (!waitFd(ex, sd, ms))
          return Nil;
-      if ((x = tcpAccept(sd)))
+      if (x = tcpAccept(sd))
          return x;
    }
 }
@@ -150,7 +150,7 @@ any doConnect(any ex) {
 
    Push(c1, evSym(cdr(ex)));
    port = evSym(cddr(ex));
-   if ((lst = server(SOCK_STREAM, Pop(c1), port))) {
+   if (lst = server(SOCK_STREAM, Pop(c1), port)) {
       for (p = lst; p; p = p->ai_next) {
          if ((sd = socket(p->ai_family, p->ai_socktype, 0)) >= 0) {
             if (connect(sd, p->ai_addr, p->ai_addrlen) == 0) {
@@ -203,7 +203,7 @@ any doUdp(any ex) {
    data(c1) = xSym(data(c1));
    y = evSym(x);
    drop(c1);
-   if ((lst = server(SOCK_DGRAM, data(c1), y))) {
+   if (lst = server(SOCK_DGRAM, data(c1), y)) {
       x = cdr(x),  x = EVAL(car(x));
       putBin = putUdp,  UdpPtr = UdpBuf = buf,  binPrint(ExtN, x);
       for (p = lst; p; p = p->ai_next) {

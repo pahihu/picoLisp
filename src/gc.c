@@ -22,7 +22,7 @@ static void mark(any x) {
 }
 
 /* Garbage collector */
-static void gc(long c) {
+void gc(long c) {
    any p, *pp, x;
    heap *h;
    int i;
@@ -34,7 +34,7 @@ static void gc(long c) {
       do
          *(word*)&cdr(p) |= 1;
       while (--p >= h->cells);
-   } while ((h = h->next));
+   } while (h = h->next);
    /* Mark */
    mark(Nil+1);
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
@@ -57,7 +57,7 @@ static void gc(long c) {
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
          if (num(val(p->car)) & 1) {
             for (x = tail1(p->car); !isSym(x); x = cdr(cellPtr(x)));
-            if ((x = (any)(num(x) & ~1)) == At2  ||  x == At3)
+            if ((x = (any)(num(x) & ~num(1))) == At2  ||  x == At3)
                mark(p->car);  // Keep if dirty or deleted
          }
    if (num(val(val(DB) = DbVal)) & 1) {
@@ -80,7 +80,7 @@ static void gc(long c) {
             if (num(p->cdr) & 1)
                Free(p),  --c;
          while (--p >= h->cells);
-      } while ((h = h->next));
+      } while (h = h->next);
       while (c >= 0)
          heapAlloc(),  c -= CELLS;
    }

@@ -69,7 +69,7 @@ static void putHex(int c) {
 static void htEncode(char *p) {
 	int c;
 
-   while ((c = *p++)) {
+   while (c = *p++) {
       if (strchr(" \"#%&:;<=>?_", c))
          putHex(c);
       else {
