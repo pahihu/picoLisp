@@ -789,6 +789,7 @@ any funq(any x) {
    if (isSym(x))
       return Nil;
    if (isNum(x))
+      // negative or odd, or bigNum
       return (unDig(x)&3) || isNum(nextDig(x))? Nil : x;
    if (circ(y = cdr(x)))
       return Nil;
@@ -1127,7 +1128,7 @@ any doCtty(any ex) {
    any x;
 
    if (isNum(x = EVAL(cadr(ex))))
-      TtyPid = unDig(x) / 2;
+      TtyPid = unDigU(x);
    else {
       if (!isSym(x))
          argError(ex,x);

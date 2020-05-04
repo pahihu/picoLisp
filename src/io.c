@@ -1168,7 +1168,7 @@ static any rdAtom(int c) {
    y = Pop(c1);
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
       return Nil;
-   if (x = symToNum(y, (int)unDig(val(Scl)) / 2, '.', 0))
+   if (x = symToNum(y, (int)unDigU(val(Scl)), '.', 0))
       return x;
    if (x = anonymous(y))
       return x;
@@ -1370,7 +1370,7 @@ any token(any x, int c) {
       i = 0,  Push(c1, y = BOX(Chr));
       while (Env.get(), Chr >= '0' && Chr <= '9' || Chr == '.')
          byteSym(Chr, &i, &y);
-      return symToNum(Pop(c1), (int)unDig(val(Scl)) / 2, '.', 0);
+      return symToNum(Pop(c1), (int)unDigU(val(Scl)), '.', 0);
    }
    if (Chr != '+' && Chr != '-') {
       char nm[bufSize(x)];
@@ -1468,10 +1468,10 @@ long waitFd(any ex, int fd, long ms) {
       for (x = data(c2) = Env.task = val(Run); isCell(x); x = cdr(x)) {
          if (!memq(car(x), taskSave)) {
             if (isNeg(caar(x))) {
-               if ((n = (int)unDig(cadar(x)) / 2) < t)
+               if ((n = (int)unDigU(cadar(x))) < t)
                   tp = &tv,  t = n;
             }
-            else if ((n = (int)unDig(caar(x)) / 2) != fd) {
+            else if ((n = (int)unDigU(caar(x))) != fd) {
                if (n < InFDs  &&  InFiles[n]  &&  inReady(InFiles[n]))
                   tp = &tv,  t = 0;
                else {
@@ -1602,27 +1602,15 @@ long waitFd(any ex, int fd, long ms) {
       for (x = data(c2); isCell(x); x = cdr(x)) {
          if (!memq(car(x), taskSave)) {
             if (isNeg(caar(x))) {
-               if ((n = (int)(unDig(cadar(x)) / 2 - t)) > 0) {
+               if ((n = (int)(unDigU(cadar(x)) - t)) > 0) {
                   cadar(x) = box(BIG(n));
-                  /*
-                  if (shortLike(cadar(x)))
-                     cadar(x) = box((long)2*n);
-                  else
-                     setDig(cadar(x), (long)2*n);
-                  */
                } else {
                   cadar(x) = box(unDig(caar(x)));
-                  /*
-                  if (shortLike(cadar(x)))
-                     cadar(x) = box(unDigShort(caar(x)));
-                  else
-                     setDig(cadar(x), unDig(caar(x)));
-                  */
                   val(At) = caar(x);
                   prog(cddar(x));
                }
             }
-            else if ((n = (int)unDig(caar(x)) / 2) != fd) {
+            else if ((n = (int)unDigU(caar(x))) != fd) {
                if (isSet(n, &rdSet)) {
 // XXX fprintf(stderr,"*** waitFd %d ***\n",n);
                   val(At) = caar(x);
@@ -1717,7 +1705,7 @@ any doTell(any x) {
    }
    pid = 0;
    if (isNum(y = EVAL(car(x)))) {
-      pid = (int)unDig(y)/2;
+      pid = (int)unDigU(y);
       x = cdr(x),  y = EVAL(car(x));
    }
    tellBeg(&pbSave, &ppSave, buf);
@@ -1803,7 +1791,7 @@ any doChar(any ex) {
       return x;
    }
    if (isNum(x = EVAL(car(x))))
-      return IsZero(x)? Nil : mkChar(unDig(x) / 2);
+      return IsZero(x)? Nil : mkChar(unDigU(x));
    if (isSym(x))
       return x == T? mkChar(TOP) : boxCnt(symChar(name(x)));
    atomError(ex,x);
@@ -2774,7 +2762,7 @@ any doWr(any x) {
 
    x = cdr(x);
    do
-      putStdout(unDig(y = EVAL(car(x))) / 2);
+      putStdout(unDigU(y = EVAL(car(x))));
    while (isCell(x = cdr(x)));
    return y;
 }
@@ -3182,7 +3170,7 @@ any doPool(any ex) {
          pathString(data(c1), nm);
          if (isCell(x))
             sprintf(nm + strlen(nm), "%d", F+1);
-         BlkShift[F] = isNum(car(x))? (int)unDig(car(x))/2 : 2;
+         BlkShift[F] = isNum(car(x))? (int)unDigU(car(x)) : 2;
          if ((BlkFile[F] = open(nm, O_RDWR)) >= 0) {
             blkPeek(0, buf, 2*BLK+1);  // Get block shift
             BlkSize[F] = BLKSIZE << (BlkShift[F] = (int)buf[2*BLK]);
@@ -3298,11 +3286,11 @@ any doId(any ex) {
       x = cdr(x);
       if (isNil(x = EVAL(car(x)))) {
          F = 0;
-         return mkId(shortLike(y) ? (unDigShort(y) / num(2)) : unBoxWord2(y));
+         return mkId(shortLike(y) ? (unDigShortU(y)) : unBoxWord2(y));
       }
-      F = (int)unDig(y)/2 - 1;
+      F = (int)unDigU(y) - 1;
       NeedNum(ex,x);
-      return mkId(shortLike(x) ? (unDigShort(x) / num(2)) : unBoxWord2(x));
+      return mkId(shortLike(x) ? (unDigShortU(x)) : unBoxWord2(x));
    }
    NeedExt(ex,y);
    n = blk64(name(y));
@@ -3322,7 +3310,7 @@ any doSeq(any ex) {
 
    x = cdr(ex);
    if (isNum(x = EVAL(car(x)))) {
-      F = (int)unDig(x)/2 - 1;
+      F = (int)unDigU(x) - 1;
       n = 0;
    }
    else {
@@ -3724,7 +3712,7 @@ any doDbck(any ex) {
    F = 0;
    x = cdr(ex);
    if (isNum(y = EVAL(car(x)))) {
-      if ((F = (int)unDig(y)/2 - 1) >= Files)
+      if ((F = (int)unDigU(y) - 1) >= Files)
          dbfErr(ex);
       x = cdr(x),  y = EVAL(car(x));
    }

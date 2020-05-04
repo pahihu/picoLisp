@@ -387,7 +387,7 @@ any doNew(any ex) {
       if (isNil(y))
          data(c1) = consSym(Nil,Nil);
       else {
-         y = newId(ex, isNum(y)? (int)unDig(y)/2 : 1);
+         y = newId(ex, isNum(y)? (int)unDigU(y) : 1);
          if (data(c1) = findHash(y, h = Extern + ehash(y)))
             tail(data(c1)) = y;
          else
@@ -1179,22 +1179,9 @@ any doAt(any ex) {
    Push(c1, car(x));
    car(x) = n = DADDU1(data(c1));
    drop(c1);
-/*
-   n = unDig(car(x))+BIG(1);
-   if (shortLike(car(x)))
-      car(x) = box(n);
-   else
-      setDig(car(x), n);
-*/
    if (unDig(n) < unDig(cdr(x)))
       return Nil;
    car(x) = Zero;
-/*
-   if (shortLike(car(x)))
-      car(x) = box(0);
-   else
-      setDig(car(x), 0);
-*/
    return prog(cddr(ex));
 }
 
@@ -1592,17 +1579,6 @@ any doTick(any ex) {
       Push(c1, cdr(p));
       cdr(p) = DADDU(data(c1), BIG(n2));
       drop(c1);
-
-/*
-      if (shortLike(car(p)))
-         car(p) = box(unDigShort(car(p)) + 2*n1);
-      else
-         setDig(car(p), unDig(car(p)) + 2*n1);
-      if (shortLike(cdr(p)))
-         cdr(p) = box(unDigShort(cdr(p)) + 2*n2);
-      else
-         setDig(cdr(p), unDig(cdr(p)) + 2*n2);
-*/
    }
    ticks1 += n1,  ticks2 += n2;
    return x;

@@ -1008,7 +1008,7 @@ any doEq0(any x) {
 any doEq1(any x) {
    x = cdr(x);
    return isNum(x = EVAL(car(x)))
-          && (unDig(x)==2 && !isNum(nextDig(x))) ? x : Nil;
+          && (unDig(x)==BIG(1) && !isNum(nextDig(x))) ? x : Nil;
 }
 
 // (=T 'any) -> flg
@@ -1657,7 +1657,7 @@ any doProve(any x) {
       }
       else if (isNum(caar(x))) {
          data(e) = prog(cdar(x));
-         for (i = unDig(caar(x)), x = data(nl);  (i -= 2) > 0;)
+         for (i = unDig(caar(x)), x = data(nl);  (i -= BIG(1)) > 0;)
             x = cdr(x);
          data(nl) = cons(car(x), data(nl));
          data(tp2) = cons(cdr(data(tp1)), data(tp2));
@@ -1701,7 +1701,7 @@ any doArrow(any x) {
 
    if (!isNum(caddr(x)))
       return lookup(car(data(*Pnl)), cadr(x));
-   for (i = unDig(caddr(x)), y = data(*Pnl);  (i -= 2) > 0;)
+   for (i = unDig(caddr(x)), y = data(*Pnl);  (i -= BIG(1)) > 0;)
       y = cdr(y);
    return lookup(car(y), cadr(x));
 }

@@ -21,8 +21,8 @@ ifeq ($(debug),yes)
 	OPT = -DPICODEBUG=1
         STRIP = :
 else
-	OPT = -O2 -fomit-frame-pointer #-DPICODEBUG=1
-        STRIP = strip
+	OPT = -O2 -fomit-frame-pointer -DPICODEBUG=1
+        STRIP = : #strip
 endif
 
 BFLAGS = -pipe \
@@ -137,8 +137,8 @@ endif
 BFLAGS += -D_OS='"$(OS)"'
 
 
-picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
-# picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+# picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 tools: $(bin)/lat1 $(bin)/utf2 $(bin)/balance
 gate: $(bin)/ssl $(bin)/httpGate
 

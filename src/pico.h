@@ -166,27 +166,40 @@ typedef struct catchFrame {
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
 #define TAG             num(2*WORD-1)
-#define SSIGN           num(2*WORD)
 #define cellNum(x)      (num(x) & ~TAG)
-#define cellPtr(x)      ((any)(num(x) & ~TAG))
+#define cellPtr(x)      ((any)cellNum(x))
 #define typeTag(x)      (num(x) & (TAG-1))
 #define T_NUM           (WORD/2)
 #define T_SYM           (WORD)
-#define T_SHORT         T_SYM
-#define T_SHORTNUM      (T_NUM+T_SHORT)
+
 #ifdef __LP64__
 #define TAGBITS         4
+#define T_SHORT         2
+#define T_SHORTNUM      T_SHORT
+// #define NORMBITS        TAGBITS
+// #define NORM            TAG
+// #define SIGN            num(2*WORD)
+#define NORMBITS        3
+#define NORM            num(WORD-1)
+#define SIGN            num(WORD)
 #else
 #define TAGBITS         3
+#define T_SHORT         T_SYM
+#define T_SHORTNUM      (T_NUM+T_SYM)
+#define NORMBITS        TAGBITS
+#define NORM            TAG
+#define SIGN            num(2*WORD)
 #endif
-#define SHORTMAX        (num(1)<<(BITS-TAGBITS))
+
+
+
+#define SHORTMAX        (num(1)<<(BITS-NORMBITS))
 #define OVFL            (num(1)<<(BITS-1))
 #define LONGMIN         ((long)OVFL)
 #define BIG(x)          (2*(x))
 
 /* Number access */
 #define num(x)          ((word)(x))
-#define isNeg(x)        (unDig(x) & num(1))
 #define BOX(n)          (consNum(n,Nil))
 #define lo(w)           num((w)&MASK)
 #define hi(w)           num((w)>>BITS)
@@ -196,7 +209,7 @@ typedef struct catchFrame {
 #define symPtr(x)       ((any)&(x)->cdr)
 #define val(x)          ((x)->car)
 #define tail(s)         (((s)-1)->cdr)
-#define tail1(s)        ((any)(num(tail(s)) & ~num(1)))
+#define tail1(s)        ((any)(num(tail(s)) & ~1))
 #define Tail(s,v)       (tail(s) = (any)(num(v) | num(tail(s)) & 1))
 #define ext(x)          ((any)(num(x) | 1))
 #define mkExt(s)        (*(word*)&tail(s) |= 1)
@@ -245,9 +258,15 @@ typedef struct catchFrame {
 
 /* Predicates */
 #define isNil(x)        ((x)==Nil)
+#ifdef __LP64__
+#define isNum(x)        (num(x)&(T_NUM+T_SHORT))
+#define isShort(x)      (num(x)&T_SHORT)
+#define isSym(x)        (typeTag(x)==T_SYM)
+#else
 #define isNum(x)        (num(x)&T_NUM)
 #define isShort(x)      (typeTag(x)==T_SHORTNUM)
 #define isSym(x)        (typeTag(x)==T_SYM)
+#endif
 #define isCell(x)       (!typeTag(x))
 #define isExt(s)        (num(tail(s))&1)
 #define shortLike(x)    (num(x)&T_SHORT)
@@ -305,9 +324,8 @@ extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern bool Break;
 extern sig_atomic_t Signal[NSIG];
 
-static const word ShortOne = ((2*num(1))<<TAGBITS);
-static const word ShortMax = (~num(2*TAG+1));
-static const word BigOne   = num(2);
+static const word ShortOne = ((2*num(1))<<NORMBITS);
+static const word ShortMax = (~num(2*NORM+1));
 
 /* Prototypes */
 void *alloc(void*,size_t);
@@ -840,27 +858,37 @@ static inline word unDigBig(any x) {
    return num(car(numCell(x)));
 }
 
+static inline word unDigBigU(any x) {
+   ASSERT(isBig(x));
+   return unDigBig(x) / 2;
+}
+
 // shortNum
 static inline word unDigShort(any x) {
    ASSERT(isShort(x));
-   return num(x) >> TAGBITS;
+   return num(x) >> NORMBITS;
 }
 
 static inline long unBoxShort(any x) {
    ASSERT(isShort(x));
    word u = unDigShort(x);
    long n = u / 2L;
-   return u & num(1)? -n : n;
+   return u & 1? -n : n;
 }
 
 static inline any posShort(any x) {
    ASSERT(isShort(x));
-   return (any)(num(x) & ~(num(1)<<TAGBITS));
+   return (any)(num(x) & ~SIGN);
 }
 
 static inline any negShort(any x) {
    ASSERT(isShort(x));
-   return (any)(num(x) ^ (num(1)<<TAGBITS));
+   return (any)(num(x) ^ SIGN);
+}
+
+static inline word unDigShortU(any x) {
+   ASSERT(isShort(x));
+   return unDigShort(x) / 2;
 }
 
 static inline int shortCompare(any x, any y) {
@@ -879,7 +907,7 @@ static inline int shortCompare(any x, any y) {
 
 // shortNum/bigNum
 static inline any mkShort(word n) {
-   return (any)((n << TAGBITS) + T_SHORTNUM);
+   return (any)((n << NORMBITS) + T_SHORTNUM);
 }
 
 static inline any box(word n) {
@@ -893,6 +921,18 @@ static inline word unDig(any x) {
    if (shortLike(x))
       return unDigShort(x);
    return num(car(numCell(x)));
+}
+
+static inline word posDig(word u) {
+   return u & ~1;
+}
+
+static inline word negDig(word u) {
+   return u ^ 1;
+}
+
+static inline word unDigU(any x) {
+   return unDig(x) / 2;
 }
 
 static inline any big(any x) {
@@ -924,6 +964,11 @@ static inline int IsZero(any x) {
    return IsZeroBig(x);
 }
 
+static inline int isNeg(any x) {
+   ASSERT(isNum(x));
+   return unDig(x) & 1;
+}
+
 // bigNum only
 static inline any setDig(any x,word v) {
    ASSERT(isBig(x));
@@ -933,13 +978,13 @@ static inline any setDig(any x,word v) {
 
 static inline any pos(any x) {
    ASSERT(isBig(x));
-   car(numCell(x)) = (any)(unDig(x) & ~num(1));
+   car(numCell(x)) = (any)(posDig(unDigBig(x)));
    return x;
 }
 
 static inline any neg(any x) {
    ASSERT(isBig(x));
-   car(numCell(x)) = (any)(unDig(x) ^ num(1));
+   car(numCell(x)) = (any)(negDig(unDigBig(x)));
    return x;
 }
 
@@ -947,7 +992,7 @@ static inline long unBox(any x) {
    ASSERT(isNum(x));
    word u = unDig(x);
    long n = u / 2L;
-   return u & num(1)? -n : n;
+   return u & 1? -n : n;
 }
 
 // short/bigNum
@@ -995,7 +1040,7 @@ static inline any nth(int n, any x) {
 
 static inline any getn(any x, any y) {
    if (isNum(x)) {
-      long n = unDig(x) / 2;
+      long n = unDigU(x);
 
       if (isNeg(x)) {
          while (--n)
