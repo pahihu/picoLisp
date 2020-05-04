@@ -821,11 +821,7 @@ any doSub(any ex) {
          return y;
       if (shortLike(y))
          return negShort(y);
-      Push(c1, bigCopy(y));
-      // --- NO STRUCTURE SHARING ---
-      // data(c1) = consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
-      neg(data(c1));
-      return Pop(c1);
+      return consNum(unDigBig(y) ^ 1, cdr(numCell(y))); // share struct
    }
    if (shortLike(y)) {
       word cnt = 0;
@@ -1356,7 +1352,6 @@ any doGt0(any x) {
 
 // (abs 'num) -> num
 any doAbs(any ex) {
-   cell c1;
    any x;
 
    x = cdr(ex);
@@ -1367,11 +1362,7 @@ any doAbs(any ex) {
       return x;
    if (shortLike(x))
       return posShort(x);
-   // --- NO STRUCTURE SHARING ---
-   // return consNum(unDigBig(x) & ~1, cdr(numCell(x)));
-   Push(c1, bigCopy(x));
-   pos(data(c1));
-   return Pop(c1);
+   return consNum(unDigBig(x) & ~1, cdr(numCell(x))); // share struct
 }
 
 // (bit? 'num ..) -> num | NIL
@@ -1476,6 +1467,7 @@ any doBitAnd(any ex) {
 any doBitOr(any ex) {
    any x, y, z;
    cell c1, c2;
+   int n;
 
    x = cdr(ex);
    if (isNil(data(c1) = EVAL(car(x))))
@@ -1486,6 +1478,7 @@ any doBitOr(any ex) {
       data(c1) = posShort(data(c1));
    else
       pos(data(c1));
+   n = length(x) - 1;
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1504,6 +1497,10 @@ any doBitOr(any ex) {
                break;
             z = nextDigBig(y);
             if (!isNum(z)) {
+               if (1 == n) { // share struct
+                  cdr(numCell(y)) = data(c2);
+                  break;
+               }
                cdr(numCell(y)) = z = BOX(unDigBig(data(c2)));
                y = z;
             }
@@ -1522,6 +1519,7 @@ any doBitOr(any ex) {
 any doBitXor(any ex) {
    any x, y, z;
    cell c1, c2;
+   int n;
 
    x = cdr(ex);
    if (isNil(data(c1) = EVAL(car(x))))
@@ -1532,6 +1530,7 @@ any doBitXor(any ex) {
       data(c1) = posShort(data(c1));
    else
       pos(data(c1));
+   n = length(x) - 1;
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1550,6 +1549,10 @@ any doBitXor(any ex) {
                break;
             z = nextDigBig(y);
             if (!isNum(z)) {
+               if (1 == n) { // share struct
+                  cdr(numCell(y)) = data(c2);
+                  break;
+               }
                cdr(numCell(y)) = z = BOX(unDigBig(data(c2)));
                y = z;
             }
