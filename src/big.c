@@ -1030,11 +1030,10 @@ any doSub(any ex) {
    if (!isCell(x = cdr(x))) {
       if (IsZero(data(c1)))
          return data(c1);
-      Push(c1, CPY(data(c1)));
-      // SHARE or NOT TO SHARE
-      // data(c1) = consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
-      data(c1) = NEG(data(c1));
-      return Pop(c1);
+      if (shortLike(data(c1)))
+         return negShort(data(c1));
+      // share struct
+      return consNum(unDigBig(data(c1)) ^ 1, cdr(numCell(data(c1))));
    }
    Push(c1, CPY(data(c1)));
    do {
@@ -1335,7 +1334,6 @@ any doGt0(any x) {
 // (abs 'num) -> num
 any doAbs(any ex) {
    any x;
-   cell c1;
 
    x = cdr(ex);
    if (isNil(x = EVAL(car(x))))
@@ -1345,11 +1343,7 @@ any doAbs(any ex) {
       return x;
    if (shortLike(x))
       return posShort(x);
-   // SHARE or NOT TO SHARE
-   // return consNum(unDigBig(x) & ~1, cdr(numCell(x)));
-   Push(c1, CPY(x));
-   data(c1) = NEG(data(c1));
-   return Pop(c1);
+   return consNum(unDigBig(x) & ~1, cdr(numCell(x))); // share struct
 }
 
 // (bit? 'num ..) -> num | NIL
@@ -1451,6 +1445,7 @@ any doBitAnd(any ex) {
 any doBitOr(any ex) {
    any x, y, z;
    cell c1, c2;
+   int n;
 
    x = cdr(ex);
    if (isNil(data(c1) = EVAL(car(x))))
@@ -1458,6 +1453,7 @@ any doBitOr(any ex) {
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
    data(c1) = ABS(data(c1));
+   n = length(x) - 1;
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1476,6 +1472,10 @@ any doBitOr(any ex) {
                break;
             z = nextDigBig(y);
             if (!isNum(z)) {
+               if (1 == n) { // share struct
+                  cdr(numCell(y)) = data(c2);
+                  break;
+               }
                cdr(numCell(y)) = z = BOX(unDigBig(data(c2)));
                y = z;
             }
@@ -1494,6 +1494,7 @@ any doBitOr(any ex) {
 any doBitXor(any ex) {
    any x, y, z;
    cell c1, c2;
+   int n;
 
    x = cdr(ex);
    if (isNil(data(c1) = EVAL(car(x))))
@@ -1501,6 +1502,7 @@ any doBitXor(any ex) {
    NeedNum(ex,data(c1));
    Push(c1, CPY(data(c1)));
    data(c1) = ABS(data(c1));
+   n = length(x) - 1;
    while (isCell(x = cdr(x))) {
       if (isNil(data(c2) = EVAL(car(x)))) {
          drop(c1);
@@ -1519,6 +1521,10 @@ any doBitXor(any ex) {
                break;
             z = nextDigBig(y);
             if (!isNum(z)) {
+               if (1 == n) { // share struct
+                  cdr(numCell(y)) = data(c2);
+                  break;
+               }
                cdr(numCell(y)) = z = BOX(unDigBig(data(c2)));
                y = z;
             }
