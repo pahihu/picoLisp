@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* passed misc/bigtest
 * optimized arithmetic operations
 * added gcc -O3 target, run with pilx
 * fixed SIGSEGV on UTF-8 character tables
@@ -16,7 +17,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 25 / 4 / 2020
+pahihu 6 / 5 / 2020
 
 
 

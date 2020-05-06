@@ -321,7 +321,7 @@ any binRead(int extn) {
    if ((y = rdNum(c / 4)) == NULL)
       return NULL;
    if ((c &= 3) == NUMBER)
-      return y;
+      return shorten(y);
    if (c == TRANSIENT)
       return consStr(y);
    if (c == EXTERN) {
@@ -2732,6 +2732,7 @@ any doRd(any x) {
       }
       zapZero(data(c1));
    }
+   data(c1) = shorten(data(c1));
    return Pop(c1);
 }
 

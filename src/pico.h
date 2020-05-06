@@ -318,6 +318,7 @@ int bigCompare(any,any);
 any bigCopy(any);
 #define copyNum(x)      (shortLike(x) ? (x) : bigCopy(x))
 void bigSub(any,any);
+any shorten(any);
 void binPrint(int,any);
 any binRead(int);
 int binSize(any);

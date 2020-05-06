@@ -60,7 +60,7 @@ word2 unBoxWord2(any x) {
    return n;
 }
 
-static inline any shorten(any x) {
+any shorten(any x) {
    ASSERT(isNum(x));
 
    if (!shortLike(x) && isNil(cdr(numCell(x)))) {
