@@ -533,7 +533,7 @@ any doFully(any ex) {
 // (cnt 'fun 'lst ..) -> cnt
 any doCnt(any ex) {
    any x = cdr(ex);
-   int res;
+   long res;
    cell foo;
 
    res = 0;
@@ -547,13 +547,17 @@ any doCnt(any ex) {
       while (isCell(x = cdr(x)));
       while (isCell(data(c[0]))) {
          if (!isNil(apply(ex, data(foo), YES, n, c)))
-            res += BIG(1);
+            res++;
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
    }
    drop(foo);
-   return box(res);
+#ifdef __LP64__
+   return boxCnt(res);
+#else
+   return box(SHORT(res));
+#endif
 }
 
 // (sum 'fun 'lst ..) -> num

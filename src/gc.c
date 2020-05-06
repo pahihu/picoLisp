@@ -57,7 +57,7 @@ void gc(long c) {
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
          if (num(val(p->car)) & 1) {
             for (x = tail1(p->car); !isSym(x); x = cdr(cellPtr(x)));
-            if ((x = (any)(num(x) & ~num(1))) == At2  ||  x == At3)
+            if ((x = (any)(num(x) & ~1)) == At2  ||  x == At3)
                mark(p->car);  // Keep if dirty or deleted
          }
    if (num(val(val(DB) = DbVal)) & 1) {

@@ -41,7 +41,7 @@ any findHash(any s, any *p) {
 
    if (isCell(h = *p)) {
       x = s,  y = name(car(h));
-      x = big(x), y = big(y);
+      x = bigLike(x), y = bigLike(y);
       ASSERT(isBig(x));
       ASSERT(isBig(y));
       while (unDig(x) == unDig(y)) {

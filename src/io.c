@@ -282,7 +282,6 @@ static any rdNum(int cnt) {
          return NULL;
       byteSym(n, &i, &x);
    }
-   data(c1) = shorten(data(c1));
    return Pop(c1);
 }
 
@@ -322,7 +321,11 @@ any binRead(int extn) {
    if ((y = rdNum(c / 4)) == NULL)
       return NULL;
    if ((c &= 3) == NUMBER)
-      return y;
+#ifdef __LP64__
+      return cvtSigned(y);
+#else
+      return shorten(y);
+#endif
    if (c == TRANSIENT)
       return consStr(y);
    if (c == EXTERN) {
@@ -364,6 +367,77 @@ static int numByte(any s) {
    return n & 0xFF;
 }
 
+#ifdef __LP64__
+int numBigBytes(any x) {
+   int cnt;
+   word n, m = MASK;
+
+   for (cnt = 1;  isNum(nextDigBig(x));  cnt += WORD)
+         x = nextDigBig(x);
+   if ((n = unDig(x)) & OVFL)
+      cnt += 9;
+   else
+      for (n <<= 1; n & (m <<= 8); ++cnt);
+   return cnt;
+}
+
+static int Bit0; // LSB
+
+/* Shift left bigNum on the fly */
+static int numBigByte(any s) {
+   static int i;
+   static any x;
+   static word n;
+   int cy;
+
+   if (s) {
+      i = 0;
+      cy = (n = unDigBig(x = s)) & OVFL? 1 : 0, n = (n<<1) + Bit0, Bit0 = cy;
+   }
+   else if (n >>= 8,  (++i & sizeof(word)-1) == 0) {
+      if (isNil(x = nextDigBig(x)))
+         n = Bit0;
+      else
+         cy = (n = unDigBig(x)) & OVFL? 1 : 0, n = (2*n) + Bit0, Bit0 = cy;
+   }
+   return n & 0xFF;
+}
+
+/* Print a short/bigNumber */
+static void prSigned(int t, any x) {
+   int cnt, i;
+
+   if (isShort(x)) {
+      prDig(t, unDigShort(x));
+      return;
+   }
+   Bit0 = isNeg(x)? 1 : 0;
+   if ((cnt = numBigBytes(x)) < 63) {
+      putBin(cnt*4+t);
+      putBin(numBigByte(x));
+      while (--cnt)
+         putBin(numBigByte(NULL));
+   }
+   else {
+      putBin(63*4+t);
+      putBin(numBigByte(x));
+      for (i = 1; i < 63; ++i)
+         putBin(numBigByte(NULL));
+      cnt -= 63;
+      while (cnt >= 255) {
+         putBin(255);
+         for (i = 0; i < 255; ++i)
+            putBin(numBigByte(NULL));
+         cnt -= 255;
+      }
+      putBin(cnt);
+      while (--cnt >= 0)
+         putBin(numBigByte(NULL));
+   }
+}
+
+#endif
+
 static void prNum(int t, any x) {
    int cnt, i;
 
@@ -397,7 +471,11 @@ void binPrint(int extn, any x) {
    any y;
 
    if (isNum(x))
+#ifdef __LP64__
+      prSigned(NUMBER, x);
+#else
       prNum(NUMBER, x);
+#endif
    else if (isNil(x))
       putBin(NIX);
    else if (isSym(x)) {
@@ -954,7 +1032,7 @@ void popInFiles(void) {
             if (*Signal)
                sighandler(NULL);
          }
-         val(At2) = box(BIG(res));
+         val(At2) = boxCnt(res);
       }
    }
    else if (InFile)
@@ -978,7 +1056,7 @@ void popOutFiles(void) {
             if (*Signal)
                sighandler(NULL);
          }
-         val(At2) = box(BIG(res));
+         val(At2) = boxCnt(res);
       }
    }
    Env.put = Env.outFrames->put;
@@ -1603,9 +1681,9 @@ long waitFd(any ex, int fd, long ms) {
          if (!memq(car(x), taskSave)) {
             if (isNeg(caar(x))) {
                if ((n = (int)(unDigU(cadar(x)) - t)) > 0) {
-                  cadar(x) = box(BIG(n));
+                  cadar(x) = boxCnt(n);
                } else {
-                  cadar(x) = box(unDig(caar(x)));
+                  cadar(x) = boxCnt(unBox(caar(x))); // XXX
                   val(At) = caar(x);
                   prog(cddar(x));
                }
@@ -2471,7 +2549,7 @@ void outName(any s) {
 }
 
 void outNum(any x) {
-   if (isNum(nextDig(x))) {
+   if (!isShort(x)) {
       cell c1;
 
       Push(c1, numToSym(x, 0, 0, 0));
@@ -3296,8 +3374,8 @@ any doId(any ex) {
    n = blk64(name(y));
    x = cdr(x);
    if (isNil(EVAL(car(x))))
-      return boxWord2(n);
-   Push(c1, boxWord2(n));
+      return shortBoxWord2(n);
+   Push(c1, shortBoxWord2(n));
    data(c1) = cons(BOX((F + 1) * 2), data(c1));
    return Pop(c1);
 }
@@ -3770,8 +3848,8 @@ any doDbck(any ex) {
    else if (!flg)
       x = Nil;
    else {
-      Push(c1, boxWord2(syms));
-      data(c1) = cons(boxWord2(blks), data(c1));
+      Push(c1, shortBoxWord2(syms));
+      data(c1) = cons(shortBoxWord2(blks), data(c1));
       x = Pop(c1);
    }
 done:

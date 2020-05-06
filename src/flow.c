@@ -1546,7 +1546,7 @@ any doCall(any ex) {
       if (Termio)
          tcsetpgrp(0,getpgrp());
       if (!WIFSTOPPED(res)) {
-         val(At2) = box(BIG(res));
+         val(At2) = boxCnt(res);
          return res == 0? T : Nil;
       }
       load(NULL, '+', Nil);
@@ -1574,10 +1574,10 @@ any doTick(any ex) {
 
       any p = cadr(ex);
       Push(c1, car(p));
-      car(p) = DADDU(data(c1), BIG(n1));
+      car(p) = DADDU(data(c1), n1);
       drop(c1);
       Push(c1, cdr(p));
-      cdr(p) = DADDU(data(c1), BIG(n2));
+      cdr(p) = DADDU(data(c1), n2);
       drop(c1);
    }
    ticks1 += n1,  ticks2 += n2;

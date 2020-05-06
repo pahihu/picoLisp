@@ -3,6 +3,9 @@ Changes
 
 All bugs introduced are mine.
 
+* passed misc/bigtest
+* pil 64bit target uses the same short/bigNum fmt as pil64, the 32bit target 
+  supports shortNums
 * added gcc -O3 target, run with pilx
 * fixed SIGSEGV on UTF-8 character tables
 * added build scripts m and m32 in src/ dir
@@ -15,7 +18,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 25 / 4 / 2020
+pahihu 6 / 5 / 2020
 
 
 

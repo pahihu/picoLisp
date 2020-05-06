@@ -119,6 +119,7 @@ static symInit Symbols[] = {
    {doEqT, "=T"},
    {doEqual, "="},
    {doErr, "err"},
+   {doErrno, "errno"},
    {doEval, "eval"},
    {doExec, "exec"},
    {doExt, "ext"},
@@ -389,7 +390,7 @@ void initSymbols(void) {
    Nil = symPtr(Avail),  Avail = Avail->car->car;  // Allocate 2 cells for NIL
    val(Nil) = tail(Nil) = val(Nil+1) = tail(Nil+1) = Nil;
    Zero = box(0);
-   One = box(BIG(1));
+   One = boxCnt(1);
    for (i = 0; i < IHASH; ++i)
       Intern[i] = Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)

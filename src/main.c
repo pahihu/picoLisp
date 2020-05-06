@@ -230,7 +230,7 @@ any doKids(any ex __attribute__((unused))) {
 
    for (i = 0, x = Nil; i < Children; ++i)
       if (Child[i].pid)
-         x = cons(box(BIG(Child[i].pid)), x);
+         x = cons(boxCnt(Child[i].pid), x);
    return x;
 }
 
@@ -790,7 +790,11 @@ any funq(any x) {
       return Nil;
    if (isNum(x))
       // negative or odd, or bigNum
-      return (unDig(x)&3) || isNum(nextDig(x))? Nil : x;
+#ifdef __LP64__
+      return isBig(x)? Nil : x;
+#else
+      return isNeg(x) || (unDigU(x)&1) || isNum(nextDig(x))? Nil : x;
+#endif
    if (circ(y = cdr(x)))
       return Nil;
    while (isCell(y)) {
@@ -856,6 +860,11 @@ bool sharedLib(any x) {
 void undefined(any x, any ex) {
    if (!sharedLib(x))
       err(ex, x, "Undefined");
+}
+
+// (errno) -> cnt
+any doErrno(any ex __attribute__((unused))) {
+   return boxCnt(errno);
 }
 
 static any evList2(any foo, any ex) {
@@ -1094,7 +1103,7 @@ any doUsec(any ex) {
    if (!isNil(EVAL(cadr(ex))))
       return boxCnt(Tv.tv_usec);
    gettimeofday(&Tv,NULL);
-   return boxWord2((word2)Tv.tv_sec*1000000 + Tv.tv_usec - USec);
+   return shortBoxWord2((word2)Tv.tv_sec*1000000 + Tv.tv_usec - USec);
 }
 
 // (pwd) -> sym
@@ -1169,7 +1178,7 @@ any doInfo(any x) {
       data(c1) = cons(
          (st.st_mode & S_IFMT) == S_IFDIR? T :
          (st.st_mode & S_IFMT) != S_IFREG? Nil :
-         boxWord2((word2)st.st_size), data(c1) );
+         shortBoxWord2((word2)st.st_size), data(c1) );
       return Pop(c1);
    }
 }
@@ -1293,7 +1302,7 @@ any doVersion(any x) {
    Push(c1, Nil);
    i = 3;
    do
-      data(c1) = cons(box(BIG(Version[--i])), data(c1));
+      data(c1) = cons(boxCnt(Version[--i]), data(c1));
    while (i);
    return Pop(c1);
 }

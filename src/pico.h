@@ -176,12 +176,11 @@ typedef struct catchFrame {
 #define TAGBITS         4
 #define T_SHORT         2
 #define T_SHORTNUM      T_SHORT
-// #define NORMBITS        TAGBITS
-// #define NORM            TAG
-// #define SIGN            num(2*WORD)
 #define NORMBITS        3
 #define NORM            num(WORD-1)
 #define SIGN            num(WORD)
+#define BIG(x)          (x)
+#define POSDIG(x)       (x)
 #else
 #define TAGBITS         3
 #define T_SHORT         T_SYM
@@ -189,6 +188,8 @@ typedef struct catchFrame {
 #define NORMBITS        TAGBITS
 #define NORM            TAG
 #define SIGN            num(2*WORD)
+#define BIG(x)          (2*(x))
+#define POSDIG(x)       posDig(x)
 #endif
 
 
@@ -196,7 +197,7 @@ typedef struct catchFrame {
 #define SHORTMAX        (num(1)<<(BITS-NORMBITS))
 #define OVFL            (num(1)<<(BITS-1))
 #define LONGMIN         ((long)OVFL)
-#define BIG(x)          (2*(x))
+#define SHORT(x)        (2*(x))
 
 /* Number access */
 #define num(x)          ((word)(x))
@@ -260,7 +261,7 @@ typedef struct catchFrame {
 #define isNil(x)        ((x)==Nil)
 #ifdef __LP64__
 #define isNum(x)        (num(x)&(T_NUM+T_SHORT))
-#define isShort(x)      (num(x)&T_SHORT)
+#define isShort(x)      ((typeTag(x) & ~SIGN)==T_SHORT)
 #define isSym(x)        (typeTag(x)==T_SYM)
 #else
 #define isNum(x)        (num(x)&T_NUM)
@@ -275,8 +276,8 @@ typedef struct catchFrame {
 
 /* Evaluation */
 #ifdef __LP64__
-#define boxFun(f)       (box(num(f)))
-#define unBoxFun(f)     (unDigShort(f))
+#define boxFun(f)       ((any)(num(f) | T_SHORT))
+#define unBoxFun(f)     (num(f) ^ T_SHORT)
 #else
 #define boxFun(f)       (BOX(num(f)))
 #define unBoxFun(f)     (unDigBig(f))
@@ -333,6 +334,7 @@ any apply(any,any,bool,int,cell*);
 void argError(any,any) __attribute__ ((noreturn));
 void atomError(any,any) __attribute__ ((noreturn));
 void begString(void);
+any cvtSigned(any);
 void digMul(any,word);
 void digMul2(any);
 any ADD(any,any);
@@ -347,6 +349,7 @@ int binSize(any);
 adr blk64(any);
 any boxChar(int,int*,any*);
 any boxWord2(word2);
+any shortBoxWord2(word2);
 any brkLoad(any);
 int bufSize(any);
 void bufString(any,char*);
@@ -587,6 +590,7 @@ any doEq1(any);
 any doEqT(any);
 any doEqual(any);
 any doErr(any);
+any doErrno(any);
 any doEval(any);
 any doExec(any);
 any doExt(any);
@@ -845,12 +849,16 @@ any doZero(any);
 
 // bigNum only
 static inline any numPtr(any x) {
-   return (any)(num(x)+T_NUM);
+   return (any)(num(x) | T_NUM);
 }
 
 static inline any numCell(any n) {
    ASSERT(isBig(n));
-   return (any)(num(n)-T_NUM);
+#ifdef __LP64__
+   return (any)(num(n) & ~(SIGN+T_NUM));
+#else
+   return (any)(num(n) & ~T_NUM);
+#endif
 }
 
 static inline word unDigBig(any x) {
@@ -860,7 +868,11 @@ static inline word unDigBig(any x) {
 
 static inline word unDigBigU(any x) {
    ASSERT(isBig(x));
+#ifdef __LP64__
+   return unDigBig(x);
+#else
    return unDigBig(x) / 2;
+#endif
 }
 
 // shortNum
@@ -869,11 +881,15 @@ static inline word unDigShort(any x) {
    return num(x) >> NORMBITS;
 }
 
+static inline word unDigShortU(any x) {
+   ASSERT(isShort(x));
+   return unDigShort(x) / 2;
+}
+
 static inline long unBoxShort(any x) {
    ASSERT(isShort(x));
-   word u = unDigShort(x);
-   long n = u / 2L;
-   return u & 1? -n : n;
+   long n = unDigShortU(x);
+   return unDigShort(x) & 1? -n : n;
 }
 
 static inline any posShort(any x) {
@@ -884,11 +900,6 @@ static inline any posShort(any x) {
 static inline any negShort(any x) {
    ASSERT(isShort(x));
    return (any)(num(x) ^ SIGN);
-}
-
-static inline word unDigShortU(any x) {
-   ASSERT(isShort(x));
-   return unDigShort(x) / 2;
 }
 
 static inline int shortCompare(any x, any y) {
@@ -932,14 +943,8 @@ static inline word negDig(word u) {
 }
 
 static inline word unDigU(any x) {
-   return unDig(x) / 2;
-}
-
-static inline any big(any x) {
    ASSERT(isNum(x));
-   if (shortLike(x))
-      return BOX(unDigShort(x));
-   return x;
+   return shortLike(x)? unDigShortU(x) : unDigBigU(x);
 }
 
 static inline any nextDigBig(any x) {
@@ -964,11 +969,6 @@ static inline int IsZero(any x) {
    return IsZeroBig(x);
 }
 
-static inline int isNeg(any x) {
-   ASSERT(isNum(x));
-   return unDig(x) & 1;
-}
-
 // bigNum only
 static inline any setDig(any x,word v) {
    ASSERT(isBig(x));
@@ -977,53 +977,125 @@ static inline any setDig(any x,word v) {
 }
 
 static inline any pos(any x) {
+#ifdef __LP64__
+   ASSERT(isNum(x));
+   x = (any)(num(x) & ~SIGN);
+#else
    ASSERT(isBig(x));
    car(numCell(x)) = (any)(posDig(unDigBig(x)));
+#endif
    return x;
 }
 
 static inline any neg(any x) {
+#ifdef __LP64__
+   ASSERT(isNum(x));
+   x = (any)(num(x) ^ SIGN);
+#else
    ASSERT(isBig(x));
    car(numCell(x)) = (any)(negDig(unDigBig(x)));
+#endif
+   return x;
+}
+
+static inline int isNeg(any x) {
+   ASSERT(isNum(x));
+#ifdef __LP64__
+   return num(x) & SIGN ? 1 : 0;
+#else
+   return unDig(x) & 1;
+#endif
+}
+
+static inline any big(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x)) {
+#ifdef __LP64__
+      any z = BOX(unDigShortU(x)); 
+      return isNeg(x)? neg(z) : z;
+#else
+      return BOX(unDigShort(x));
+#endif
+   }
+   return x;
+}
+
+static inline any bigLike(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x)) {
+      return BOX(unDigShort(x));
+   }
    return x;
 }
 
 static inline long unBox(any x) {
    ASSERT(isNum(x));
-   word u = unDig(x);
-   long n = u / 2L;
-   return u & 1? -n : n;
+   long n = unDigU(x);
+   return isNeg(x)? -n : n;
 }
 
 // short/bigNum
 static inline any boxLong(long n) {
    any x;
-   cell c1;
+   int sign;
 
+   sign = n<0? 1 : 0;
    if (n == LONGMIN) {
+#ifdef __LP64__
+      return neg(BOX(n));
+#else
+      cell c1;
       Push(c1, BOX(1));
-      x = consNum(0, data(c1));
+      x = consNum(1, data(c1));
       drop(c1);
       return x;
+#endif
    }
-   return box(n>=0?  n*2 : -n*2+1);
+#ifdef __LP64__
+   word u = n>=0? n : -n;
+   if (SHORT(u) < SHORTMAX)
+      return mkShort(SHORT(u) + sign);
+   return x = BOX(u), n<0? neg(x) : x;
+#else
+   return box(n>=0?  SHORT(n) : SHORT(-n)+1);
+#endif
 }
 
 static inline any boxWord(word n) {
-   any x;
-   cell c1;
 
-   if (n&(num(1)<<(BITS-1))) {          // MSB set?
+   if (n&OVFL) {                        // MSB set?
+#ifdef __LP64__
+      return BOX(n);
+#else
+      any x;
+      cell c1;
       Push(c1, BOX(1));                 // take MSB alone
-      x = consNum(2*n, data(c1));       // shift n and store
+      x = consNum(BIG(n), data(c1));    // shift n and store
       drop(c1);
       return x;
+#endif
    }
-   return box(2*n);                     // shift n and box
+#ifdef __LP64__
+   if (SHORT(n) < SHORTMAX)
+      return mkShort(SHORT(n));
+   return BOX(n);
+#else
+   return box(SHORT(n));                // shift n and box
+#endif
 }
 
 // always bigNum
-static inline any boxCnt(long n) { return box(n>=0?  n*2 : -n*2+1); }
+static inline any boxCnt(long n) {
+#ifdef __LP64__
+   // always shortNum
+   word u = n>=0? SHORT(n) : SHORT(-n)+1;
+   if (u >= SHORTMAX)
+      giveup("Small number required");
+   return mkShort(u);
+#else
+   return box(n>=0? SHORT(n) : SHORT(-n)+1);
+#endif
+}
 
 /* List element access */
 static inline any nCdr(int n, any x) {
