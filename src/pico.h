@@ -322,6 +322,7 @@ extern any ApplyArgs, ApplyBody, DbVal, DbTail;
 extern any Nil, DB, Meth, Quote, T;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
+extern any Tstp1, Tstp2;
 extern bool Break;
 extern sig_atomic_t Signal[NSIG];
 
@@ -509,6 +510,7 @@ any doBoxQ(any);
 any doBreak(any);
 any doBy(any);
 any doBye(any) __attribute__ ((noreturn));
+any doByte(any);
 any doBytes(any);
 any doCaaaar(any);
 any doCaaadr(any);
@@ -889,8 +891,8 @@ static inline word unDigShortU(any x) {
 
 static inline long unBoxShort(any x) {
    ASSERT(isShort(x));
-   long n = unDigShortU(x);
-   return unDigShort(x) & 1? -n : n;
+   word u = unDigShort(x);
+   return u & 1? -(long)u : (long)u;
 }
 
 static inline any posShort(any x) {

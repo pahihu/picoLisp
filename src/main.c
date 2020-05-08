@@ -37,6 +37,7 @@ any ApplyArgs, ApplyBody, DbVal, DbTail;
 any Nil, DB, Meth, Quote, T;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
+any Tstp1, Tstp2;
 bool Break;
 sig_atomic_t Signal[NSIG];
 
@@ -119,6 +120,14 @@ void sighandler(any ex) {
          else if (Signal[SIGHUP]) {
             --Signal[0], --Signal[SIGHUP];
             run(val(Hup));
+         }
+         else if (Signal[SIGTSTP]) {
+            --Signal[0], --Signal[SIGTSTP];
+            run(val(Tstp1));
+         }
+         else if (Signal[SIGCONT]) {
+            --Signal[0], --Signal[SIGCONT];
+            run(val(Tstp2));
          }
          else if (Signal[SIGTERM]) {
             for (flg = NO, i = 0; i < Children; ++i)
@@ -286,6 +295,23 @@ any doAdr(any x) {
    if (isNum(x = EVAL(car(x))))
       return (any)(unDig(x) * WORD);
    return box(num(x) / WORD);
+}
+
+// (byte 'num ['cnt]) -> cnt
+any doByte(any ex) {
+  char *a;
+  any x, y;
+
+  x = cdr(ex), y = EVAL(car(x));
+  NeedNum(ex,y);
+  a = (char*)unDigU(y);
+  if (isCell(x = cdr(x))) {
+     y = EVAL(car(x));
+     NeedCnt(ex,y);
+     *a = (byte)unDigU(y);
+     return y;
+  }
+  return boxCnt(*a);
 }
 
 // (env ['lst] | ['sym 'val] ..) -> lst
@@ -1357,6 +1383,8 @@ static void init(int ac, char *av[]) {
    iSignal(SIGALRM, sig);
    iSignal(SIGTERM, sig);
    iSignal(SIGIO, sig);
+   iSignal(SIGTSTP, sig);
+   iSignal(SIGCONT, sig);
    signal(SIGCHLD, sigChld);
    signal(SIGPIPE, SIG_IGN);
    signal(SIGTTIN, SIG_IGN);

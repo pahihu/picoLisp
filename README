@@ -3,7 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
-* added doErrno, doBlk, lib/dbgc.l runs
+* added byte, *Tstp1, *Tstp2
+* added errno, blk, lib/dbgc.l runs
 * passed misc/bigtest
 * pil 64bit target uses the same short/bigNum fmt as pil64, the 32bit target 
   supports shortNums

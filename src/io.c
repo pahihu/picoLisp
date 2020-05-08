@@ -3402,8 +3402,7 @@ any doBlk(any ex) {
    if (cnt) {
       x = cdr(x), y = EVAL(car(x));
       siz = (byte)xCnt(ex,y);
-      x = cdr(x);
-      if (!isNil(x)) {
+      if (isCell(x = cdr(x))) {
          y = EVAL(car(x));
          if ((fd2 = (int)xCnt(ex,y)) < 0 || fd2 >= InFDs || !InFiles[fd2])
             badFd(ex,y);

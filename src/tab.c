@@ -38,6 +38,7 @@ static symInit Symbols[] = {
    {doBreak, "!"},
    {doBy, "by"},
    {doBye, "bye"},
+   {doByte, "byte"},
    {doBytes, "bytes"},
    {doCaaaar, "caaaar"},
    {doCaaadr, "caaadr"},
@@ -422,6 +423,8 @@ void initSymbols(void) {
    Hup    = initSym(Nil, "*Hup");
    Sig1   = initSym(Nil, "*Sig1");
    Sig2   = initSym(Nil, "*Sig2");
+   Tstp1  = initSym(Nil, "*Tstp1");
+   Tstp2  = initSym(Nil, "*Tstp2");
    Up     = initSym(Nil, "^");
    Err    = initSym(Nil, "*Err");
    Msg    = initSym(Nil, "*Msg");
