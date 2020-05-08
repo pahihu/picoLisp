@@ -502,6 +502,7 @@ any doBitAnd(any);
 any doBitOr(any);
 any doBitQ(any);
 any doBitXor(any);
+any doBlk(any);
 any doBool(any);
 any doBox(any);
 any doBoxQ(any);
@@ -1036,51 +1037,35 @@ static inline long unBox(any x) {
 
 // short/bigNum
 static inline any boxLong(long n) {
+#ifdef __LP64__
    any x;
-   int sign;
-
-   sign = n<0? 1 : 0;
-   if (n == LONGMIN) {
-#ifdef __LP64__
+   int sign = n<0? 1 : 0;
+   if (n == LONGMIN)
       return neg(BOX(n));
-#else
-      cell c1;
-      Push(c1, BOX(1));
-      x = consNum(1, data(c1));
-      drop(c1);
-      return x;
-#endif
-   }
-#ifdef __LP64__
-   word u = n>=0? n : -n;
-   if (SHORT(u) < SHORTMAX)
+
+   word u = sign? -n : n;
+   if (SHORT(u) < SHORTMAX) {
       return mkShort(SHORT(u) + sign);
-   return x = BOX(u), n<0? neg(x) : x;
+   }
+   return x = BOX(u), sign? neg(x) : x;
 #else
+   if (n == LONGMIN)
+      return consNum(1, BOX(1));
    return box(n>=0?  SHORT(n) : SHORT(-n)+1);
 #endif
 }
 
 static inline any boxWord(word n) {
-
-   if (n&OVFL) {                        // MSB set?
 #ifdef __LP64__
+   if (n&OVFL)
       return BOX(n);
-#else
-      any x;
-      cell c1;
-      Push(c1, BOX(1));                 // take MSB alone
-      x = consNum(BIG(n), data(c1));    // shift n and store
-      drop(c1);
-      return x;
-#endif
-   }
-#ifdef __LP64__
    if (SHORT(n) < SHORTMAX)
       return mkShort(SHORT(n));
    return BOX(n);
 #else
-   return box(SHORT(n));                // shift n and box
+   if (n&OVFL)
+      return consNum(BIG(n), BOX(1));
+   return box(SHORT(n));
 #endif
 }
 

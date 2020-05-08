@@ -31,6 +31,7 @@ static symInit Symbols[] = {
    {doBitOr, "|"},
    {doBitQ, "bit?"},
    {doBitXor, "x|"},
+   {doBlk, "blk"},
    {doBool, "bool"},
    {doBox, "box"},
    {doBoxQ, "box?"},

@@ -17,6 +17,7 @@ static bool Sync;
 static pid_t Talking;
 static byte *PipeBuf, *PipePtr;
 static void (*PutSave)(int);
+static void rdvp(any,any);
 static byte TBuf[] = {INTERN+4, 'T'};
 
 static void openErr(any ex, char *s) {err(ex, NULL, "%s open: %s", s, strerror(errno));}
@@ -3236,11 +3237,13 @@ any doPool(any ex) {
    if (!isNil(data(c1))) {
       x = data(c2);
       Files = length(x) ?: 1;
+      Files++; // structure for doBlk
       BlkShift = alloc(BlkShift, Files * sizeof(int));
       BlkFile = alloc(BlkFile, Files * sizeof(int));
       BlkSize = alloc(BlkSize, Files * sizeof(int));
       Fluse = alloc(Fluse, Files * sizeof(int));
       Locks = alloc(Locks, Files),  memset(Locks, 0, Files);
+      Files--;
       MaxBlkSize = 0;
       for (F = 0; F < Files; ++F) {
          char nm[pathSize(data(c1)) + 8];
@@ -3380,6 +3383,72 @@ any doId(any ex) {
    return Pop(c1);
 }
 
+// (blk 'fd 'cnt 'siz ['fd2]) ->lst
+// (blk 'fd 0) -> (cnt . siz)
+any doBlk(any ex) {
+   int fd, fd2;
+   adr cnt;
+   byte siz;
+   any x, y, lst;
+   cell c1;
+
+   fd2 = 0;
+   x = cdr(ex),  y = EVAL(car(x));
+   if ((fd = (int)xCnt(ex,y)) < 0 || fd >= InFDs || !InFiles[fd])
+      badFd(ex,y);
+   fd = InFiles[fd]->fd;
+   x = cdr(x), y = EVAL(car(x));
+   cnt = (adr)xCnt(ex,y);
+   if (cnt) {
+      x = cdr(x), y = EVAL(car(x));
+      siz = (byte)xCnt(ex,y);
+      x = cdr(x);
+      if (!isNil(x)) {
+         y = EVAL(car(x));
+         if ((fd2 = (int)xCnt(ex,y)) < 0 || fd2 >= InFDs || !InFiles[fd2])
+            badFd(ex,y);
+         fd2 = InFiles[fd2]->fd;
+      }
+   }
+   F = Files; Files++; // use doBlk entry
+   BlkFile[F] = fd; Fluse[F] = -1; Locks[F] = 0;
+   if (Marks)
+      Marks[F] = 0, Mark[F] = 0;
+
+   if (fd2)
+      lockFile(fd2, F_SETLK, F_RDLCK);
+   lst = Nil;
+   if (!cnt) {
+      byte buf[2*BLK+1];
+      adr next;
+
+      blkPeek(0, buf, 2*BLK+1);
+      siz = (int)buf[2*BLK]; // Get block shift
+      next = getAdr(buf+BLK);  // Get Next
+      lst = cons(boxWord2(next / BLKSIZE), boxCnt(siz));
+   }
+   else {
+      BlkSize[F] = BLKSIZE << (BlkShift[F] = siz);
+      if (BlkSize[F] > MaxBlkSize) {
+         MaxBlkSize = BlkSize[F];
+         Block = alloc(Block, MaxBlkSize);
+         IniBlk = alloc(IniBlk, MaxBlkSize);
+         memset(IniBlk, 0, MaxBlkSize);
+      }
+      rdBlock(cnt*BLKSIZE);
+      if ((Block[0] & TAGMASK) == 1) {
+         Push(c1, consSym(Nil,Nil));
+         rdvp(data(c1),Nil);
+         lst = cons(val(data(c1)),tail1(data(c1)));
+         drop(c1);
+      }
+   }
+   if (fd2)
+      lockFile(fd2, F_SETLK, F_UNLCK);
+   Files--; // release doBlk entry
+   return lst;
+}
+
 // (seq 'cnt|sym1) -> sym | NIL
 any doSeq(any ex) {
    any x;
@@ -3454,6 +3523,24 @@ int dbSize(any ex, any x) {
    return n;
 }
 
+/* Read value and props of external sym in current block */
+static void rdvp(any s, any x) {
+   any y;
+
+   getBin = getBlock;
+   val(s) = binRead(0);
+   if (!isNil(y = binRead(0))) {
+      tail(s) = ext(x = cons(y,x));
+      if ((y = binRead(0)) != T)
+         car(x) = cons(y,car(x));
+      while (!isNil(y = binRead(0))) {
+         cdr(x) = cons(y,cdr(x));
+         if ((y = binRead(0)) != T)
+            cadr(x) = cons(y,cadr(x));
+         x = cdr(x);
+      }
+   }
+}
 
 void db(any ex, any s, int a) {
    any x, y, *p;
@@ -3496,6 +3583,8 @@ void db(any ex, any s, int a) {
                if ((Block[0] & TAGMASK) != 1)
                   err(ex, s, "Bad ID");
                *p  =  a == 1? At : At2;  // loaded : dirty
+               rdvp(s,x);
+/*
                getBin = getBlock;
                val(s) = binRead(0);
                if (!isNil(y = binRead(0))) {
@@ -3509,6 +3598,7 @@ void db(any ex, any s, int a) {
                      x = cdr(x);
                   }
                }
+*/
                rwUnlock(1);
             }
             else {
@@ -3734,10 +3824,12 @@ any doMark(any ex) {
    if (F >= Files)
       dbfErr(ex);
    if (!Marks) {
+      Files++; // doBlk entry
       Marks = alloc(Marks, Files * sizeof(adr));
       memset(Marks, 0, Files * sizeof(adr));
       Mark = alloc(Mark, Files * sizeof(byte*));
       memset(Mark, 0, Files * sizeof(byte*));
+      Files--;
    }
    b = 1 << (n & 7);
    if ((n >>= 3) >= Marks[F]) {
