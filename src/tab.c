@@ -242,6 +242,7 @@ static symInit Symbols[] = {
    {doNond, "nond"},
    {doNor, "nor"},
    {doNot, "not"},
+   {doNsp, "nsp"},
    {doNth, "nth"},
    {doNumQ, "num?"},
    {doOff, "off"},
@@ -265,6 +266,7 @@ static symInit Symbols[] = {
    {doPlace, "place"},
    {doPoll, "poll"},
    {doPool, "pool"},
+   {doPool2, "pool2"},
    {doPop, "pop"},
    {doPopq, "++"},
    {doPort, "port"},
@@ -336,6 +338,7 @@ static symInit Symbols[] = {
    {doSuper, "super"},
    {doSwap, "swap"},
    {doSym, "sym"},
+   {doSymbols, "symbols"},
    {doSymQ, "sym?"},
    {doSync, "sync"},
    {doSys, "sys"},
@@ -377,10 +380,13 @@ static symInit Symbols[] = {
    {doZero, "zero"},
 };
 
+static any *IniIntern;
+
 static any initSym(any v, char *s) {
    any x, *h;
 
-   h = Intern + ihash(x = mkName(s));
+   h = IniIntern + ihash(x = mkName(s));
+   ASSERT(isSym(car(*h)));
    x = consSym(v,x);
    *h = cons(x,*h);
    return x;
@@ -388,15 +394,27 @@ static any initSym(any v, char *s) {
 
 void initSymbols(void) {
    int i;
+   any Pico;
 
-   Nil = symPtr(Avail),  Avail = Avail->car->car;  // Allocate 2 cells for NIL
+   PicoNil = Nil = symPtr(Avail),  Avail = Avail->car->car;  // Allocate 2 cells for NIL
    val(Nil) = tail(Nil) = val(Nil+1) = tail(Nil+1) = Nil;
    Zero = box(0);
    One = boxCnt(1);
+   TNsp = BOX(1383865);
+// XXX fprintf(stderr,"*** TNsp = %p\n",TNsp);
+   TCo7 = BOX(1369447);
    for (i = 0; i < IHASH; ++i)
-      Intern[i] = Transient[i] = Nil;
+      Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)
       Extern[i] = Nil;
+
+   // construct initial namespace
+   // set initial hash tab to value of pico ns
+   IniIntern = ptrNsp(Pico = consNsp());
+   // Env.nsp contains symbols !!!
+   Env.nsp = Pico1 = cons(initSym(Pico,"pico"),Nil); // initial ns lst
+
+   initSym(mkStr(_CPU), "%CPU");
    initSym(mkStr(_OS), "*OS");
    DB    = initSym(Nil, "*DB");
    Meth  = initSym(boxFun(doMeth), "meth");

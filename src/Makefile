@@ -10,19 +10,20 @@ CC = gcc
 # CCLD is the cc (compiler frontend) to use for the link step.
 CCLD = gcc
 GCCLD = gcc
-
-ifeq ($(target),pil32)
-        M32=-m32
-endif
+CPU = $(shell uname -m)
 
 ifeq ($(debug),yes)
-	CC += -g
-	CCLD += -g
+	CC += -g #-fsanitize=address
+	CCLD += -g #-fsanitize=address
 	OPT = -DPICODEBUG=1
         STRIP = :
 else
 	OPT = -O2 -fomit-frame-pointer #-DPICODEBUG=1
         STRIP = strip
+endif
+
+ifeq ($(target),pil32)
+        M32=-m32
 endif
 
 BFLAGS = -pipe \
@@ -72,11 +73,13 @@ else
 ifeq ($(shell uname), Darwin)
 ifeq ($(target), pil32)
 	GCCLD = gcc
+        CPU = i386
 else
 	GCCLD = gcc-mp-8
 endif
 	OS = Darwin
-	BFLAGS += ${M32} -mmacosx-version-min=10.6 -Wno-parentheses
+	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
+		  -Wno-parentheses
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS = -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
@@ -134,7 +137,7 @@ endif
 endif
 endif
 
-BFLAGS += -D_OS='"$(OS)"'
+BFLAGS += -D_OS='"$(OS)"' -D_CPU='"$(CPU)"'
 
 
 #picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)

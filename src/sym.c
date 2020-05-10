@@ -27,23 +27,13 @@ uint32_t ehash(any x) {
    return h % EHASH;
 }
 
-bool hashed(any s, any x) {
-   while (isCell(x)) {
-      if (s == car(x))
-         return YES;
-      x = cdr(x);
-   }
-   return NO;
-}
-
 any findHash(any s, any *p) {
    any x, y, *q, h;
 
    if (isCell(h = *p)) {
       x = s,  y = name(car(h));
-      x = bigLike(x), y = bigLike(y);
-      ASSERT(isBig(x));
-      ASSERT(isBig(y));
+      // x = bigLike(x), y = bigLike(y);
+      // ASSERT(isBig(x) && isBig(y));
       while (unDig(x) == unDig(y)) {
          x = nextDig(x);
          y = nextDig(y);
@@ -51,11 +41,11 @@ any findHash(any s, any *p) {
             return car(h);
          if (!isNum(x) || !isNum(y))
             break;
-         ASSERT(isBig(x));
-         ASSERT(isBig(y));
+         // ASSERT(isBig(x) && isBig(y));
       }
       while (isCell(h = *(q = &cdr(h)))) {
          x = s,  y = name(car(h));
+         // ASSERT(isBig(x) && isBig(y));
          while (unDig(x) == unDig(y)) {
             x = nextDig(x);
             y = nextDig(y);
@@ -63,10 +53,90 @@ any findHash(any s, any *p) {
                *q = cdr(h),  cdr(h) = *p,  *p = h;
                return car(h);
             }
+            if (!isNum(x) || !isNum(y))
+               break;
+            // ASSERT(isBig(x) && isBig(y));
          }
       }
    }
    return NULL;
+}
+
+void checkHashed(any* p) {
+#ifdef PICODEBUG
+   int i;
+
+   for (i = 0; i < IHASH; i++) {
+      any x = p[i];
+      while (isCell(x)) {
+         ASSERT(isSym(car(x)));
+         x = cdr(x);
+      }
+   }
+#endif
+   return;
+}
+
+/* Search first/all namespaces */
+static any searchSym(any s, any *p, any first, any more) {
+   word d;
+   any x, y;
+
+   ASSERT(isSym(first) && isNsp(val(first)));
+   // XXX checkHashed(ptrNsp(val(first)));
+
+   y = findHash(s, p);
+   if (y)
+      return y;
+   if (isNil(more))
+      return NULL;
+
+   d = p - ptrNsp(val(first));
+   ASSERT(d < IHASH);
+   do {
+      x = car(more);
+      ASSERT(isSym(x) && isNsp(val(x)));
+      // XXX checkHashed(ptrNsp(val(x)));
+      p = ptrNsp(val(x)) + d;
+      y = findHash(s, p);
+      if (y)
+         return y;
+   } while (isCell(more = cdr(more)));
+   return NULL;
+}
+
+any whereHashed(any s, any* p) {
+   word d;
+   any x, y, nsp = Env.nsp;
+
+   nsp = Env.nsp; // search all ns
+   d = p - ptrNsp(val(car(nsp))); // calc. offset
+   do {
+      y = car(nsp);
+      ASSERT(isSym(y) && isNsp(val(y)));
+      p = ptrNsp(val(y)) + d;
+      x = *p;
+
+      // XXX checkHashed(ptrNsp(val(y)));
+
+      while (isCell(x)) {
+         ASSERT(isSym(car(x)));
+         if (s == car(x))
+            return y;
+         x = cdr(x);
+      }
+
+   } while (isCell(nsp = cdr(nsp)));
+   return Nil;
+}
+
+bool hashed(any s, any* p) {
+   return isNil(whereHashed(s,p))? NO : YES;
+}
+
+/* Search all namespaces */
+any findSym(any s, any *p) {
+   return searchSym(s, p, car(Env.nsp), cdr(Env.nsp));
 }
 
 void unintern(any s, any *p) {
@@ -75,6 +145,7 @@ void unintern(any s, any *p) {
    while (isCell(x = *p)) {
       if (s == car(x)) {
          *p = cdr(x);
+         ASSERT(isSym(car(*p)));
          return;
       }
       p = &x->cdr;
@@ -83,9 +154,12 @@ void unintern(any s, any *p) {
 
 /* Get symbol name */
 any name(any s) {
+   any x;
    ASSERT(isSym(s));
-   for (s = tail1(s); isCell(s); s = cdr(s));
-   return s;
+   for (x = tail1(s); isCell(x); x = cdr(x))
+      ;
+   ASSERT(isNil(x) || isNum(x));
+   return x;
 }
 
 // (name 'sym ['sym2]) -> sym
@@ -100,7 +174,7 @@ any doName(any ex) {
    if (!isCell(x = cdr(x)))
       return isNum(y)? consStr(y) : Nil;
    n = ihash(y);
-   if (isNil(data(c1)) || isExt(data(c1)) || hashed(data(c1), Intern[n]))
+   if (isNil(data(c1)) || isExt(data(c1)) || hashed(data(c1), Intern+n))
       err(ex, data(c1), "Can't rename");
    Save(c1);
    x = EVAL(car(x));
@@ -109,6 +183,16 @@ any doName(any ex) {
    for (p = &tail(data(c1)); isCell(*p); p = &cdr(*p));
    *p = name(x);
    return Pop(c1);
+}
+
+// (nsp 'sym) -> sym
+any doNsp(any ex) {
+   any x, y;
+
+   x = cdr(ex), x = EVAL(car(x));
+   NeedSym(ex,x);
+   y = name(x);
+   return whereHashed(x,Intern+ihash(y));
 }
 
 /* Find or create single-char symbol */
@@ -144,6 +228,7 @@ any mkName(char *s) {
    return Pop(c1);
 }
 
+/*
 any intern(char *s) {
    any nm, x, *h;
 
@@ -155,6 +240,7 @@ any intern(char *s) {
    *h = cons(x = consStr(nm), *h);
    return x;
 }
+*/
 
 /* Make string */
 any mkStr(char *s) {return s && *s? consStr(mkName(s)) : Nil;}
@@ -206,19 +292,35 @@ any doGetd(any x) {
       val(x) : Nil;
 }
 
-// (all ['T | '0]) -> lst
-any doAll(any x) {
-   any *p;
+// (all ['T | '0 | 'sym]) -> lst
+any doAll(any ex) {
+   any x, *p;
    int mod, i;
    cell c1;
 
-   x = cdr(x),  x = EVAL(car(x));
-   if isNil(x)
-      p = Intern,  mod = IHASH;
+   x = cdr(ex),  x = EVAL(car(x));
+   if (isNil(x)) {
+      any y = Env.nsp;
+      Push(c1, Nil);
+      do {
+         p = ptrNsp(val(car(y)));
+         for (i = 0; i < IHASH; ++i)
+            for (x = p[i]; isCell(x); x = cdr(x))
+               data(c1) = cons(car(x), data(c1));
+      } while (isCell(y = cdr(y)));
+      return Pop(c1);
+   }
    else if (x == T)
       p = Transient,  mod = IHASH;
-   else
+   else if (x == Zero)
       p = Extern,  mod = EHASH;
+   else if (isSym(x)) {
+      if (!isNsp(val(x)))
+         symNsError(ex,x);
+      p = ptrNsp(val(x)), mod = IHASH;
+   }
+   else
+      p = Intern, mod = IHASH;
    Push(c1, Nil);
    for (i = 0; i < mod; ++i)
       for (x = p[i]; isCell(x); x = cdr(x))
@@ -226,9 +328,51 @@ any doAll(any x) {
    return Pop(c1);
 }
 
-// (intern 'sym) -> sym
+// (symbols) -> lst
+// (symbols 'lst) -> lst
+// (symbols 'lst . prg) -> any
+// (symbols 'sym1 'sym2 ...) -> lst
+any doSymbols(any ex) {
+   any x, y;
+   cell c1, c2;
+
+   if (isNil(x = cdr(ex)))
+      return Env.nsp;
+   y = EVAL(car(x));
+   if (isCell(y)) { // 'lst [. prg]
+      x = cdr(x);
+      if (isNil(x))
+         return x = Env.nsp, Env.nsp = y, x;
+      Push(c1, Env.nsp);
+      Env.nsp = y;
+      x = prog(x);
+      Env.nsp = data(c1);
+      drop(c1);
+      return x;
+   }
+   NeedSym(ex,y); // 'sym1 'sym2 ...
+   Push(c1, y);
+   if (isNil(val(data(c1))))
+      val(data(c1)) = consNsp();
+   else if (!isNsp(val(data(c1))))
+      symNsError(ex,y);
+   data(c1) = y = cons(data(c1),Nil);
+   while (isCell(x = cdr(x))) {
+      Push(c2, EVAL(car(x)));
+      NeedSym(ex,data(c2));
+      if (isNil(val(data(c2))) || !isNsp(val(data(c2))))
+         symNsError(ex,data(c2));
+      y = (cdr(y) = cons(data(c2),Nil));
+      drop(c2);
+   }
+   x = Env.nsp, Env.nsp = data(c1);
+   drop(c1);
+   return x;
+}
+
+// (intern 'sym ['flg]) -> sym
 any doIntern(any ex) {
-   any x, y, z, *h;
+   any x, y, z, *h, flg;
 
    x = cdr(ex),  x = EVAL(car(x));
    NeedSym(ex,x);
@@ -236,8 +380,15 @@ any doIntern(any ex) {
       return Nil;
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
       return Nil;
-   if (z = findHash(y, h = Intern + ihash(y)))
+   flg = cddr(ex);
+   if (!isNil(flg))
+      flg = EVAL(car(flg));
+// XXX outString("*** intern "); flushAll(); print1(x); newline();
+   if (z = searchSym(y, h = Intern + ihash(y),
+                        car(Env.nsp),
+                        isNil(flg) ? cdr(Env.nsp) : Nil))
       return z;
+   ASSERT(isSym(car(*h)));
    *h = cons(x,*h);
    return x;
 }
@@ -294,7 +445,7 @@ any doBoxQ(any x) {
 any doStrQ(any x) {
    x = cdr(x);
    return isSym(x = EVAL(car(x))) &&
-         !isExt(x) && !hashed(x, Intern[ihash(name(x))])? x : Nil;
+         !isExt(x) && !hashed(x, Intern+ihash(name(x)))? x : Nil;
 }
 
 // (ext? 'any) -> sym | NIL

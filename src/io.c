@@ -270,17 +270,23 @@ static any rdNum(int cnt) {
    if (--cnt == 62) {
       do {
          do {
-            if ((n = getBin()) < 0)
+            if ((n = getBin()) < 0) {
+               drop(c1);
                return NULL;
+            }
             byteSym(n, &i, &x);
          } while (--cnt);
-         if ((cnt = getBin()) < 0)
+         if ((cnt = getBin()) < 0) {
+            drop(c1);
             return NULL;
+         }
       } while (cnt == 255);
    }
    while (--cnt >= 0) {
-      if ((n = getBin()) < 0)
+      if ((n = getBin()) < 0) {
+         drop(c1);
          return NULL;
+      }
       byteSym(n, &i, &x);
    }
    return Pop(c1);
@@ -338,10 +344,13 @@ any binRead(int extn) {
       *h = cons(x,*h);
       return x;
    }
-   if (x = findHash(y, h = Intern + ihash(y)))
+   if (x = findSym(y, h = Intern + ihash(y)))
       return x;
+   ASSERT(isSym(car(*h)));
+// XXX checkHashed(Intern);
    x = consSym(Nil,y);
    *h = cons(x,*h);
+// XXX checkHashed(Intern);
    return x;
 }
 
@@ -483,7 +492,7 @@ void binPrint(int extn, any x) {
       if (!isNum(y = name(x)))
          binPrint(extn, y);
       else if (!isExt(x))
-         prNum(hashed(x, Intern[ihash(y)])? INTERN : TRANSIENT, y);
+         prNum(hashed(x, Intern+ihash(y))? INTERN : TRANSIENT, y);
       else
          prNum(EXTERN, extn? extOffs(-extn, y) : y);
    }
@@ -1234,28 +1243,63 @@ static any anonymous(any s) {
 /* Read an atom */
 static any rdAtom(int c) {
    int i;
-   any x, y, *h;
-   cell c1;
+   any x, y, *h, ret;
+   cell c1, c2;
 
+   Push(c2, Env.nsp);
    i = 0,  Push(c1, y = BOX(c));
-   while (Chr > 0 && !strchr(Delim, Chr)) {
-      if (Chr == '\\')
-         Env.get();
-      byteSym(Chr, &i, &y);
+   while (Chr > 0) {
+      if (Chr == '~') {
+         y = Pop(c1);
+         x = findSym(y, h = Intern + ihash(y));
+         if (!x) {
+            ASSERT(isSym(car(*h)));
+            // XXX checkHashed(Intern);
+            x = consSym(Nil,y);
+            *h = cons(x,*h);
+            // XXX checkHashed(Intern);
+         }
+         if (!isNsp(val(x))) {
+            while (!eol()) Env.get(); // ??? how to terminate input?
+            symNsError(Nil,x);
+         }
+// XXX outString("*** ns "); flushAll(); print1(x); newline();
+         Env.nsp = cons(x,Nil); // switch ns
+         i = -1, Push(c1, y = BOX(0));
+      }
+      else {
+         if (strchr(Delim, Chr))
+            break;
+         if (Chr == '\\')
+            Env.get();
+         if (i < 0)
+            setDig(y, Chr), i = 0;
+         else
+            byteSym(Chr, &i, &y);
+      }
       Env.get();
    }
+   ret = Nil;
    y = Pop(c1);
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
-      return Nil;
-   if (x = symToNum(y, (int)unDigU(val(Scl)), '.', 0))
-      return x;
-   if (x = anonymous(y))
-      return x;
-   if (x = findHash(y, h = Intern + ihash(y)))
-      return x;
-   x = consSym(Nil,y);
-   *h = cons(x,*h);
-   return x;
+      ret = Nil;
+   else if (x = symToNum(y, (int)unDigU(val(Scl)), '.', 0))
+      ret = x;
+   else if (x = anonymous(y))
+      ret = x;
+   else if (x = findSym(y, h = Intern + ihash(y)))
+      ret = x;
+   else {
+      ASSERT(isSym(car(*h)));
+      // XXX checkHashed(Intern);
+      x = consSym(Nil,y);
+      *h = cons(x,*h);
+      // XXX checkHashed(Intern);
+      ret = x;
+   }
+   Env.nsp = data(c2);
+   drop(c2);
+   return ret;
 }
 
 /* Read a list */
@@ -1469,10 +1513,13 @@ any token(any x, int c) {
          y = Pop(c1);
          if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
             return Nil;
-         if (x = findHash(y, h = Intern + ihash(y)))
+         if (x = findSym(y, h = Intern + ihash(y)))
             return x;
+         ASSERT(isSym(car(*h)));
+         // XXX checkHashed(Intern);
          x = consSym(Nil,y);
          *h = cons(x,*h);
+         // XXX checkHashed(Intern);
          return x;
       }
    }
@@ -2591,7 +2638,7 @@ void print1(any x) {
          Env.put('$'),  outWord(num(x)/sizeof(cell));
       else if (isExt(x))
          Env.put('{'),  outSym(c),  Env.put('}');
-      else if (hashed(x, Intern[ihash(y)])) {
+      else if (hashed(x, Intern+ihash(y))) {
          if (unDig(y) == '.')
             Env.put('\\'),  Env.put('.');
          else {
@@ -2799,8 +2846,10 @@ any doRd(any x) {
          return Nil;
       i = 0,  Push(c1, x = BOX(n));
       while (++cnt) {
-         if ((n = getBinary()) < 0)
+         if ((n = getBinary()) < 0) {
+            drop(c1);
             return Nil;
+         }
          byteSym(n, &i, &x);
       }
       zapZero(data(c1));
@@ -2812,8 +2861,10 @@ any doRd(any x) {
          return Nil;
       i = 0,  Push(c1, x = BOX(BIG(n)));
       while (--cnt) {
-         if ((n = getBinary()) < 0)
+         if ((n = getBinary()) < 0) {
+            drop(c1);
             return Nil;
+         }
          digMul(data(c1), 256);
          setDig(data(c1), unDigBig(data(c1)) | BIG(n));
       }
@@ -3237,9 +3288,10 @@ any doPool(any ex) {
    if (!isNil(data(c1))) {
       x = data(c2);
       Files = length(x) ?: 1;
-      Files++; // structure for doBlk
+      Files++; // entry for doBlk
       BlkShift = alloc(BlkShift, Files * sizeof(int));
-      BlkFile = alloc(BlkFile, Files * sizeof(int));
+      // #Files entry for doPool2
+      BlkFile = alloc(BlkFile, (2*Files-1) * sizeof(int));
       BlkSize = alloc(BlkSize, Files * sizeof(int));
       Fluse = alloc(Fluse, Files * sizeof(int));
       Locks = alloc(Locks, Files),  memset(Locks, 0, Files);
@@ -3309,6 +3361,34 @@ any doPool(any ex) {
    }
    drop(c1);
    return T;
+}
+
+// (pool2 'sym . prg) -> any
+any doPool2(any ex) {
+   any x;
+   cell c1;
+   FILE *savJnl = NULL, *savLog = NULL;
+
+   x = cdr(ex),  Push(c1, evSym(x));  // db
+   BlkFile += Files, savJnl = Jnl, savLog = Log, Jnl = Log = NULL;
+   for (F = 0; F < Files; ++F) {
+      char nm[pathSize(data(c1)) + 8];
+
+      pathString(data(c1), nm);
+      if (F > 1)
+         sprintf(nm + strlen(nm), "%d", F+1);
+      if ((BlkFile[F] = open(nm, O_RDWR)) < 0) {
+         BlkFile -= Files, Jnl = savJnl, Log = savLog;
+         openErr(ex, nm);
+      }
+      closeOnExec(ex, BlkFile[F]);
+   }
+   x = prog(cdr(x));
+   for (F = 0; F < Files; ++F)
+      close(BlkFile[F]);
+   BlkFile -= Files, Jnl = savJnl, Log = savLog;
+   drop(c1);
+   return x;
 }
 
 // (journal 'any ..) -> T

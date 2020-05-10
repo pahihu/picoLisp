@@ -50,6 +50,7 @@ void myAssert(int,const char*,const char*,int);
 #define BITS32 ((int)32)
 #define MASK ((word)-1)
 #define CELLS (1024*1024/sizeof(cell)) // Heap allocation unit 1MB
+// #define CELLS (32*1024/sizeof(cell)) // GC stress: Heap allocation unit 32KB
 #define IHASH 4999                     // Internal hash table size (should be prime)
 #define EHASH 49999                    // External hash table size (should be prime)
 #define TOP 0x110000                   // Character Top
@@ -147,6 +148,7 @@ typedef struct stkEnv {
    bindFrame *bind;
    int next, protect, trace;
    any cls, key, task, *make, *yoke;
+   any nsp; // list of ns
    inFrame *inFrames;
    outFrame *outFrames;
    errFrame *errFrames;
@@ -210,7 +212,7 @@ typedef struct catchFrame {
 #define symPtr(x)       ((any)&(x)->cdr)
 #define val(x)          ((x)->car)
 #define tail(s)         (((s)-1)->cdr)
-#define tail1(s)        ((any)(num(tail(s)) & ~1))
+#define tail1(s)        ((any)(num(tail(s)) & ~num(1)))
 #define Tail(s,v)       (tail(s) = (any)(num(v) | num(tail(s)) & 1))
 #define ext(x)          ((any)(num(x) | 1))
 #define mkExt(s)        (*(word*)&tail(s) |= 1)
@@ -249,6 +251,8 @@ typedef struct catchFrame {
 
 #define data(c)         ((c).car)
 #define Save(c)         ((c).cdr=Env.stack, Env.stack=&(c))
+// #define Save(c)         ((c).cdr=Env.stack, Env.stack=CHK(&(c)))
+// #define drop(c)         (Env.stack=(c).cdr, (c).cdr=(any)0xdeadc0de)
 #define drop(c)         (Env.stack=(c).cdr)
 #define Push(c,x)       (data(c)=(x), Save(c))
 #define Tuck(c1,c2,x)   (data(c1)=(x), (c1).cdr=(c2).cdr, (c2).cdr=&(c1))
@@ -273,6 +277,7 @@ typedef struct catchFrame {
 #define shortLike(x)    (num(x)&T_SHORT)
 #define symLike(x)      (num(x)&T_SYM)
 #define isBig(x)        (isNum(x)&&!shortLike(x))
+#define isNsp(x)        (isCell(x)&&(TNsp==car(x))&&isNum(cdr(x)))
 
 /* Evaluation */
 #ifdef __LP64__
@@ -316,10 +321,10 @@ extern outFile *OutFile, **OutFiles;
 extern int (*getBin)(void);
 extern void (*putBin)(int);
 extern any TheKey, TheCls, Thrown;
-extern any Alarm, Sigio, Line, Zero, One;
-extern any Intern[IHASH], Transient[IHASH], Extern[EHASH];
+extern any Alarm, Sigio, Line, Zero, One, Pico1;
+extern any Transient[IHASH], Extern[EHASH];
 extern any ApplyArgs, ApplyBody, DbVal, DbTail;
-extern any Nil, DB, Meth, Quote, T;
+extern any PicoNil, Nil, DB, Meth, Quote, T;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern any Tstp1, Tstp2;
@@ -328,6 +333,9 @@ extern sig_atomic_t Signal[NSIG];
 
 static const word ShortOne = ((2*num(1))<<NORMBITS);
 static const word ShortMax = (~num(2*NORM+1));
+// static const word TNsp = ((2*1383865)<<NORMBITS)+T_SHORTNUM+1;
+// static const word TCo7 = ((2*1369447)<<NORMBITS)+T_SHORTNUM+1;
+extern any TNsp, TCo7;
 
 /* Prototypes */
 void *alloc(void*,size_t);
@@ -368,6 +376,7 @@ any cons(any,any);
 any consNum(word,any);
 any consStr(any);
 any consSym(any,any);
+any consNsp(void);
 void newline(void);
 void ctOpen(any,any,ctlFrame*);
 void db(any,any,int);
@@ -391,6 +400,8 @@ void execError(char*) __attribute__ ((noreturn));
 void extError(any,any) __attribute__ ((noreturn));
 any extOffs(int,any);
 any findHash(any,any*);
+void checkHashed(any*);
+any findSym(any,any*);
 int firstByte(any);
 bool flush(outFile*);
 void flushAll(void);
@@ -400,7 +411,7 @@ any get(any,any);
 int getChar(void);
 void getStdin(void);
 void giveup(char*) __attribute__ ((noreturn));
-bool hashed(any,any);
+bool hashed(any,any*);
 void heapAlloc(void);
 any idx(any,any,int);
 uint32_t ihash(any);
@@ -466,6 +477,7 @@ bool subStr(any,any);
 int symByte(any);
 int symChar(any);
 void symError(any,any) __attribute__ ((noreturn));
+void symNsError(any,any) __attribute__ ((noreturn));
 any symToNum(any,int,int,int);
 word2 unBoxWord2(any);
 void undefined(any,any);
@@ -715,6 +727,7 @@ any doNil(any);
 any doNond(any);
 any doNor(any);
 any doNot(any);
+any doNsp(any);
 any doNth(any);
 any doNumQ(any);
 any doOff(any);
@@ -738,6 +751,7 @@ any doPipe(any);
 any doPlace(any);
 any doPoll(any);
 any doPool(any);
+any doPool2(any);
 any doPop(any);
 any doPopq(any);
 any doPort(any);
@@ -810,6 +824,7 @@ any doSum(any);
 any doSuper(any);
 any doSwap(any);
 any doSym(any);
+any doSymbols(any);
 any doSymQ(any);
 any doSync(any);
 any doSys(any);
@@ -849,6 +864,18 @@ any doXor(any);
 any doYoke(any);
 any doZap(any);
 any doZero(any);
+
+static inline any CHK(any x) {
+  int t = 0;
+  any y = car(x);
+
+  if (isBig(y)) t++;
+  if (isShort(y)) t++;
+  if (isSym(y)) t++;
+  if (isCell(y)) t++;
+  ASSERT(t == 1);
+  return x;
+}
 
 // bigNum only
 static inline any numPtr(any x) {
@@ -1082,6 +1109,31 @@ static inline any boxCnt(long n) {
 #else
    return box(n>=0? SHORT(n) : SHORT(-n)+1);
 #endif
+}
+
+/* Namespace hash table ptr */
+static inline any* ptrNsp(any x) {
+   ASSERT(isNsp(x));
+
+   return (any*)(unDig(cdr(x)));
+}
+
+/* Global Intern[] table */
+static inline any* InternTab(void) {
+   ASSERT(isCell(Env.nsp) && isSym(car(Env.nsp)));
+
+   return ptrNsp(val(car(Env.nsp)));
+}
+
+#define Intern  (InternTab())
+
+/* Free typed cell */
+static inline void FreeTyped(any p) {
+   if (isNsp(p)) {
+fprintf(stderr,"*** free %p=(%p,%p)\n",p,car(p),cdr(p));
+      free(ptrNsp(p));
+   }
+   Free(p);
 }
 
 /* List element access */

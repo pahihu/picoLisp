@@ -1776,8 +1776,10 @@ any doSort(any ex) {
    Save(out[0]);
    x = cdr(x),  Push(foo, EVAL(car(x)));
    Push(out[1], Nil);
-   Save(in[0]);
-   Save(in[1]);
+   // Save(in[0]);
+   // Save(in[1]);
+   Push(in[0], Nil);
+   Push(in[1], Nil);
    Push(p, Nil);
    Push(last[1], Nil);
    do {

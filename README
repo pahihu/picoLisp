@@ -3,6 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
+* added nsp, pico, symbols, %CPU, modified all, intern
+* added pool2
 * added byte, *Tstp1, *Tstp2
 * added errno, blk, lib/dbgc.l runs
 * passed misc/bigtest
@@ -20,7 +22,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 6 / 5 / 2020
+pahihu 9 / 5 / 2020
 
 
 

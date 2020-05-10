@@ -727,20 +727,29 @@ any symToNum(any s, int scl, int sep, int ign) {
 }
 
 #ifdef __LP64__
-#define NINES ((word)999999999999999999LL)
+#define NINES ((word)999999999999999999ULL)
 #define NUM9S 18
 #else
-#define NINES ((word)999999999)
+#define NINES ((word)999999999UL)
 #define NUM9S  9
 #endif
 
 /* Buffer size calculation */
+#ifdef __LP64__
+static inline int numlen(any x) {
+   int n = NUM9S+2;
+   while (isNum(x = nextDig(x)))
+      n += NUM9S+2;
+   return (n + NUM9S-1) / NUM9S;
+}
+#else
 static inline int numlen(any x) {
    int n = NUM9S+1;
    while (isNum(x = nextDig(x)))
       n += NUM9S+1;
    return (n + NUM9S-1) / NUM9S;
 }
+#endif
 
 /* Make symbol from number */
 any numToSym(any x, int scl, int sep, int ign) {
@@ -1670,9 +1679,14 @@ any doSqrt(any ex) {
    if (shortLike(x)) {
       word u = unDigShortU(x);
 #ifdef __LP64__
-      if (BITS - __builtin_clz(u) < 53)
-#endif
+      if (BITS - __builtin_clz(u) < 53) {
+         drop(c1);
+         return boxWord(sqrt(u) + (isNil(y) ? 0.0 : 0.5));
+      }
+#else
+      drop(c1);
       return boxWord(sqrt(u) + (isNil(y) ? 0.0 : 0.5));
+#endif
    }
    x = data(c1) = big(x), y = data(c2) = isNum(y) ? big(y) : y;
 

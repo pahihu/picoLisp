@@ -8,13 +8,19 @@
 static void mark(any x) {
    cell *p;
 
-   if (isShort(x))
+   if (isShort(x)) // short number
       return;
-
    while (num((p = cellPtr(x))->cdr) & 1) {
       *(word*)&cdr(p) &= ~1;
       if (!isNum(x))
          mark(p->car);
+      if (isNsp(x)) { // namespace
+         any *q = ptrNsp(x);
+         int i;
+// fprintf(stderr,"*** mark ns %p\n",q);
+         for (i = 0; i < IHASH; i++)
+            mark(q[i]);
+      }
       x = p->cdr;
       if (isShort(x))
          break;
@@ -27,6 +33,8 @@ void gc(long c) {
    heap *h;
    int i;
 
+// XXX outString("*** gc ***"); flushAll(); newline();
+
    val(DB) = Nil;
    h = Heaps;
    do {
@@ -35,11 +43,14 @@ void gc(long c) {
          *(word*)&cdr(p) |= 1;
       while (--p >= h->cells);
    } while (h = h->next);
+// XXX outString("*** heaps "); flushAll(); outNum(mkShort(2*nheaps)); newline();
    /* Mark */
    mark(Nil+1);
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
+   mark(TNsp), mark(TCo7);
+   mark(Pico1),  mark(Env.nsp); // mark initial/current ns
    for (i = 0; i < IHASH; ++i)
-      mark(Intern[i]),  mark(Transient[i]);
+      mark(Transient[i]);
    mark(ApplyArgs),  mark(ApplyBody);
    for (p = Env.stack; p; p = cdr(p))
       mark(car(p));
@@ -52,6 +63,7 @@ void gc(long c) {
       if (((catchFrame*)p)->tag)
          mark(((catchFrame*)p)->tag);
       mark(((catchFrame*)p)->fin);
+      mark(((catchFrame*)p)->env.nsp); // mark saved ns
    }
    for (i = 0; i < EHASH; ++i)
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
@@ -70,6 +82,7 @@ void gc(long c) {
             *pp = (cell*)(num(p->cdr) & ~1);
          else
             *(word*)(pp = &cdr(p)) &= ~1;
+   *(word*)&cdr(Pico1) &= ~1;
    /* Sweep */
    Avail = NULL;
    h = Heaps;
@@ -78,7 +91,7 @@ void gc(long c) {
          p = h->cells + CELLS-1;
          do
             if (num(p->cdr) & 1)
-               Free(p),  --c;
+               FreeTyped(p),  --c;
          while (--p >= h->cells);
       } while (h = h->next);
       while (c >= 0)
@@ -94,7 +107,7 @@ void gc(long c) {
          p = h->cells + CELLS-1;
          do
             if (num(p->cdr) & 1)
-               Free(p),  --c;
+               FreeTyped(p),  --c;
          while (--p >= h->cells);
          if (c)
             hp = &h->next,  h = h->next;
@@ -125,6 +138,7 @@ any cons(any x, any y) {
       drop(c1);
       p = Avail;
    }
+// XXX if (x == TNsp) fprintf(stderr,"*** cons\n");
    Avail = p->car;
    p->car = x;
    p->cdr = y;
@@ -135,6 +149,7 @@ any cons(any x, any y) {
 any consSym(any v, any x) {
    cell *p;
 
+   ASSERT(isNil(x) || isNum(x));
    if (!(p = Avail)) {
       cell c1, c2;
 
@@ -155,6 +170,7 @@ any consSym(any v, any x) {
 any consStr(any x) {
    cell *p;
 
+   ASSERT(isNum(x));
    if (!(p = Avail)) {
       cell c1;
 
@@ -187,3 +203,17 @@ any consNum(word n, any x) {
    p->cdr = x;
    return numPtr(p);
 }
+
+/* Construct a namespace */
+any consNsp(void) {
+   any x, *p = NULL;
+   int i;
+
+   p = (any*)alloc(p,IHASH*sizeof(any));
+   for (i = 0; i < IHASH; i++)
+      p[i] = Nil;
+   x = cons(TNsp, box(num(p)));
+// XXX fprintf(stderr,"*** consNsp %p=(%p,%p) ptr=%p\n",x,TNsp,cdr(x),p);
+   return x;
+}
+

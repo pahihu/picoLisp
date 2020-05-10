@@ -31,13 +31,14 @@ outFile *OutFile, **OutFiles;
 int (*getBin)(void);
 void (*putBin)(int);
 any TheKey, TheCls, Thrown;
-any Alarm, Sigio, Line, Zero, One;
-any Intern[IHASH], Transient[IHASH], Extern[EHASH];
+any Alarm, Sigio, Line, Zero, One, Pico1;
+any Transient[IHASH], Extern[EHASH];
 any ApplyArgs, ApplyBody, DbVal, DbTail;
-any Nil, DB, Meth, Quote, T;
+any PicoNil, Nil, DB, Meth, Quote, T;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 any Tstp1, Tstp2;
+any TNsp, TCo7;
 bool Break;
 sig_atomic_t Signal[NSIG];
 
@@ -308,7 +309,7 @@ any doByte(any ex) {
   if (isCell(x = cdr(x))) {
      y = EVAL(car(x));
      NeedCnt(ex,y);
-     *a = (byte)unDigU(y);
+     *a = (char)unDigU(y);
      return y;
   }
   return boxCnt(*a);
@@ -678,6 +679,7 @@ void argError(any ex, any x) {err(ex, x, "Bad argument");}
 void numError(any ex, any x) {err(ex, x, "Number expected");}
 void cntError(any ex, any x) {err(ex, x, "Small number expected");}
 void symError(any ex, any x) {err(ex, x, "Symbol expected");}
+void symNsError(any ex, any x) {err(ex, x, "Bad symbol namespace");}
 void extError(any ex, any x) {err(ex, x, "External symbol expected");}
 void pairError(any ex, any x) {err(ex, x, "Cons pair expected");}
 void atomError(any ex, any x) {err(ex, x, "Atom expected");}
@@ -1408,6 +1410,6 @@ void myAssert(int cond,const char *expr,const char *path,int line) {
    char msg[128];
    if (!cond) {
       sprintf(msg,"%s:%d: assertion failed \"%s\"\n",path,line,expr);
-      giveup(msg);
+      flushAll(); giveup(msg);
    }
 }
