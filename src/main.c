@@ -259,6 +259,31 @@ void *alloc(void *p, size_t siz) {
    return p;
 }
 
+/* Allocate aligned memory */
+void *allocAligned(void *p, size_t siz, size_t boundary) {
+#ifdef __LP64__
+   return alloc(p,siz);
+#else
+   char *q, *r;
+
+   q = (char*)alloc(p,siz+1+boundary-1);
+   r = q + 1;
+   r = (char*)(boundary * ((num(r) + boundary - 1) / boundary));
+   *(r - 1) = r - q;
+   return r;
+#endif
+}
+
+/* Free aligned memory */
+void freeAligned(void *p) {
+#ifdef __LP64__
+   free(p);
+#else
+   char *q = p;
+   free(q - *(q - 1));
+#endif
+}
+
 /* Allocate cell heap */
 void heapAlloc(void) {
    heap *h;
@@ -361,13 +386,22 @@ any doEnv(any x) {
    return Pop(c1);
 }
 
-// (up [cnt] sym ['val]) -> any
+// (up [[cnt] sym ['val]]) -> any
 any doUp(any x) {
    any y, *val;
    int cnt, i;
    bindFrame *p;
 
    x = cdr(x);
+   if (!isCell(x)) {
+      for (p = Env.bind;  p;  p = p->link) {
+         if (p->i <= 0) {
+            if (At == p->bnd[0].sym)
+               return p->exe;
+         }
+      }
+      return Nil;
+   }
    if (!isNum(y = car(x)))
       cnt = 1;
    else
@@ -388,6 +422,39 @@ any doUp(any x) {
    if (isCell(x = cdr(x)))
       return *val = EVAL(car(x));
    return *val;
+}
+
+// (trail ['flg]) -> lst
+any doTrail(any x) {
+   int i;
+   bindFrame *p;
+   cell c1;
+   any y;
+
+   x = cdr(x);
+   if (isCell(x))
+      x = EVAL(car(x));
+   Push(c1, Nil);
+   for (p = Env.bind;  p;  p = p->link) {
+      if (p->i <= 0) {
+         for (i = p->cnt;  --i >= 0;) {
+            if (At == p->bnd[i].sym && !i)
+               data(c1) = cons(p->exe, data(c1));
+            else if (!isNil(x)) {
+               data(c1) = cons(p->bnd[i].sym, cons(val(p->bnd[i].sym), data(c1)));
+               val(p->bnd[i].sym) = p->bnd[i].val; // set old val
+            }
+         }
+      }
+   }
+   x = data(c1); // restore values
+   while (isCell(x)) {
+      y = car(x); x = cdr(x);
+      if (isSym(y)) {
+         val(y) = car(x); x = cdr(x);
+      }
+   }
+   return Pop(c1);
 }
 
 // (sys 'any ['any]) -> sym
@@ -760,6 +827,8 @@ any evExpr(any expr, any x) {
    /* XXX struct {any sym; any val;} bnd[length(y)+2]; */
    bindFrame *f = allocFrame(length(y)+2);
 
+   ASSERT(isCell(Env.exe));
+   f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 1; */
    f->i = length(y) + 1;
@@ -910,12 +979,20 @@ static any evList2(any foo, any ex) {
       if (*Signal)
          sighandler(ex);
       if (isNum(foo = val(foo))) {
+         cell c2;
+         Push(c2, Env.exe);
+         Env.exe = ex;
          foo = evSubr(foo,ex);
+         Env.exe = data(c2);
          drop(c1);
          return foo;
       }
       if (isCell(foo)) {
+         cell c2;
+         Push(c2, Env.exe);
+         Env.exe = ex;
          foo = evExpr(foo, cdr(ex));
+         Env.exe = data(c2);
          drop(c1);
          return foo;
       }
@@ -941,10 +1018,22 @@ any evList(any ex) {
          undefined(foo,ex);
       if (*Signal)
          sighandler(ex);
-      if (isNum(foo = val(foo)))
-         return evSubr(foo,ex);
-      if (isCell(foo))
-         return evExpr(foo, cdr(ex));
+      if (isNum(foo = val(foo))) {
+         cell c1;
+         Push(c1, Env.exe);
+         Env.exe = ex;
+         foo = evSubr(foo,ex);
+         Env.exe = Pop(c1);
+         return foo;
+      }
+      if (isCell(foo)) {
+         cell c1;
+         Push(c1, Env.exe);
+         Env.exe = ex;
+         foo = evExpr(foo, cdr(ex));
+         Env.exe = Pop(c1);
+         return foo;
+      }
    }
 }
 
@@ -1376,6 +1465,7 @@ static void init(int ac, char *av[]) {
    Tio = tcgetattr(STDIN_FILENO, &OrgTermio) == 0;
    ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
    ApplyBody = cons(Nil,Nil);
+   Env.exe = Nil;
    sigfillset(&sigs);
    sigprocmask(SIG_UNBLOCK, &sigs, NULL);
    iSignal(SIGHUP, sig);

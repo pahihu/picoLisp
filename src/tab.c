@@ -352,6 +352,7 @@ static symInit Symbols[] = {
    {doTime, "time"},
    {doTouch, "touch"},
    {doTrace, "$"},
+   {doTrail, "trail"},
    {doTrim, "trim"},
    {doTry, "try"},
    {doType, "type"},

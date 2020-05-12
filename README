@@ -3,6 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
+* added trail, modified up, bt now works
+* fixed namespace deallocation in 32bit target
 * added nsp, pico, symbols, %CPU, modified all, intern
 * added pool2
 * added byte, *Tstp1, *Tstp2
@@ -22,7 +24,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 9 / 5 / 2020
+pahihu 12 / 5 / 2020
 
 
 

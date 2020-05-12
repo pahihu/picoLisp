@@ -13,6 +13,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          bindFrame *f = allocFrame(length(x)+2);
 
          f->link = Env.bind,  Env.bind = (bindFrame*)f;
+         f->exe = Env.exe;
          f->i = 0;
          f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
          while (isCell(x)) {
@@ -63,6 +64,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
 
             Env.cls = TheCls,  Env.key = TheKey;
             f->link = Env.bind,  Env.bind = (bindFrame*)f;
+            f->exe = Env.exe;
             f->i = 0;
             f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
             --n, ++p;
@@ -227,6 +229,7 @@ any doMapc(any ex) {
       do
          Push(c[n], EVAL(car(x))), ++n;
       while (isCell(x = cdr(x)));
+
       while (isCell(data(c[0]))) {
          x = apply(ex, data(foo), YES, n, c);
          for (i = 0; i < n; ++i)

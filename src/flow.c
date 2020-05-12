@@ -88,6 +88,7 @@ any doEval(any x) {
       /* XXX struct {any sym; any val;} bnd[length(x)]; */
       bindFrame *f = allocFrame(length(x));
 
+      f->exe = Nil;
       x = cdr(x),  x = EVAL(car(x));
       j = cnt = (int)unBox(y);
       n = f->i = f->cnt = 0;
@@ -153,6 +154,7 @@ any doRun(any x) {
          /* XXX struct {any sym; any val;} bnd[length(x)]; */
          bindFrame *f = allocFrame(length(x));
 
+         f->exe = Nil;
          x = cdr(x),  x = EVAL(car(x));
          j = cnt = (int)unBox(y);
          n = f->i = f->cnt = 0;
@@ -290,6 +292,7 @@ static any evMethod(any o, any expr, any x) {
    /* XXX struct {any sym; any val;} bnd[length(y)+3]; */
    bindFrame *f = allocFrame(length(y)+3);
 
+   f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 2; */
    f->i = length(y) + 1;
@@ -625,6 +628,7 @@ any doWith(any ex) {
    if (isNil(x = EVAL(car(x))))
       return Nil;
    NeedSym(ex,x);
+   f.exe = Nil;
    Bind(This,f),  val(This) = x;
    x = prog(cddr(ex));
    Unbind(f);
@@ -643,6 +647,7 @@ any doBind(any ex) {
    if (isSym(y)) {
       bindFrame f;
 
+      f.exe = Nil;
       Bind(y,f);
       x = prog(cdr(x));
       Unbind(f);
@@ -652,6 +657,7 @@ any doBind(any ex) {
       /* XXX struct {any sym; any val;} bnd[length(y)]; */
       bindFrame *f = allocFrame(length(y));
 
+      f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
@@ -685,6 +691,7 @@ any doJob(any ex) {
    bindFrame *f = allocFrame(length(y));
 
    Push(c1,y);
+   f->exe = Nil;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    f->i = f->cnt = 0;
    while (isCell(y)) {
@@ -711,6 +718,7 @@ any doLet(any x) {
    if (isSym(y = car(x))) {
       bindFrame f;
 
+      f.exe = Nil;
       x = cdr(x),  Bind(y,f),  val(y) = EVAL(car(x));
       x = prog(cdr(x));
       Unbind(f);
@@ -719,6 +727,7 @@ any doLet(any x) {
       /* XXX struct {any sym; any val;} bnd[(length(y)+1)/2]; */
       bindFrame *f = allocFrame((length(y)+1)/2);
 
+      f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
@@ -743,6 +752,7 @@ any doLetQ(any x) {
    x = cdr(x),  y = car(x),  x = cdr(x);
    if (isNil(z = EVAL(car(x))))
       return Nil;
+   f.exe = Nil;
    Bind(y,f),  val(y) = z;
    x = prog(cdr(x));
    Unbind(f);
@@ -758,6 +768,7 @@ any doUse(any x) {
    if (isSym(y = car(x))) {
       bindFrame f;
 
+      f.exe = Nil;
       Bind(y,f);
       x = prog(cdr(x));
       Unbind(f);
@@ -766,6 +777,7 @@ any doUse(any x) {
       /* XXX struct {any sym; any val;} bnd[length(y)]; */
       bindFrame *f = allocFrame(length(y));
 
+      f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
@@ -1193,10 +1205,12 @@ any doFor(any x) {
    cell c1;
    struct {  // bindFrame
       struct bindFrame *link;
+      any exe;
       int i, cnt;
       struct {any sym; any val;} bnd[2];
    } f;
 
+   f.exe = Nil;
    f.link = Env.bind,  Env.bind = (bindFrame*)&f;
    f.i = 0;
    if (!isCell(y = car(x = cdr(x))) || !isCell(cdr(y))) {
@@ -1387,6 +1401,7 @@ any doFinally(any x) {
 static outFrame Out;
 static struct {  // bindFrame
    struct bindFrame *link;
+   any exe;
    int i, cnt;
    struct {any sym; any val;} bnd[3];  // for 'Up', 'Run' and 'At'
 } Brk;
@@ -1394,6 +1409,7 @@ static struct {  // bindFrame
 any brkLoad(any x) {
    if (!Break && isatty(STDIN_FILENO) && isatty(STDOUT_FILENO)) {
       Break = YES;
+      Brk.exe = Nil;
       Brk.cnt = 3;
       Brk.bnd[0].sym = Up,  Brk.bnd[0].val = val(Up),  val(Up) = x;
       Brk.bnd[1].sym = Run,  Brk.bnd[1].val = val(Run),  val(Run) = Nil;

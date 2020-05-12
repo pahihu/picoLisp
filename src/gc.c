@@ -43,6 +43,7 @@ void gc(long c) {
          *(word*)&cdr(p) |= 1;
       while (--p >= h->cells);
    } while (h = h->next);
+
 // XXX outString("*** heaps "); flushAll(); outNum(mkShort(2*nheaps)); newline();
    /* Mark */
    mark(Nil+1);
@@ -52,13 +53,17 @@ void gc(long c) {
    for (i = 0; i < IHASH; ++i)
       mark(Transient[i]);
    mark(ApplyArgs),  mark(ApplyBody);
+   mark(Env.exe);
    for (p = Env.stack; p; p = cdr(p))
       mark(car(p));
-   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
-      for (i = ((bindFrame*)p)->cnt;  --i >= 0;) {
-         mark(((bindFrame*)p)->bnd[i].sym);
-         mark(((bindFrame*)p)->bnd[i].val);
+   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link) {
+      bindFrame *f = (bindFrame*)p;
+      mark(f->exe);
+      for (i = f->cnt;  --i >= 0;) {
+         mark(f->bnd[i].sym);
+         mark(f->bnd[i].val);
       }
+   }
    for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
       if (((catchFrame*)p)->tag)
          mark(((catchFrame*)p)->tag);
@@ -208,11 +213,16 @@ any consNum(word n, any x) {
 any consNsp(void) {
    any x, *p = NULL;
    int i;
+   word u;
 
-   p = (any*)alloc(p,IHASH*sizeof(any));
+   p = (any*)allocAligned(p,IHASH*sizeof(any),1<<NORMBITS);
    for (i = 0; i < IHASH; i++)
       p[i] = Nil;
-   x = cons(TNsp, box(num(p)));
+   u = num(p);
+#ifndef __LP64__
+   u >>= NORMBITS;
+#endif
+   x = cons(TNsp, mkShort(u));
 // XXX fprintf(stderr,"*** consNsp %p=(%p,%p) ptr=%p\n",x,TNsp,cdr(x),p);
    return x;
 }

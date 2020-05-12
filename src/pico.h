@@ -95,6 +95,7 @@ typedef struct symVal {
 
 typedef struct bindFrame {
    struct bindFrame *link;
+   any exe;
    int i, cnt;
    struct {any sym; any val;} bnd[1];
 } bindFrame;
@@ -146,6 +147,7 @@ typedef struct parseFrame {
 typedef struct stkEnv {
    cell *stack, *arg;
    bindFrame *bind;
+   any exe;
    int next, protect, trace;
    any cls, key, task, *make, *yoke;
    any nsp; // list of ns
@@ -277,7 +279,11 @@ typedef struct catchFrame {
 #define shortLike(x)    (num(x)&T_SHORT)
 #define symLike(x)      (num(x)&T_SYM)
 #define isBig(x)        (isNum(x)&&!shortLike(x))
-#define isNsp(x)        (isCell(x)&&(TNsp==car(x))&&isNum(cdr(x)))
+
+// tag of x is known
+#define isNsp(x)        (isCell(x)&&(TNsp==car(x)))
+// tag of x is unknown (ie. cell) when called from FreeTyped()
+#define isNspLike(x)    (isNsp(x)&&isShort(cdr(x)))
 
 /* Evaluation */
 #ifdef __LP64__
@@ -339,6 +345,8 @@ extern any TNsp, TCo7;
 
 /* Prototypes */
 void *alloc(void*,size_t);
+void *allocAligned(void*,size_t,size_t);
+void freeAligned(void*);
 any apply(any,any,bool,int,cell*);
 void argError(any,any) __attribute__ ((noreturn));
 void atomError(any,any) __attribute__ ((noreturn));
@@ -838,6 +846,7 @@ any doTill(any);
 any doTime(any);
 any doTouch(any);
 any doTrace(any);
+any doTrail(any);
 any doTrim(any);
 any doTry(any);
 any doType(any);
@@ -1113,9 +1122,14 @@ static inline any boxCnt(long n) {
 
 /* Namespace hash table ptr */
 static inline any* ptrNsp(any x) {
+   word u;
    ASSERT(isNsp(x));
 
-   return (any*)(unDig(cdr(x)));
+   u = unDigShort(cdr(x));
+#ifndef __LP64__
+   u <<= NORMBITS;
+#endif
+   return (any*)u;
 }
 
 /* Global Intern[] table */
@@ -1129,7 +1143,7 @@ static inline any* InternTab(void) {
 
 /* Free typed cell */
 static inline void FreeTyped(any p) {
-   if (isNsp(p)) {
+   if (isNspLike(p)) {
 fprintf(stderr,"*** free %p=(%p,%p)\n",p,car(p),cdr(p));
       free(ptrNsp(p));
    }
