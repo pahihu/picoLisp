@@ -3,6 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
+* can generate pil21 sources
+* fixed up to return any call, load to preserve namespace, nested Apply
 * fixed 64bit seed/rand to match pil64
 * added destructuring bind in let, fixed trail, modified gc
 * added trail, modified up, bt now works

@@ -2248,8 +2248,12 @@ any doStr(any ex) {
 }
 
 any load(any ex, int pr, any x) {
-   cell c1, c2;
+   cell c0, c1, c2;
    inFrame f;
+
+// XXX outString("*** load ");
+// XXX if (ex) print1(cdr(ex)); else outString("NULL ");
+// XXX print1(x); newline(); flushAll();
 
    if (isSym(x) && firstByte(x) == '-') {
       Push(c1, parse(x, YES, NULL));
@@ -2257,6 +2261,7 @@ any load(any ex, int pr, any x) {
       drop(c1);
       return x;
    }
+   Push(c0, Env.nsp);
    rdOpen(ex, x, &f);
    pushInFiles(&f);
    doHide(Nil);
@@ -2283,6 +2288,7 @@ any load(any ex, int pr, any x) {
          }
       }
       if (isNil(data(c1))) {
+         Env.nsp = Pop(c0);
          popInFiles();
          doHide(Nil);
          return x;

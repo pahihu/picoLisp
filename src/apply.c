@@ -5,6 +5,7 @@
 #include "pico.h"
 
 any apply(any ex, any foo, bool cf, int n, cell *p) {
+   cell c1, c2;
    while (!isNum(foo)) {
       if (isCell(foo)) {
          int i;
@@ -118,9 +119,13 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          undefined(foo,ex);
       foo = val(foo);
    }
+   Push(c1, ApplyBody); // always build Apply frame
+   Push(c2, ApplyArgs);
+   ApplyBody = cons(Nil,Nil);
    if (--n < 0)
       cdr(ApplyBody) = Nil;
    else {
+      ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
       any x = ApplyArgs;
       val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
       while (--n >= 0) {
@@ -131,7 +136,10 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
       }
       cdr(ApplyBody) = car(x);
    }
-   return evSubr(foo, ApplyBody);
+   foo = evSubr(foo, ApplyBody);
+   ApplyArgs = Pop(c2);
+   ApplyBody = Pop(c1);
+   return foo;
 }
 
 // (apply 'fun 'lst ['any ..]) -> any

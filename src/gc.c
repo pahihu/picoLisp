@@ -35,7 +35,7 @@ void gc(long c) {
    heap *h;
    int i;
 
-// XXX outString("*** gc ***"); flushAll(); newline();
+// XXX outString("=== gc ==="); flushAll();
 
    val(DB) = Nil;
    h = Heaps;

@@ -386,39 +386,37 @@ any doEnv(any x) {
    return Pop(c1);
 }
 
-// (up [[cnt] sym ['val]]) -> any
+// (up [cnt] [sym ['val]]) -> any
 any doUp(any x) {
    any y, *val;
    int cnt, i;
    bindFrame *p;
 
    x = cdr(x);
-   if (!isCell(x)) {
-      for (p = Env.bind;  p;  p = p->link) {
-         if (p->i <= 0) {
-            if (At == p->bnd[0].sym)
-               return p->exe;
-         }
-      }
-      return Nil;
-   }
    if (!isNum(y = car(x)))
       cnt = 1;
    else
       cnt = (int)unBox(y),  x = cdr(x),  y = car(x);
    for (p = Env.bind, val = &val(y);  p;  p = p->link) {
       if (p->i <= 0) {
-         for (i = 0;  i < p->cnt;  ++i)
-            if (p->bnd[i].sym == y) {
-               if (!--cnt) {
-                  if (isCell(x = cdr(x)))
-                     return p->bnd[i].val = EVAL(car(x));
-                  return p->bnd[i].val;
+         if (isNil(y)) {
+            if (At == p->bnd[0].sym && !--cnt)
+               return p->exe;
+         }
+         else
+            for (i = 0;  i < p->cnt;  ++i)
+               if (p->bnd[i].sym == y) {
+                  if (!--cnt) {
+                     if (isCell(x = cdr(x)))
+                        return p->bnd[i].val = EVAL(car(x));
+                     return p->bnd[i].val;
+                  }
+                  val = &p->bnd[i].val;
                }
-               val = &p->bnd[i].val;
-            }
       }
    }
+   if (isNil(y))
+      return Nil;
    if (isCell(x = cdr(x)))
       return *val = EVAL(car(x));
    return *val;

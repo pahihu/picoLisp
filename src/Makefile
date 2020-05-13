@@ -79,7 +79,7 @@ else
 endif
 	OS = Darwin
 	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
-		  -Wno-parentheses
+		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS = -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
