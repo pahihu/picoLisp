@@ -191,11 +191,11 @@
 
 
 ### seed rand hash ###
-# (test (if (and *CPU (== 64 64)) -417605464 -1007791040) (seed "init string"))
-# (test (if (and *CPU (== 64 64)) -1061886707 -1053142179) (rand))
-# (test (if (and *CPU (== 64 64)) 822065436 1884033960) (rand))
-# (test (if (and *CPU (== 64 64)) 5 3) (rand 3 9))
-# (test (if (and *CPU (== 64 64)) 3 6) (rand 3 9))
+(test (if 64bit? -417605464 -1007791040) (seed "init string"))
+(test (if 64bit? -1061886707 -1053142179) (rand))
+(test (if 64bit? 822065436 1884033960) (rand))
+(test (if 64bit? 5 3) (rand 3 9))
+(test (if 64bit? 3 6) (rand 3 9))
 (test 1 (hash 0))
 (test 55682 (hash 1))
 (test 35970 (hash 7))

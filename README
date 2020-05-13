@@ -3,6 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
+* fixed 64bit seed/rand to match pil64
+* added destructuring bind in let, fixed trail, modified gc
 * added trail, modified up, bt now works
 * fixed namespace deallocation in 32bit target
 * added nsp, pico, symbols, %CPU, modified all, intern
@@ -24,7 +26,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 12 / 5 / 2020
+pahihu 13 / 5 / 2020
 
 
 

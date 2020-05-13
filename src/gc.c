@@ -27,6 +27,8 @@ static void mark(any x) {
    }
 }
 
+static long GcCount = CELLS;
+
 /* Garbage collector */
 void gc(long c) {
    any p, *pp, x;
@@ -65,10 +67,11 @@ void gc(long c) {
       }
    }
    for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-      if (((catchFrame*)p)->tag)
-         mark(((catchFrame*)p)->tag);
-      mark(((catchFrame*)p)->fin);
-      mark(((catchFrame*)p)->env.nsp); // mark saved ns
+      catchFrame *f = (catchFrame*)p;
+      if (f->tag)
+         mark(f->tag);
+      mark(f->fin);
+      mark(f->env.nsp); // mark saved ns
    }
    for (i = 0; i < EHASH; ++i)
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
@@ -107,7 +110,7 @@ void gc(long c) {
       cell *av;
 
       do {
-         c = CELLS;
+         c = GcCount? GcCount : CELLS;
          av = Avail;
          p = h->cells + CELLS-1;
          do
@@ -122,12 +125,21 @@ void gc(long c) {
    }
 }
 
-// (gc ['cnt]) -> cnt | NIL
-any doGc(any x) {
-   x = cdr(x),  x = EVAL(car(x));
+// (gc ['cnt ['cnt2]]) -> cnt | NIL
+any doGc(any ex) {
+   any x, cnt, cnt2;
+
+   x = cdr(ex),  cnt = EVAL(car(x));
    val(At) = val(At2) = Nil;
-   gc(isNum(x)? CELLS*unBox(x) : CELLS);
-   return x;
+   gc(isNum(cnt)? CELLS*unBox(cnt) : GcCount);
+   if (isCell(x = cdr(x))) {
+      cnt2 = EVAL(car(x));
+      NeedCnt(ex,cnt2);
+      GcCount = CELLS*unBox(cnt2);
+   }
+   else
+      GcCount = CELLS;
+   return cnt;
 }
 
 /* Construct a cell */
@@ -139,7 +151,7 @@ any cons(any x, any y) {
 
       Push(c1,x);
       Push(c2,y);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
@@ -160,7 +172,7 @@ any consSym(any v, any x) {
 
       Push(c1,v);
       Push(c2,x);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
@@ -180,7 +192,7 @@ any consStr(any x) {
       cell c1;
 
       Push(c1,x);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
@@ -199,7 +211,7 @@ any consNum(word n, any x) {
       cell c1;
 
       Push(c1,x);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }

@@ -163,7 +163,7 @@
       (test 2 N) )
    (test 1 N) )
 
-(when (and *CPU (== 64 64))
+(when (== 64 64)
    (test (1 2 (3) 4)
       (let (A 1  (B . C) (2 3)  D 4)
          (list A B C D) ) )

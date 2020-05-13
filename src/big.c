@@ -1718,7 +1718,7 @@ any doSqrt(any ex) {
 }
 
 /* Random numbers */
-static uint64_t Seed;
+static word2 Seed;
 
 static uint64_t initSeed(any x) {
    uint64_t n;
@@ -1737,7 +1737,12 @@ static uint64_t initSeed(any x) {
 
 // (seed 'any) -> cnt
 any doSeed(any ex) {
-   return box(hi64(Seed = initSeed(EVAL(cadr(ex))) * 6364136223846793005LL));
+#ifdef __LP64__
+   Seed = (word2)initSeed(EVAL(cadr(ex))) * 6364136223846793005ULL;
+   return box(hi64(lo(Seed)));
+#else
+   return box(hi64(Seed = initSeed(EVAL(cadr(ex))) * 6364136223846793005ULL));
+#endif
 }
 
 // (hash 'any) -> cnt
@@ -1760,7 +1765,17 @@ any doRand(any ex) {
    long n, m;
 
    x = cdr(ex);
-   Seed = Seed * 6364136223846793005LL + 1;
+#ifdef __LP64__
+   Seed = (word2)lo(Seed) * 6364136223846793005ULL + 1;
+   if (isNil(x = EVAL(car(x))))
+      return box(hi64(lo(Seed)));
+   if (x == T)
+      return hi64(lo(Seed)) & 1 ? T : Nil;
+   n = xCnt(ex,x);
+   if (m = evCnt(ex, cddr(ex)) + 1 - n)
+      n += ((hi(Seed)<<BITS32) | (lo(Seed)>>BITS32)) % m;
+#else
+   Seed = Seed * 6364136223846793005ULL + 1;
    if (isNil(x = EVAL(car(x))))
       return box(hi64(Seed));
    if (x == T)
@@ -1768,5 +1783,6 @@ any doRand(any ex) {
    n = xCnt(ex,x);
    if (m = evCnt(ex, cddr(ex)) + 1 - n)
       n += hi64(Seed) % m;
+#endif
    return boxCnt(n);
 }

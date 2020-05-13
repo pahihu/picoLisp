@@ -43,10 +43,15 @@
 
 
 ### byte ###
-(when (and *CPU (== 64 64))
-   (test (hex "12")
-      (byte (>> -4 (adr (1)))) )
+(when byte
+   (when 64bit?
+      (test (hex "12")
+         (byte (>> -4 (adr (1)))) ) )
+   (when (not 64bit?)
+      (test (hex "16")
+         (byte (>> -3 (adr (1)))) ) ) )
 
+(when (and byte native)
    (test "ABC"
       (let P (native "@" "malloc" 'N 8)
          (byte P (char "A"))

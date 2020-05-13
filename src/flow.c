@@ -709,8 +709,48 @@ any doJob(any ex) {
    return x;
 }
 
+static int numsyms2(any x, int n) {
+   if (isNil(x))
+      ;
+   else if (isSym(x))
+      n++;
+   else if (isCell(x))
+      n += (numsyms2(car(x),0) + numsyms2(cdr(x),0));
+   return n;
+}
+
+static int numsyms(any x) {
+   any y;
+   int n = 0;
+
+   do {
+      y = car(x);
+      if (isSym(y))
+        n++;
+      else if (isCell(y))
+        n += numsyms2(y, 0);
+   } while (isCell(x = cddr(x)));
+   return n;
+}
+
+static void destructBind(bindFrame *f, any x, any y) {
+   if (isNil(x))
+      ;
+   else if (isSym(x)) {
+      ASSERT(isSym(x));
+      f->bnd[f->cnt].sym = x;
+      f->bnd[f->cnt].val = val(x);
+      ++(f->cnt);
+      val(x) = y;
+   }
+   else if (isCell(x)) {
+      destructBind(f,car(x),isCell(y)? car(y) : Nil);
+      destructBind(f,cdr(x),isCell(y)? cdr(y) : Nil);
+   }
+}
+
 // (let sym 'any . prg) -> any
-// (let (sym 'any ..) . prg) -> any
+// (let (sym|lst 'any ..) . prg) -> any
 any doLet(any x) {
    any y;
 
@@ -725,16 +765,20 @@ any doLet(any x) {
    }
    else {
       /* XXX struct {any sym; any val;} bnd[(length(y)+1)/2]; */
-      bindFrame *f = allocFrame((length(y)+1)/2);
+      bindFrame *f = allocFrame(numsyms(y));
 
       f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
-         f->bnd[f->cnt].sym = car(y);
-         f->bnd[f->cnt].val = val(car(y));
-         ++(f->cnt);
-         val(car(y)) = EVAL(cadr(y));
+         if (isSym(car(y))) {
+            f->bnd[f->cnt].sym = car(y);
+            f->bnd[f->cnt].val = val(car(y));
+            ++(f->cnt);
+            val(car(y)) = EVAL(cadr(y));
+         }
+         else
+            destructBind(f,car(y),EVAL(cadr(y)));
       } while (isCell(y = cddr(y)));
       x = prog(cdr(x));
       while (--(f->cnt) >= 0)

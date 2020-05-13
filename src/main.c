@@ -436,7 +436,7 @@ any doTrail(any x) {
       x = EVAL(car(x));
    Push(c1, Nil);
    for (p = Env.bind;  p;  p = p->link) {
-      if (p->i <= 0) {
+      if (p->i == 0) {
          for (i = p->cnt;  --i >= 0;) {
             if (At == p->bnd[i].sym && !i)
                data(c1) = cons(p->exe, data(c1));
@@ -979,20 +979,18 @@ static any evList2(any foo, any ex) {
       if (*Signal)
          sighandler(ex);
       if (isNum(foo = val(foo))) {
-         cell c2;
-         Push(c2, Env.exe);
+         any savExe = Env.exe;
          Env.exe = ex;
          foo = evSubr(foo,ex);
-         Env.exe = data(c2);
+         Env.exe = savExe;
          drop(c1);
          return foo;
       }
       if (isCell(foo)) {
-         cell c2;
-         Push(c2, Env.exe);
+         any savExe = Env.exe;
          Env.exe = ex;
          foo = evExpr(foo, cdr(ex));
-         Env.exe = data(c2);
+         Env.exe = savExe;
          drop(c1);
          return foo;
       }
@@ -1019,19 +1017,17 @@ any evList(any ex) {
       if (*Signal)
          sighandler(ex);
       if (isNum(foo = val(foo))) {
-         cell c1;
-         Push(c1, Env.exe);
+         any savExe = Env.exe;
          Env.exe = ex;
          foo = evSubr(foo,ex);
-         Env.exe = Pop(c1);
+         Env.exe = savExe;
          return foo;
       }
       if (isCell(foo)) {
-         cell c1;
-         Push(c1, Env.exe);
+         any savExe = Env.exe;
          Env.exe = ex;
          foo = evExpr(foo, cdr(ex));
-         Env.exe = Pop(c1);
+         Env.exe = savExe;
          return foo;
       }
    }
