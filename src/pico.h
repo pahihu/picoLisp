@@ -330,6 +330,7 @@ extern any TheKey, TheCls, Thrown;
 extern any Alarm, Sigio, Line, Zero, One, Pico1;
 extern any Transient[IHASH], Extern[EHASH];
 extern any ApplyArgs, ApplyBody, DbVal, DbTail;
+extern int ApplyDepth;
 extern any PicoNil, Nil, DB, Meth, Quote, T;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;

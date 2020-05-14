@@ -3,7 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
-* can generate pil21 sources
+* reduced overhead of nested Apply and exe tracking in bindFrame
+* can be used to regenerate pil21 sources
 * fixed up to return any call, load to preserve namespace, nested Apply
 * fixed 64bit seed/rand to match pil64
 * added destructuring bind in let, fixed trail, modified gc
@@ -28,7 +29,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 13 / 5 / 2020
+pahihu 14 / 5 / 2020
 
 
 

@@ -34,6 +34,7 @@ any TheKey, TheCls, Thrown;
 any Alarm, Sigio, Line, Zero, One, Pico1;
 any Transient[IHASH], Extern[EHASH];
 any ApplyArgs, ApplyBody, DbVal, DbTail;
+int ApplyDepth;
 any PicoNil, Nil, DB, Meth, Quote, T;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
@@ -977,10 +978,7 @@ static any evList2(any foo, any ex) {
       if (*Signal)
          sighandler(ex);
       if (isNum(foo = val(foo))) {
-         any savExe = Env.exe;
-         Env.exe = ex;
          foo = evSubr(foo,ex);
-         Env.exe = savExe;
          drop(c1);
          return foo;
       }
@@ -1015,11 +1013,7 @@ any evList(any ex) {
       if (*Signal)
          sighandler(ex);
       if (isNum(foo = val(foo))) {
-         any savExe = Env.exe;
-         Env.exe = ex;
-         foo = evSubr(foo,ex);
-         Env.exe = savExe;
-         return foo;
+         return evSubr(foo,ex);
       }
       if (isCell(foo)) {
          any savExe = Env.exe;
@@ -1459,6 +1453,7 @@ static void init(int ac, char *av[]) {
    Tio = tcgetattr(STDIN_FILENO, &OrgTermio) == 0;
    ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
    ApplyBody = cons(Nil,Nil);
+   ApplyDepth = 0;
    Env.exe = Nil;
    sigfillset(&sigs);
    sigprocmask(SIG_UNBLOCK, &sigs, NULL);
