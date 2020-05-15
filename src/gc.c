@@ -52,6 +52,8 @@ void gc(long c) {
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
    mark(TNsp), mark(TCo7);
    mark(Pico1),  mark(Env.nsp); // mark initial/current ns
+   for (i = 0; i < NCBL; i++) // mark callbacks
+      mark(Lisp[i].tag), mark(Lisp[i].fun);
    for (i = 0; i < IHASH; ++i)
       mark(Transient[i]);
    mark(ApplyArgs),  mark(ApplyBody);

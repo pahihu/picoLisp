@@ -194,6 +194,7 @@ static symInit Symbols[] = {
    {doLine, "line"},
    {doLines, "lines"},
    {doLink, "link"},
+   {doLisp, "lisp"},
    {doList, "list"},
    {doListen, "listen"},
    {doLit, "lit"},
@@ -231,6 +232,7 @@ static symInit Symbols[] = {
    {doMulDiv, "*/"},
    {doName, "name"},
    {doNand, "nand"},
+   {doNative, "native"},
    {doNEq, "n=="},
    {doNEq0, "n0"},
    {doNEqT, "nT"},
@@ -332,6 +334,7 @@ static symInit Symbols[] = {
    {doStr, "str"},
    {doStrip, "strip"},
    {doStrQ, "str?"},
+   {doStruct, "struct"},
    {doSub, "-"},
    {doSubQ, "sub?"},
    {doSum, "sum"},
@@ -425,6 +428,11 @@ void initSymbols(void) {
    mkExt(val(DB) = DbVal = consStr(DbTail = BOX('1')));
    Extern['1'] = cons(DbVal, Nil);
 
+   ISym   = initSym(Nil, "I");
+   NSym   = initSym(Nil, "N");
+   SSym   = initSym(Nil, "S");
+   CSym   = initSym(Nil, "C");
+   BSym   = initSym(Nil, "B");
    Solo   = initSym(Zero, "*Solo");
    PPid   = initSym(Nil, "*PPid");
    Pid    = initSym(boxCnt(getpid()), "*Pid");

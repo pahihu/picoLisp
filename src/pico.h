@@ -54,6 +54,7 @@ void myAssert(int,const char*,const char*,int);
 #define IHASH 4999                     // Internal hash table size (should be prime)
 #define EHASH 49999                    // External hash table size (should be prime)
 #define TOP 0x110000                   // Character Top
+#define NCBL 32                        // No. of C callbacks
 
 typedef unsigned long word;
 typedef unsigned int  word32;
@@ -166,6 +167,12 @@ typedef struct catchFrame {
    stkEnv env;
    jmp_buf rst;
 } catchFrame;
+
+typedef struct CBL {
+   any tag;
+   any fun;
+   void *cb;
+} CBL;
 
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
@@ -329,9 +336,11 @@ extern void (*putBin)(int);
 extern any TheKey, TheCls, Thrown;
 extern any Alarm, Sigio, Line, Zero, One, Pico1;
 extern any Transient[IHASH], Extern[EHASH];
+extern CBL Lisp[NCBL];
 extern any ApplyArgs, ApplyBody, DbVal, DbTail;
 extern int ApplyDepth;
 extern any PicoNil, Nil, DB, Meth, Quote, T;
+extern any ISym, NSym, SSym, CSym, BSym;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern any Tstp1, Tstp2;
@@ -687,6 +696,7 @@ any doLieu(any);
 any doLine(any);
 any doLines(any);
 any doLink(any);
+any doLisp(any);
 any doList(any);
 any doListen(any);
 any doLit(any);
@@ -725,6 +735,7 @@ any doMul(any);
 any doMulDiv(any);
 any doName(any);
 any doNand(any);
+any doNative(any);
 any doNEq(any);
 any doNEq0(any);
 any doNEqT(any);
@@ -827,6 +838,7 @@ any doStem(any);
 any doStr(any);
 any doStrip(any);
 any doStrQ(any);
+any doStruct(any);
 any doSub(any);
 any doSubQ(any);
 any doSum(any);

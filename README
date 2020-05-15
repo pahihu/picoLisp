@@ -3,6 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
+* added native, struct, lisp (callbacks), and external lisp() call
+  float/double return values/arguments in native calls not supported (yet)
 * reduced overhead of nested Apply and exe tracking in bindFrame
 * can be used to regenerate pil21 sources
 * fixed up to return any call, load to preserve namespace, nested Apply
