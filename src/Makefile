@@ -32,6 +32,8 @@ BFLAGS = -pipe \
 	-Wuninitialized -Wstrict-prototypes \
 	-D_GNU_SOURCE  -D_FILE_OFFSET_BITS=64
 
+LIB-FLAGS = -lffi
+
 CFLAGS = -c $(OPT) $(BFLAGS)
 
 DYNAMIC-CC-FLAGS=
@@ -40,7 +42,7 @@ ifeq ($(shell uname), Linux)
 	OS = Linux
 	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm -ldl
+	LIB-FLAGS += -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
 	LCRYPT = -lcrypt
 else
@@ -48,7 +50,7 @@ ifeq ($(shell uname), OpenBSD)
 	OS = OpenBSD
 	BFLAGS += ${M32}
 	PICOLISP-FLAGS = ${M32} -rdynamic -Wl,-E
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = -Wl,-E -Wl,-shared
 	LCRYPT = -lcrypto
 else
@@ -58,7 +60,7 @@ ifeq ($(shell uname), FreeBSD)
 	CCLD = clang
 	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
 	LCRYPT = -lcrypt
 else
@@ -66,7 +68,7 @@ ifeq ($(shell uname), NetBSD)
 	OS = NetBSD
 	BFLAGS += ${M32}
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
 	LCRYPT = -lcrypto
 else
@@ -74,14 +76,16 @@ ifeq ($(shell uname), Darwin)
 ifeq ($(target), pil32)
 	GCCLD = gcc
         CPU = i386
+        # BFLAGS += -I$(HOME)/local32/include
+        # LIB-FLAGS = -L$(HOME)/local32/lib -lffi
 else
 	GCCLD = gcc-mp-8
 endif
 	OS = Darwin
 	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
-		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT
+		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT -fwritable-strings
 	PICOLISP-FLAGS = ${M32}
-	LIB-FLAGS = -lc -lm -ldl
+	LIB-FLAGS += -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
         SYSDIRS = -I/opt/local/include -L/opt/local/lib
 	LCRYPT = #-lcrypto
@@ -91,7 +95,7 @@ ifeq ($(shell uname), SunOS)
 	OS = SunOS
 	BFLAGS += ${M32}
 	PICOLISP-FLAGS =
-	LIB-FLAGS = -lm -lnsl -lsocket
+	LIB-FLAGS += -lm -lnsl -lsocket
 	DYNAMIC-LIB-FLAGS = -G
 	LCRYPT = -lcrypt
 else
@@ -99,7 +103,7 @@ ifeq ($(shell uname), AIX)
 	OS = AIX
 	BFLAGS += -maix32
 	PICOLISP-FLAGS = -maix32 -Wl,-brtl -Wl,-bexpall
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = -maix32 -Wl,-G -shared -lm
 	LCRYPT = -lcrypt
 else
@@ -107,7 +111,7 @@ ifeq ($(shell uname), HP-UX)
 	OS = HP-UX
 	BFLAGS +=
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm -ldl
+	LIB-FLAGS += -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
 	LCRYPT =
 else

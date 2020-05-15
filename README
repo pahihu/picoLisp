@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* native C calls thru libffi float/double return values/arguments supported
 * added native, struct, lisp (callbacks), and external lisp() call
   float/double return values/arguments in native calls not supported (yet)
 * reduced overhead of nested Apply and exe tracking in bindFrame
