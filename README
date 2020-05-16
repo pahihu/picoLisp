@@ -3,6 +3,8 @@ Changes
 
 All bugs introduced are mine.
 
+* fixed float/double result/argument type decoding, both 32bit/64bit target uses
+  lib/math64.l (ie. native calls)
 * fixed 32bit libffi native C calls
 
   Note, to call a C function with variable number of arguments, the number

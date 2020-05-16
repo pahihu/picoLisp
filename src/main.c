@@ -1210,36 +1210,42 @@ typedef struct ffi {
 
 static ffi_type *ffiType(any y,int isarg) {
    NATDBG(show("ffiType ? ",y))
-   if (isNil(y)) {
+   if (isNil(y)) { // 'NIL
       NATDBG(fprintf(stderr,"void\n"))
       return &ffi_type_void;
    }
-   else if (y == ISym) {
+   else if (y == ISym) { // 'I
       NATDBG(fprintf(stderr,"sint32\n"))
       return &ffi_type_sint32;
    }
-   else if (y == NSym) {
+   else if (y == NSym) { // 'N
       NATDBG(fprintf(stderr,"sint64\n"))
       return &FFI_TYPE_SINT;
    }
-   else if (y == CSym) {
+   else if (y == CSym) { // 'C
       NATDBG(fprintf(stderr,"uint32\n"))
       return &ffi_type_uint32;
    }
-   else if (y == BSym) {
+   else if (y == BSym) { // 'B
       NATDBG(fprintf(stderr,"uint8\n"))
       return &ffi_type_uint8;
    }
    else if (isNum(y)) {
-      NATDBG(fprintf(stderr,"sint64\n"))
-      return &FFI_TYPE_SINT;
+      if (isarg) { // num
+         NATDBG(fprintf(stderr,"sint64\n"))
+         return &FFI_TYPE_SINT;
+      }
+      else { // [-]1.0
+         NATDBG(fprintf(stderr,"float/double\n"))
+         return isNeg(y)? &ffi_type_float : &ffi_type_double;
+      }
    }
-   else if (isarg && isNum(cdr(y))) {
+   else if (isarg && isCell(y) && isNum(cdr(y))) { // (num . scl)
       NATDBG(fprintf(stderr,"float/double\n"))
       return isNeg(cdr(y))? &ffi_type_float : &ffi_type_double;
    }
    NATDBG(fprintf(stderr,"pointer\n"))
-   return &ffi_type_pointer;
+   return &ffi_type_pointer; // (Typ . Cnt)
 }
 
 // Needs evaluated lst
