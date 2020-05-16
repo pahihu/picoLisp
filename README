@@ -3,6 +3,7 @@ Changes
 
 All bugs introduced are mine.
 
+* fixed float/double scaling in native calls
 * fixed float/double result/argument type decoding, both 32bit/64bit target uses
   lib/math64.l (ie. native calls)
 * fixed 32bit libffi native C calls

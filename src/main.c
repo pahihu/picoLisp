@@ -1012,7 +1012,7 @@ static any natRet(any x, byte **pbuf, int C) {
            d = *(float*)buf;
            buf += sizeof(float);
          }
-         d *= unDigU(x);
+         d *= fabs(numToDouble(x));
          NATDBG(fprintf(stderr,"Scaled ret = %lf\n", d))
          ret = doubleToNum(d);
       }
@@ -1139,9 +1139,10 @@ static void natBuf(any x, byte **pbuf, int *pc) {
        }
    }
    else { // ([-]1.0 . lst)
+      double scl = fabs(numToDouble(x));
       while (isCell(y)) {
          NATDBG(fprintf(stderr,"natBuf: (%c1.0 . lst)...\n",isNeg(x)? '-' : '+'))
-         double d = numToDouble(car(y)) / labs(unBox(x));
+         double d = numToDouble(car(y)) / scl;
          if (!isNeg(x)) {
             *((double*)buf) = d;
             c -= sizeof(double), buf += sizeof(double);
@@ -1329,8 +1330,6 @@ static any evalList(any x) {
    return Pop(c1);
 }
 
-#define ALLOC   alloca
-
 // (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
 any doNative(any ex) {
    void *lib;
@@ -1402,16 +1401,14 @@ any doNative(any ex) {
          NATDBG(fprintf(stderr,"arg = %ld\n", arg.i))
       }
       else if (isSym(y)) {
-         // NB. 32bit target with alloca() does NOT work
-         //     hence we use malloc()
-         args[nargs++].p = arg.p = ALLOC(bufSize(y));
+         args[nargs++].p = arg.p = alloca(bufSize(y));
          bufString(y,arg.p);
          NATDBG(fprintf(stderr,"arg = \"%s\"\n", arg.p))
       }
       else { // pair
          if (isNum(cdr(y))) { // (num . scl), num/flg as fixpt
             NATDBG(fprintf(stderr, "(num . scl)...\n"))
-            double d = numToDouble(car(y)) / labs(unBox(cdr(y)));
+            double d = numToDouble(car(y)) / fabs(numToDouble(cdr(y)));
             if (!isNeg(cdr(y))) {
                args[nargs++].d = arg.d = d;
                NATDBG(fprintf(stderr,"arg = %lf\n", arg.d))
@@ -1425,8 +1422,7 @@ any doNative(any ex) {
             // (Tim (8 B . 8))
             any e = cdr(y); // (8 B . 8)
             int c = unDigU(caar(e)), oc = c;
-            // NB. see note above
-            byte *buf = ALLOC(oc), *z = buf;
+            byte *buf = alloca(oc), *z = buf;
             args[nargs++].p = arg.p = (char*)buf;
             NATDBG(fprintf(stderr,"(cnt Typ . N)...\n"))
             do {
