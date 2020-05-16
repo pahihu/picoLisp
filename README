@@ -3,6 +3,16 @@ Changes
 
 All bugs introduced are mine.
 
+* fixed 32bit libffi native C calls
+
+  Note, to call a C function with variable number of arguments, the number
+  of fixed arguments must be marked with T, eg:
+
+     (native "@" "printf" "abc%d%s^J" T 7 "XYZ")
+
+  The arguments before T are the fixed arguments, the number of arguments 
+  after the T are variable.
+
 * native C calls thru libffi float/double return values/arguments supported
 * added native, struct, lisp (callbacks), and external lisp() call
   float/double return values/arguments in native calls not supported (yet)
@@ -32,7 +42,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 14 / 5 / 2020
+pahihu 16 / 5 / 2020
 
 
 

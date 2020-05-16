@@ -77,7 +77,7 @@ ifeq ($(target), pil32)
 	GCCLD = gcc
         CPU = i386
         # BFLAGS += -I$(HOME)/local32/include
-        # LIB-FLAGS = -L$(HOME)/local32/lib -lffi
+        # LIB-FLAGS = $(HOME)/local32/lib/libffi.a
 else
 	GCCLD = gcc-mp-8
 endif

@@ -1185,8 +1185,6 @@ any doStruct(any ex) {
    return x;
 }
 
-#define MAXCARGS 16
-
 typedef union {
    long   i;
    char  *p;
@@ -1200,9 +1198,15 @@ typedef union {
 typedef struct ffi {
    ffi_cif cif;
    void (*fun)(void);
-   int nargs;
+   int nfixed,nargs;
    ffi_type *args[0];
 } ffi;
+
+#ifdef __LP64__
+#define FFI_TYPE_SINT   ffi_type_sint64
+#else
+#define FFI_TYPE_SINT   ffi_type_sint32
+#endif
 
 static ffi_type *ffiType(any y,int isarg) {
    NATDBG(show("ffiType ? ",y))
@@ -1216,7 +1220,7 @@ static ffi_type *ffiType(any y,int isarg) {
    }
    else if (y == NSym) {
       NATDBG(fprintf(stderr,"sint64\n"))
-      return &ffi_type_sint64;
+      return &FFI_TYPE_SINT;
    }
    else if (y == CSym) {
       NATDBG(fprintf(stderr,"uint32\n"))
@@ -1228,7 +1232,7 @@ static ffi_type *ffiType(any y,int isarg) {
    }
    else if (isNum(y)) {
       NATDBG(fprintf(stderr,"sint64\n"))
-      return &ffi_type_sint64;
+      return &FFI_TYPE_SINT;
    }
    else if (isarg && isNum(cdr(y))) {
       NATDBG(fprintf(stderr,"float/double\n"))
@@ -1241,16 +1245,68 @@ static ffi_type *ffiType(any y,int isarg) {
 // Needs evaluated lst
 static ffi *ffiPrep(void *lib,char *s,any x) {
    any y = car(x);
-   int i, nargs = length(x = cdr(x));
+   int i, j, nargs = length(x = cdr(x));
    ffi *p = malloc(sizeof(ffi) + nargs * sizeof(ffi_type*));
    ffi_type *rtype;
+   ffi_status fs;
 
-   rtype = ffiType(y,0);
-   for (i = 0; i < nargs; i++, x = cdr(x))
-      p->args[i] = ffiType(car(x),1);
-
+   p->nfixed = 0; // no fixed args
    p->nargs = nargs;
-   if (FFI_OK == ffi_prep_cif(&p->cif, FFI_DEFAULT_ABI, nargs, rtype, p->args) && (p->fun = dlsym(lib,s)))
+   rtype = ffiType(y,0);
+   for (i = 0, j = 0; i < nargs; i++, x = cdr(x)) {
+      if (car(x) == T) {
+         p->nfixed = i;
+         (p->nargs)--;
+      }
+      else
+         p->args[j++] = ffiType(car(x),1);
+   }
+
+   NATDBG(fprintf(stderr,"ffiPrep: %s(), nfixed=%d nargs=%d\n",s,p->nfixed,p->nargs))
+#if 0
+   fs = p->nfixed
+        ? ffi_prep_cif_var(&p->cif,FFI_DEFAULT_ABI,p->nfixed,p->nargs,rtype,p->args)
+        : ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#else
+   fs = ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#endif
+   if ((FFI_OK == fs) && (p->fun = dlsym(lib,s)))
+      return p;
+
+   free(p);
+   return NULL;
+}
+
+static ffi *ffiReprep(ffi *p,any x) {
+   any y = car(x);
+   int i, j, nargs = length(x = cdr(x));
+   ffi_type *rtype;
+   ffi_status fs;
+
+   ASSERT(p->nfixed);
+
+   p = realloc(p, sizeof(ffi) + nargs * sizeof(ffi_type*));
+   p->nfixed = 0; // no fixed args
+   p->nargs = nargs;
+   rtype = ffiType(y,0);
+   for (i = 0, j = 0; i < nargs; i++, x = cdr(x)) {
+      if (car(x) == T) { // fixed arg marker
+         p->nfixed = i;
+         (p->nargs)--;
+      }
+      else
+         p->args[j++] = ffiType(car(x),1);
+   }
+
+   NATDBG(fprintf(stderr,"ffiReprep: nfixed=%d nargs=%d\n",p->nfixed,p->nargs))
+#if 0
+   fs = p->nfixed
+        ? ffi_prep_cif_var(&p->cif,FFI_DEFAULT_ABI,p->nfixed,p->nargs,rtype,p->args)
+        : ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#else
+   fs = ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#endif
+   if (FFI_OK == fs)
       return p;
 
    free(p);
@@ -1267,18 +1323,21 @@ static any evalList(any x) {
    return Pop(c1);
 }
 
+#define ALLOC   alloca
+
 // (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
 any doNative(any ex) {
    void *lib;
    cell c1, c2;
-   CARG arg, args[MAXCARGS], rvalue;
-   void *avalues[MAXCARGS];
-   int  nargs, i;
-   any x, y;
-   byte *pretc;
-   ffi *pffi;
+   int  nargs = length(cdr(ex))-2, i;
+   CARG arg, args[nargs], rvalue; // return value/argument holders
+   byte *prvalue; // ptr to rvalue
+   void *avalues[nargs]; // ptr to args[]
+   any x, y, sym2;
+   ffi *pffi; // FFI structure
+   bool oldffi; // FFI struct old?
 
-   nargs = 0; pretc = (byte*)&rvalue;
+   nargs = 0; prvalue = (byte*)&rvalue;
    x = cdr(ex), y = EVAL(car(x)); // library handle
    if (isNum(y))
       lib = (void*)unDig(y);
@@ -1286,42 +1345,60 @@ any doNative(any ex) {
       NeedSym(ex,y);
       char buf[bufSize(y)];
       bufString(y,buf);
-// XXX fprintf(stderr,"buf=[%s]\n",buf);
+      NATDBG(fprintf(stderr,"doNative: lib=%s\n",buf))
       if (!(lib = dlopen(strcmp(buf,"@")? buf : 0, RTLD_LAZY | RTLD_GLOBAL)))
          dlError(ex,y);
       val(y) = box(num(lib));
    }
-   x = cdr(x), y = EVAL(car(x)); // function ptr
-   Push(c1, y);
+   x = cdr(x), y = EVAL(sym2 = car(x)); // function ptr
+   Push(c1, sym2);
    NATDBG(show("function ptr = ",y))
    x = evalList(cdr(x)); // eval argument list
-   NATDBG(show("evald args = ",x))
-   if (car(x) == T)
-      nativeError(ex,x);
+   NATDBG(show("eval'd args = ",x))
 
-   if (isNum(y))
+   oldffi = NO;
+   if (isNum(y)) {
       pffi = (ffi*)unDig(y);
+      oldffi = YES;
+   }
    else {
       NeedSym(ex,y);
       char buf[bufSize(y)];
       bufString(y,buf);
+
+      if (car(x) == T) { // just check
+         void *fun;
+         NATDBG(fprintf(stderr,"doNative: check only %s\n",buf))
+         if (!(fun = dlsym(lib,buf)))
+            dlError(ex,y);
+         return T;
+      }
       if (!(pffi = ffiPrep(lib,buf,x)))
          dlError(ex,y);
       val(y) = box(num(pffi));
+   }
+   if (oldffi && pffi->nfixed) { // variable call
+      if (!(pffi = ffiReprep(pffi,x)))
+         dlError(ex,y);
+      val(sym2) = box(num(pffi));
    }
    drop(c1);
 
    Push(c1, car(x)); // save result spec
    Push(c2, x = cdr(x)); // save args
    while (isCell(x)) {
-      avalues[nargs] = &args[nargs];
       y = car(x);
-      if (isNum(y)) {
-        args[nargs++].i = arg.i = unBox(y);
-        NATDBG(fprintf(stderr,"arg = %ld\n", arg.i))
+      avalues[nargs] = &args[nargs];
+      if (y == T) 
+         ; // skip fixed args marker
+      else if (isNum(y)) {
+         args[nargs++].i = arg.i = unBox(y);
+         NATDBG(fprintf(stderr,"arg = %ld\n", arg.i))
       }
       else if (isSym(y)) {
-         args[nargs++].p = arg.p = alloca(bufSize(y));
+         // NB. 32bit target with alloca() does NOT work
+         //     hence we use malloc()
+         args[nargs++].p = arg.p = ALLOC(bufSize(y));
          bufString(y,arg.p);
          NATDBG(fprintf(stderr,"arg = \"%s\"\n", arg.p))
       }
@@ -1342,7 +1419,8 @@ any doNative(any ex) {
             // (Tim (8 B . 8))
             any e = cdr(y); // (8 B . 8)
             int c = unDigU(caar(e)), oc = c;
-            byte *buf = alloca(oc), *z = buf;
+            // NB. see note above
+            byte *buf = ALLOC(oc), *z = buf;
             args[nargs++].p = arg.p = (char*)buf;
             NATDBG(fprintf(stderr,"(cnt Typ . N)...\n"))
             do {
@@ -1371,26 +1449,31 @@ any doNative(any ex) {
    // call C
    ffi_call(&pffi->cif, pffi->fun, &rvalue, avalues);
    NATDBG(
-      fprintf(stderr," retc = %p (%lu)\n", rvalue.p, rvalue.i);
-      fprintf(stderr,"pretc = %p\n", pretc);
+      fprintf(stderr," rvalue = %p (%lu)\n", rvalue.p, rvalue.i);
+      fprintf(stderr,"prvalue = %p\n", prvalue);
       fprintf(stderr,"decoding return value...\n");
    )
 
-   data(c1) = natRet(data(c1), &pretc, 0);
+   data(c1) = natRet(data(c1), &prvalue, 0);
    i = 0; x = data(c2);
    NATDBG(fprintf(stderr,"decoding args...\n"))
    while (isCell(x)) {
-      arg = args[i++], y = car(x);   // ^(Tim (8 B . 8))
-      NATDBG(show("y = ",y))
-      if (isCell(y)) {
-         if (isCell(cdr(y)) && !isNum(cadr(y))) {      // (Tim ^(8 B . 8))
-           if (!isNil(car(y))) {     // (^Tim (8 B . 8))
-              NATDBG(
-                 show(" cadr(y) = ",  cadr(y));
-                 show("cdadr(y) = ", cdadr(y));
-              )
-              val(car(y)) = natRet(cdadr(y), (byte **)&arg.p, 1);
-           }
+      y = car(x);   // ^(Tim (8 B . 8))
+      if (y == T)
+         ; // skip fixed args marker
+      else {
+         arg = args[i++];
+         NATDBG(show("y = ",y))
+         if (isCell(y)) {
+            if (isCell(cdr(y)) && !isNum(cadr(y))) {      // (Tim ^(8 B . 8))
+              if (!isNil(car(y))) {     // (^Tim (8 B . 8))
+                 NATDBG(
+                    show(" cadr(y) = ",  cadr(y));
+                    show("cdadr(y) = ", cdadr(y));
+                 )
+                 val(car(y)) = natRet(cdadr(y), (byte **)&arg.p, 1);
+              }
+            }
          }
       }
       x = cdr(x);

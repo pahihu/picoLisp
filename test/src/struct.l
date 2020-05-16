@@ -40,17 +40,15 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 
 (setq *Word (if 64bit? 8 4))
 
-(use "printf"
-   (test 8
-      (native "@" "printf" 'I "abc%d%s^J" (+ 3 4) (pack "X" "Y" "Z")) ) )
+(test 8
+   (native "@" "printf" 'I "abc%d%s^J" T (+ 3 4) (pack "X" "Y" "Z")) )
 
-(use "printf"
-   (test 16
-      (native "@" "printf" 'I "This is %.3f^J" (123456 . 1000)) ) )
+(test 16
+   (native "@" "printf" 'I "This is %.3f^J" T (123456 . 1000)) )
 
 (test 
    (129 254 139 254 135 87 108 62 203 34 66 111 142 87 132 115 130 145 122 207)
-   (native "libcrypto.dylib" "SHA1" '(B . 20) "abcd" 4 0) )
+   (native `(shlib "libcrypto") "SHA1" '(B . 20) "abcd" 4 0) )
 
 (use Tim
    # time_t 8   # Get time_t structure
