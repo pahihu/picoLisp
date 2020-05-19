@@ -5,7 +5,8 @@
 #include "pico.h"
 
 any apply(any ex, any foo, bool cf, int n, cell *p) {
-   cell c1, c2;
+   applyFrame af;
+
    while (!isNum(foo)) {
       if (isCell(foo)) {
          int i;
@@ -119,17 +120,15 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          undefined(foo,ex);
       foo = val(foo);
    }
-   if (ApplyDepth++) {
-      Push(c1, ApplyBody); // always build Apply frame
-      Push(c2, ApplyArgs);
-      ApplyBody = cons(Nil,Nil);
+   if (Env.applyDepth++) {
+      af.body = cons(Nil,Nil), af.link = Env.applyFrames;
+      Env.applyFrames = &af;
    }
+   applyFrame *caf = Env.applyFrames; // current Apply frame
    if (--n < 0)
-      cdr(ApplyBody) = Nil;
+      cdr(caf->body) = Nil;
    else {
-      if (ApplyDepth>1)
-         ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
-      any x = ApplyArgs;
+      any x = Env.applyDepth>1? cons(cons(consSym(Nil,Nil), Nil), Nil) : caf->args;
       val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
       while (--n >= 0) {
          if (!isCell(cdr(x)))
@@ -137,13 +136,11 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          x = cdr(x);
          val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
       }
-      cdr(ApplyBody) = car(x);
+      cdr(caf->body) = car(x);
    }
-   foo = evSubr(foo, ApplyBody);
-   if (--ApplyDepth) {
-      ApplyArgs = Pop(c2);
-      ApplyBody = Pop(c1);
-   }
+   foo = evSubr(foo, caf->body);
+   if (--Env.applyDepth)
+      Env.applyFrames = af.link;
    return foo;
 }
 

@@ -84,6 +84,7 @@ static symInit Symbols[] = {
    {doClose, "close"},
    {doCmd, "cmd"},
    {doCnt, "cnt"},
+   {doCo, "co"},
    {doCol, ":"},
    {doCommit, "commit"},
    {doCon, "con"},
@@ -329,6 +330,7 @@ static symInit Symbols[] = {
    {doSplit, "split"},
    {doSpQ, "sp?"},
    {doSqrt, "sqrt"},
+   {doStack, "stack"},
    {doState, "state"},
    {doStem, "stem"},
    {doStr, "str"},
@@ -379,6 +381,7 @@ static symInit Symbols[] = {
    {doWr, "wr"},
    {doXchg, "xchg"},
    {doXor, "xor"},
+   {doYield, "yield"},
    {doYoke, "yoke"},
    {doZap, "zap"},
    {doZero, "zero"},
@@ -406,7 +409,6 @@ void initSymbols(void) {
    One = boxCnt(1);
    TNsp = BOX(1383865);
 // XXX fprintf(stderr,"*** TNsp = %p\n",TNsp);
-   TCo7 = BOX(1369447);
    for (i = 0; i < IHASH; ++i)
       Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)

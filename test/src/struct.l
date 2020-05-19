@@ -1,5 +1,7 @@
 (load "lib/native.l")
 
+# (msg "### struct/lisp/native tests ###")
+
 ### lisp ###
 (gcc "ltest" NIL
    (cbTest (Fun) cbTest 'N Fun)

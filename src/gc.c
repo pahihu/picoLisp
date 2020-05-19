@@ -27,13 +27,49 @@ static void mark(any x) {
    }
 }
 
+static inline void markEnv(stkEnv *env) {
+   any p;
+   int i;
+
+   mark(env->nsp); // mark current ns
+   for (p = (any)env->applyFrames;  p;  p = (any)((applyFrame*)p)->link) {
+      applyFrame *f = (applyFrame*)p;
+      mark(f->body);
+      mark(f->args);
+   }
+   mark(env->exe);
+   for (p = env->stack; p; p = cdr(p))
+      mark(car(p));
+   for (p = (any)env->bind;  p;  p = (any)((bindFrame*)p)->link) {
+      bindFrame *f = (bindFrame*)p;
+      mark(f->exe);
+      for (i = f->cnt;  --i >= 0;) {
+         mark(f->bnd[i].sym);
+         mark(f->bnd[i].val);
+      }
+   }
+}
+
+static inline void markCatch(catchFrame *catchPtr) {
+   any p;
+
+   for (p = (any)catchPtr; p; p = (any)((catchFrame*)p)->link) {
+      catchFrame *f = (catchFrame*)p;
+      if (f->tag)
+         mark(f->tag);
+      mark(f->fin);
+      mark(f->env.nsp); // mark saved ns
+   }
+}
+
+
 static long GcCount = CELLS;
 
 /* Garbage collector */
 void gc(long c) {
    any p, *pp, x;
    heap *h;
-   int i;
+   int i, n;
 
 // XXX outString("=== gc ==="); flushAll();
 
@@ -50,30 +86,29 @@ void gc(long c) {
    /* Mark */
    mark(Nil+1);
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
-   mark(TNsp), mark(TCo7);
-   mark(Pico1),  mark(Env.nsp); // mark initial/current ns
+   mark(TNsp);
+   mark(Pico1); // mark initial ns
    for (i = 0; i < NCBL; i++) // mark callbacks
       mark(Lisp[i].tag), mark(Lisp[i].fun);
    for (i = 0; i < IHASH; ++i)
       mark(Transient[i]);
-   mark(ApplyArgs),  mark(ApplyBody);
-   mark(Env.exe);
-   for (p = Env.stack; p; p = cdr(p))
-      mark(car(p));
-   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link) {
-      bindFrame *f = (bindFrame*)p;
-      mark(f->exe);
-      for (i = f->cnt;  --i >= 0;) {
-         mark(f->bnd[i].sym);
-         mark(f->bnd[i].val);
-      }
-   }
-   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-      catchFrame *f = (catchFrame*)p;
-      if (f->tag)
-         mark(f->tag);
-      mark(f->fin);
+   markEnv(&Env); // mark current env
+   markCatch(CatchPtr);
+   for (p = (any)Env.coFrames; p; p = (any)((coFrame*)p)->link) {
+      coFrame *f = (coFrame*)p;
       mark(f->env.nsp); // mark saved ns
+   }
+   for (i = 0; i < Stacks; i++) {
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag)) { // used?
+         mark(f->tag);
+         mark(f->ret);
+         mark(f->At);
+         if (!f->active) { // not active?
+            markEnv(&(f->env));
+            markCatch(f->CatchPtr);
+         }
+      }
    }
    for (i = 0; i < EHASH; ++i)
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
@@ -92,6 +127,20 @@ void gc(long c) {
             *pp = (cell*)(num(p->cdr) & ~1);
          else
             *(word*)(pp = &cdr(p)) &= ~1;
+   /* Clean up */
+   for (i = 0; i < (n = Stacks); i++) {
+      coFrame *f = Stack1[i];
+      any tag = f->tag;
+      if (!isNil(tag)) {
+         if (num(tag) & 1)
+            f->tag = Nil, Stacks--;
+         else {
+            // pil64: clear ApplyStack (builds the ApplyFrame on the stack)
+            ;
+         }
+      }
+   }
+   // pil64: clear ApplyStack (builds the ApplyFrame on the stack)
    *(word*)&cdr(Pico1) &= ~1;
    /* Sweep */
    Avail = NULL;

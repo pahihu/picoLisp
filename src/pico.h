@@ -145,6 +145,11 @@ typedef struct parseFrame {
    word dig, eof;
 } parseFrame;
 
+typedef struct applyFrame {
+   struct applyFrame *link;
+   any args, body;
+} applyFrame;
+
 typedef struct stkEnv {
    cell *stack, *arg;
    bindFrame *bind;
@@ -152,13 +157,17 @@ typedef struct stkEnv {
    int next, protect, trace;
    any cls, key, task, *make, *yoke;
    any nsp; // list of ns
+   struct coFrame *coFrames;
    inFrame *inFrames;
    outFrame *outFrames;
    errFrame *errFrames;
    ctlFrame *ctlFrames;
+   applyFrame *applyFrames;
+   int applyDepth;
    parseFrame *parser;
    void (*get)(void);
    void (*put)(int);
+   applyFrame AF;
 } stkEnv;
 
 typedef struct catchFrame {
@@ -173,6 +182,23 @@ typedef struct CBL {
    any fun;
    void *cb;
 } CBL;
+
+typedef struct coFrame {
+   struct coFrame *link;
+   any tag; // coro tag
+   bool active; // active?
+   any ret; // return value
+   bool fromMain; // return from coroMain?
+   struct coFrame *mainCoro; // main coro used in (yield 'any)
+   any At;
+   int Chr;
+   inFile *InFile;
+   outFile *OutFile;
+   catchFrame *CatchPtr; // saved CatchPtr
+   stkEnv env; // saved Env
+   ucontext_t ctx; // context
+   char ss[1]; // StkSize'd local stack
+} coFrame;
 
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
@@ -337,21 +363,22 @@ extern any TheKey, TheCls, Thrown;
 extern any Alarm, Sigio, Line, Zero, One, Pico1;
 extern any Transient[IHASH], Extern[EHASH];
 extern CBL Lisp[NCBL];
-extern any ApplyArgs, ApplyBody, DbVal, DbTail;
-extern int ApplyDepth;
+extern any DbVal, DbTail;
 extern any PicoNil, Nil, DB, Meth, Quote, T;
 extern any ISym, NSym, SSym, CSym, BSym;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern any Tstp1, Tstp2;
 extern bool Break;
+extern coFrame **Stack1;
+extern int Stack1s, Stacks, StkSize;
 extern sig_atomic_t Signal[NSIG];
 
 static const word ShortOne = ((2*num(1))<<NORMBITS);
 static const word ShortMax = (~num(2*NORM+1));
 // static const word TNsp = ((2*1383865)<<NORMBITS)+T_SHORTNUM+1;
 // static const word TCo7 = ((2*1369447)<<NORMBITS)+T_SHORTNUM+1;
-extern any TNsp, TCo7;
+extern any TNsp;
 
 /* Prototypes */
 void *alloc(void*,size_t);
@@ -395,6 +422,8 @@ any consNum(word,any);
 any consStr(any);
 any consSym(any,any);
 any consNsp(void);
+void *coroAlloc(int);
+coFrame *coroInit(coFrame*,any);
 void newline(void);
 void ctOpen(any,any,ctlFrame*);
 void db(any,any,int);
@@ -402,6 +431,7 @@ int dbSize(any,any);
 any DADDU(any,word);
 any DADDU1(any);
 any DEC(any);
+void dlError(any,any);
 any doubleToNum(double);
 uint32_t ehash(any);
 any endString(void);
@@ -466,8 +496,10 @@ void pathString(any,char*);
 void pipeError(any,char*);
 void popCtlFiles(void);
 void popInFiles(void);
+void popInFrame(inFrame*);
 void popErrFiles(void);
 void popOutFiles(void);
+void popOutFrame(outFrame*);
 void pr(int,any);
 void prin(any);
 void prin1(any);
@@ -483,6 +515,7 @@ void put(any,any,any);
 void putStdout(int);
 void rdOpen(any,any,inFrame*);
 any read1(int);
+void reentError(any,any);
 int rdBytes(int,byte*,int,bool);
 int secondByte(any);
 void setCooked(void);
@@ -507,6 +540,7 @@ bool wrBytes(int,byte*,int);
 void wrOpen(any,any,outFrame*);
 long xCnt(any,any);
 any xSym(any);
+void yieldError(any,any);
 void zapZero(any);
 
 any doAbs(any);
@@ -586,6 +620,7 @@ any doClip(any);
 any doClose(any);
 any doCmd(any);
 any doCnt(any);
+any doCo(any);
 any doCol(any);
 any doCommit(any);
 any doCon(any);
@@ -833,6 +868,7 @@ any doSpace(any);
 any doSplit(any);
 any doSpQ(any);
 any doSqrt(any);
+any doStack(any);
 any doState(any);
 any doStem(any);
 any doStr(any);
@@ -883,6 +919,7 @@ any doWith(any);
 any doWr(any);
 any doXchg(any);
 any doXor(any);
+any doYield(any);
 any doYoke(any);
 any doZap(any);
 any doZero(any);

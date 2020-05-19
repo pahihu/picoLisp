@@ -29,7 +29,8 @@
    "@test/src/net.l"
    "@test/src/ext.l"
    "@test/src/ht.l"
-   "@test/src/struct.l" )
+   "@test/src/struct.l" 
+   "@test/src/co.l" )
 
 (load "@test/lib.l")
 (load "@test/lib/misc.l")

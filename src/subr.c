@@ -460,6 +460,7 @@ any doLink(any x) {
    x = cdr(x);
    do {
       y = EVAL(car(x));
+// XXX outString("link: ");print1(y);flushAll();newline();
       Env.make = &cdr(*Env.make = cons(y, Nil));
    } while (isCell(x = cdr(x)));
    return y;

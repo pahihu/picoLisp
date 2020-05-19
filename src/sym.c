@@ -694,10 +694,11 @@ any doVal(any ex) {
 // (set 'var 'any ..) -> any
 any doSet(any ex) {
    any x;
-   cell c1, c2;
+   cell c1, c2, c0;
 
    x = cdr(ex);
    do {
+      Push(c0, car(x));
       Push(c1, EVAL(car(x))),  x = cdr(x);
       NeedVar(ex,data(c1));
       CheckVar(ex,data(c1));
@@ -705,7 +706,7 @@ any doSet(any ex) {
          Touch(ex,data(c1));
       Push(c2, EVAL(car(x))),  x = cdr(x);
       val(data(c1)) = data(c2);
-      drop(c1);
+      drop(c0);
    } while (isCell(x));
    return val(data(c1));
 }

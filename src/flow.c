@@ -3,6 +3,7 @@
  */
 
 #include "pico.h"
+#include <ucontext.h>
 
 static void redefMsg(any x, any y) {
    outFile *oSave = OutFile;
@@ -1440,6 +1441,429 @@ any doFinally(any x) {
    EVAL(f.fin);
    CatchPtr = f.link;
    return Pop(c1);
+}
+
+static void closeCoInFrames(inFrame *f) {
+   while (f)
+      popInFrame(f), f = f->link;
+}
+
+static void closeCoOutFrames(outFrame *f) {
+   while (f)
+      popOutFrame(f), f = f->link;
+}
+
+#define CODBG(x)
+
+#if 0
+static void show(char *msg,any x,int nl) {
+   outString(msg); print1(x);
+   if (nl) {
+      flushAll(); newline();
+   }
+}
+#endif
+
+/* Save environment */
+void coroSaveEnv(coFrame *e) {
+   e->env = Env;
+   CODBG(
+      show("coroSaveEnv: ",e->tag,0);
+      show(" make ",box(num(Env.make)),1)
+   )
+   e->At  = At;
+   e->Chr = Chr;
+   e->InFile = InFile;
+   e->OutFile = OutFile;
+   e->CatchPtr = CatchPtr;
+}
+
+/* Load environment */
+void coroLoadEnv(coFrame *e) {
+   CODBG(
+      show("coroLoadEnv: ",e->tag,0);
+      show(" make ",box(num(e->env.make)),1)
+   )
+   At = e->At;
+   Chr = e->Chr;
+   InFile = e->InFile;
+   OutFile = e->OutFile;
+   CatchPtr = e->CatchPtr;
+}
+
+// resume coroutine environment, with return value ret
+any resumeCoro(coFrame *c, coFrame *t, any ret) {
+   int i;
+   bindFrame *mbF, *bF;
+   bool fromMain;
+   coFrame *m;
+
+   CODBG(show("resumeCoro: from ",c->tag,0);show(" to ",t->tag,1))
+   c->active = NO; // mark current inactive
+   m = t->mainCoro; // attach to main
+   coroLoadEnv(t); // load environment
+   t->link = c; Env = t->env; Env.coFrames = t; // close coroutine frame
+   mbF = m->env.bind; // restore bindings
+   for (bF = Env.bind; bF;) {
+      if (!bF->i) {
+         for (i = 0; i < bF->cnt; i++) {
+            any v;
+            v = bF->bnd[i].val;
+            bF->bnd[i].val = val(bF->bnd[i].sym);
+            val(bF->bnd[i].sym) = v;
+         }
+      }
+      bindFrame *lnk = bF->link; // down link
+      bF->link = mbF; // undo reversal
+      mbF = bF;
+      bF = lnk;
+   }
+   Env.bind = mbF;
+   if (CatchPtr) { // catchFrames
+      catchFrame *cF = CatchPtr;
+      while (cF->link)
+         cF = cF->link;
+      cF->link = m->CatchPtr;
+   }
+   else
+      CatchPtr = m->CatchPtr;
+   if (Env.inFrames) { // inFrames
+      inFrame *iF = Env.inFrames;
+      while (iF->link)
+         iF = iF->link;
+      iF->link = m->env.inFrames; // join
+   }
+   else {
+      Chr = m->Chr; // adapt
+      InFile = m->InFile;
+      Env.get = m->env.get;
+      Env.inFrames = m->env.inFrames;
+   }
+   if (Env.outFrames) { // outFrames
+      outFrame *oF = Env.outFrames;
+      while (oF->link)
+         oF = oF->link;
+      oF->link = m->env.outFrames; // join
+   }
+   else {
+      OutFile = m->OutFile; // adapt
+      Env.put = m->env.put;
+      Env.outFrames = m->env.outFrames;
+   }
+   if (Env.applyFrames) { // applyFrames
+      applyFrame *aF = Env.applyFrames;
+      while (aF->link)
+         aF = aF->link;
+      aF->link = m->env.applyFrames; // join
+   }
+   else {
+      // Env.applyDepth = m->env.applyDepth; // adapt
+      Env.applyFrames->link = m->env.applyFrames;
+   }
+   if (Env.stack) { // link to main stack
+      any l = Env.stack;
+      while (l->cdr)
+         l = l->cdr;
+      l->cdr = m->env.stack;
+   }
+   t->active = YES; // mark active
+   t->ret = ret;
+   if (swapcontext(&c->ctx,&t->ctx))
+      giveup("resumeCoro:swapcontext()");
+
+   // XXX return check?
+   fromMain = Env.coFrames->fromMain;
+   CODBG(
+      show("resumeCoro: return ",Env.coFrames->tag,0);
+      show(" fromMain = ",boxCnt(fromMain),0);
+      show(" ret = ",ret,1)
+   )
+   return Env.coFrames->ret;
+   /*
+   Env.coFrames->fromMain = NO;
+   Env.coFrames->active = NO;
+   ret = Env.coFrames->ret; // save return value
+   coroLoadEnv(m); // restore env
+   Env = m->env;
+   if (fromMain)
+      t->tag = Nil, Stacks--;
+   m->active = YES;
+   return val(At) = ret;
+   */
+}
+
+static void coroMain(any x) {
+   cell c1;
+
+   CODBG(show("coroMain: x = ",x,1))
+   Push(c1, x); // save prg
+   x = prog(x); // run prg
+   drop(c1);
+   Env.coFrames->ret = x;
+   Env.coFrames->fromMain = YES;
+   CODBG(show("coroMain: return x = ",x,1))
+}
+
+// (co 'sym [.prg]) -> any
+any doCo(any ex) {
+   any x, tag, ret;
+   bool fromMain;
+   int i;
+
+   ASSERT(Stack1[0]->mainCoro != NULL);
+   x = cdr(ex); tag = EVAL(car(x));
+   CODBG(show("tag = ",tag,1))
+   // main coro cannot be terminated, nor started
+   if (tag == T)
+      return Nil;
+   x = cdr(x);
+   if (isCell(x)) { // prg?
+      coFrame *m, *t;
+      int fi = Stack1s;
+      for (i = 1; Stack1[i]; i++) {
+         coFrame *f = Stack1[i];
+         if (isNil(f->tag))
+            fi = i < fi? i : fi; // remember 1st free
+         else if (f->tag == tag)
+            break;
+      }
+      if (Stack1[i]) { // found
+         t = Stack1[i]; // target
+         if (t->active)
+            reentError(ex, tag);
+         coroSaveEnv(Env.coFrames);
+         CODBG(show("co: (1) ",Nil,1))
+         ret = resumeCoro(Env.coFrames, t, Nil);
+         CODBG(
+            show("co: (1) return ",Env.coFrames->tag,0);
+            show(" ret ",ret,1)
+         )
+         goto coroMainReturn;
+      }
+      if (i == Stack1s) { // all slots allocated
+         if (fi == Stack1s) { // all slots in use
+            CODBG(show(" resize Stacks ",Nil,1))
+            Stack1 = alloc(Stack1, (2 * Stack1s + 1) * sizeof(coFrame*));
+            memset(Stack1 + Stack1s, 0, (Stack1s + 1) * sizeof(coFrame*));
+            Stack1s = 2 * Stack1s;
+         }
+         else
+            i = fi; // select 1st unused slot
+      }
+      else { // not all slots allocated
+         if (fi < i) // any unused slot before?
+            i = fi;
+      }
+      CODBG(show("slot = ",boxCnt(i),1))
+      Stack1[i] = coroInit(coroAlloc(StkSize), tag); Stacks++;
+      t = Stack1[i];
+      CODBG(show("main coro ",t->env.coFrames->tag,1))
+      t->tag = tag;
+      coroSaveEnv(m = Env.coFrames);
+      m->active = NO;
+      t->link = m, Env = t->env, Env.coFrames = t; // close coroutine frame
+      t->active = YES;
+
+      if (getcontext(&t->ctx)) // build ucontext
+         giveup("co:getcontext()");
+      t->ctx.uc_link = &m->ctx; // continue here
+      t->ctx.uc_stack.ss_sp   = t->ss; // set stack
+      t->ctx.uc_stack.ss_size = StkSize;
+      makecontext(&t->ctx, coroMain, 1, x); // execute coroMain(x)
+      CODBG(show("co: from ",m->tag,0);show(" to ",t->tag,1))
+      if (swapcontext(&m->ctx, &t->ctx))
+         giveup("co:swapcontext()");
+
+coroMainReturn:
+      // either from yield or not yielded
+      fromMain = Env.coFrames->fromMain;
+      Env.coFrames->fromMain = NO;
+      Env.coFrames->active = NO;
+      ret = Env.coFrames->ret; // save return value
+      CODBG(
+         show("co: return ",Env.coFrames->tag,0);
+         show(" fromMain = ",boxCnt(fromMain),0);
+         show(" ret ",ret,1);
+      )
+      // coroLoadEnv(m = Env.coFrames->env.coFrames); // restore env
+      ASSERT(Env.coFrames->mainCoro != NULL);
+      coroLoadEnv(m = Env.coFrames->mainCoro); // restore env
+      Env = m->env;
+      if (fromMain)
+         t->tag = Nil, Stacks--;
+      m->active = YES;
+      return val(At) = ret;
+   }
+   // stop coro
+   if (1 == Stacks) // only main coro
+      return Nil;
+   ret = Nil; // assume not found
+   for (i = 1; Stack1[i]; i++) { // except main coro
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag)) {
+         if (f->tag == tag) {
+            if (f->active) {
+               ret = Nil;
+               break;
+            }
+            else {
+               closeCoInFrames(f->env.inFrames);
+               closeCoOutFrames(f->env.outFrames);
+               f->tag = Nil, Stacks--;
+               ret = T;
+               break;
+            }
+         }
+      }
+   }
+   return ret;
+}
+
+// (yield 'any ['sym) -> any
+any doYield(any ex) {
+   int i;
+   any x, ret, tag;
+   coFrame *c, *m, *t, *rtm;
+   cell c1;
+
+   CODBG(show("yield: enter ",Env.coFrames->tag,1))
+   x = cdr(ex);
+   Push(c1, ret = EVAL(car(x)));
+   x = cdr(x), tag = EVAL(car(x));
+   t = 0;
+   if (!isNil(tag)) {
+      for (i = 0; Stack1[i]; i++) {
+         coFrame *f = Stack1[i];
+         if (!isNil(f->tag)) {
+            if (f->tag ==  tag)
+               break;
+         }
+      }
+      if (!Stack1[i]) // not found
+         yieldError(ex,tag);
+      t = Stack1[i];
+      if (t->active)
+         reentError(ex,tag);
+   }
+   ret = Pop(c1);
+   // if (!(m = Env.coFrames->link)) {
+   rtm = Env.coFrames->link;
+   if (!(m = Env.coFrames->mainCoro)) {
+      if (!t)
+         yieldError(ex,tag);
+      CODBG(show("yield: (1) ",Nil,1))
+      ret = resumeCoro(m,t,ret);
+      CODBG(
+         show("yield: (1) return ",Env.coFrames->tag,0);
+         show(" ret = ",ret,1)
+      )
+      return ret;
+   }
+   CODBG(
+      show("rt main = ",rtm->tag,0);
+      show(" main = ",m->tag,1)
+   )
+   // cut everything on main coroutine
+   if (Env.stack != m->env.stack) { // local stack?
+      any l = Env.stack;
+      while (l->cdr != m->env.stack)
+         l = l->cdr;
+      l->cdr = 0; // cut off
+   }
+   else
+      Env.stack = 0;
+   if (Env.applyFrames != m->env.applyFrames) { // local applyFrames?
+      applyFrame *aF = Env.applyFrames;
+      while (aF->link != m->env.applyFrames)
+         aF = aF->link;
+      aF->link = 0;
+   }
+   else {
+      // Env.applyDepth -= m->env.applyDepth;
+      Env.applyFrames->link = 0;
+   }
+   if (Env.outFrames != m->env.outFrames) { // local outFrames?
+      outFrame *oF = Env.outFrames;
+      while (oF->link != m->env.outFrames)
+         oF = oF->link;
+      oF->link = 0; // cut off
+   }
+   else
+      Env.outFrames = 0;
+   if (Env.inFrames != m->env.inFrames) { // local inFrames?
+      inFrame *iF = Env.inFrames;
+      while (iF->link != m->env.inFrames)
+         iF = iF->link;
+      iF->link = 0;
+   }
+   else
+      Env.inFrames = 0;
+   if (CatchPtr != m->CatchPtr) { // local catchFrames?
+      catchFrame *cF = CatchPtr;
+      while (cF->link != m->CatchPtr)
+         cF = cF->link;
+      cF->link = 0; // cut off
+   }
+   else
+      CatchPtr = 0;
+   if (Env.bind != m->env.bind) { // reverse bindings
+      bindFrame *c = 0, *b;
+      for (b = Env.bind; b != m->env.bind; ) {
+         if (!b->i) {
+            for (i = 0; i < b->cnt; i++) {
+               any v = b->bnd[i].val; // exchange with saved value
+               b->bnd[i].val = val(b->bnd[i].sym);
+               val(b->bnd[i].sym) = v;
+            }
+         }
+         bindFrame *lnk = b->link;
+         b->link = c;
+         c = b;
+         b = lnk;
+      }
+      Env.bind = c;
+   }
+   else
+      Env.bind = 0;
+   coroSaveEnv(c = Env.coFrames); // save env
+   if (!t) { // no target, going to main
+      bool fromMain;
+      c->active = NO;
+      coroLoadEnv(m);
+      Env = m->env;
+      m->ret = ret;
+      m->active = YES;
+      CODBG(show("yield: (2) from ",c->tag,0);show(" to ",m->tag,1))
+      if (swapcontext(&c->ctx,&m->ctx))
+         giveup("yield:swapcontext()");
+
+      // XXX return check?
+      fromMain = Env.coFrames->fromMain;
+      CODBG(
+         show("yield: (2) return ",Env.coFrames->tag,0);
+         show(" fromMain = ",boxCnt(fromMain),0);
+         show(" ret ",ret,1)
+      )
+      return Env.coFrames->ret;
+      /*
+      Env.coFrames->fromMain = NO;
+      Env.coFrames->active = NO;
+      ret = Env.coFrames->ret; // save return value
+      coroLoadEnv(c); // restore env
+      Env = c->env;
+      if (fromMain)
+         m->tag = Nil, Stacks--;
+      c->active = YES;
+      return val(At) = ret;
+      */
+   }
+   CODBG(show("yield: (3) ",Nil,1))
+   ret = resumeCoro(c,t,ret);
+   CODBG(
+      show("yield: (3) return ",Env.coFrames->tag,0);
+      show(" ret ",ret,1)
+   )
+   return ret;
 }
 
 static outFrame Out;

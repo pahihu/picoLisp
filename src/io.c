@@ -1030,13 +1030,13 @@ void pushCtlFiles(ctlFrame *f) {
    f->link = Env.ctlFrames,  Env.ctlFrames = f;
 }
 
-void popInFiles(void) {
-   if (Env.inFrames->pid) {
-      close(Env.inFrames->fd),  closeInFile(Env.inFrames->fd);
-      if (Env.inFrames->pid > 1) {
+void popInFrame(inFrame *f) {
+   if (f->pid) {
+      close(f->fd),  closeInFile(f->fd);
+      if (f->pid > 1) {
          int res;
 
-         while (waitpid(Env.inFrames->pid, &res, 0) < 0) {
+         while (waitpid(f->pid, &res, 0) < 0) {
             if (errno != EINTR)
                closeErr();
             if (*Signal)
@@ -1045,6 +1045,11 @@ void popInFiles(void) {
          val(At2) = boxCnt(res);
       }
    }
+}
+
+void popInFiles(void) {
+   if (Env.inFrames->pid)
+      popInFrame(Env.inFrames);
    else if (InFile)
       InFile->next = Chr;
    Env.get = Env.inFrames->get;
@@ -1053,14 +1058,13 @@ void popInFiles(void) {
          InFile->next : -1;
 }
 
-void popOutFiles(void) {
-   flush(OutFile);
-   if (Env.outFrames->pid) {
-      close(Env.outFrames->fd),  closeOutFile(Env.outFrames->fd);
-      if (Env.outFrames->pid > 1) {
+void popOutFrame(outFrame *f) {
+   if (f->pid) {
+      close(f->fd),  closeOutFile(f->fd);
+      if (f->pid > 1) {
          int res;
 
-         while (waitpid(Env.outFrames->pid, &res, 0) < 0) {
+         while (waitpid(f->pid, &res, 0) < 0) {
             if (errno != EINTR)
                closeErr();
             if (*Signal)
@@ -1069,6 +1073,12 @@ void popOutFiles(void) {
          val(At2) = boxCnt(res);
       }
    }
+}
+
+void popOutFiles(void) {
+   flush(OutFile);
+   if (Env.outFrames->pid)
+      popOutFrame(Env.outFrames);
    Env.put = Env.outFrames->put;
    OutFile = OutFiles[(Env.outFrames = Env.outFrames->link)? Env.outFrames->fd : STDOUT_FILENO];
 }

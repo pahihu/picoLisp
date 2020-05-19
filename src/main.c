@@ -33,8 +33,7 @@ void (*putBin)(int);
 any TheKey, TheCls, Thrown;
 any Alarm, Sigio, Line, Zero, One, Pico1;
 any Transient[IHASH], Extern[EHASH];
-any ApplyArgs, ApplyBody, DbVal, DbTail;
-int ApplyDepth;
+any DbVal, DbTail;
 any PicoNil, Nil, DB, Meth, Quote, T;
 any ISym, NSym, SSym, CSym, BSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
@@ -42,6 +41,9 @@ any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 any Tstp1, Tstp2;
 any TNsp, TCo7;
 bool Break;
+coFrame **Stack1; // coro stacks
+int Stack1s; // #Stack1[] - 1, last elt always NULL
+int Stacks, StkSize; // #stacks, stack size
 sig_atomic_t Signal[NSIG];
 
 static int TtyPid;
@@ -286,6 +288,25 @@ void freeAligned(void *p) {
 #endif
 }
 
+/* Allocate coroutine env. */
+void *coroAlloc(int siz) {
+   void *p = NULL;
+   return alloc(p, sizeof(coFrame) + siz - sizeof(char));
+}
+
+coFrame *coroInit(coFrame *f, any tag) {
+   memset(f, 0, sizeof(coFrame));
+   f->tag = tag;
+   f->active = NO;
+   f->ret = Nil;
+   f->At  = Nil;
+   f->env = Env;
+   f->env.make = f->env.yoke = 0; // clean make env
+   f->env.applyDepth = 1; // always allocate applyFrame
+   f->mainCoro = Env.coFrames; // main coro
+   return f;
+}
+
 /* Allocate cell heap */
 void heapAlloc(void) {
    heap *h;
@@ -314,6 +335,32 @@ any doHeap(any x) {
    for (x = Avail;  x;  x = car(x))
       ++n;
    return boxCnt(n / CELLS);
+}
+
+// (stack ['cnt]) -> cnt | (.. sym . cnt)
+any doStack(any x) {
+   int i;
+   cell c1;
+
+   if (isCell(cdr(x))) {
+      if (1 == Stacks) { // just main stack
+         StkSize = 1024 * evCnt(x,cdr(x));
+         if (StkSize < MINSIGSTKSZ)
+            StkSize = MINSIGSTKSZ;
+         for (i = 0; Stack1[i]; i++)
+            free(Stack1[i]), Stack1[i] = NULL;
+         Env.coFrames = Stack1[0] = coroInit(coroAlloc(4 * StkSize), T);
+         Env.coFrames->mainCoro = Env.coFrames;
+         return boxCnt(StkSize / 1024);
+      }
+   }
+   Push(c1, boxCnt(StkSize / 1024));
+   for (i = 1; Stack1[i]; i++) { // skip main coro
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag))
+         data(c1) = cons(f->tag, data(c1));
+   }
+   return Pop(c1);
 }
 
 // (adr 'var) -> num
@@ -725,6 +772,7 @@ void err(any ex, any x, char *fmt, ...) {
    Env.parser = NULL;
    Env.put = putStdout;
    Env.get = getStdin;
+   Env.coFrames = Stack1[0]; Stacks = 1;
    longjmp(ErrRst, +1);
 }
 
@@ -757,7 +805,8 @@ void protError(any ex, any x) {err(ex, x, "Protected symbol");}
 void pipeError(any ex, char *s) {err(ex, NULL, "Pipe %s error", s);}
 void dlError(any ex, any x) {err(ex, x, "[DLL] %s", dlerror());}
 void cbError(any ex, any x) {err(ex, x, "Too many callbacks");}
-void nativeError(any ex, any x) {err(ex, x, "Must call");}
+void reentError(any ex, any x) {err(ex, x, "Reentrant coroutine");}
+void yieldError(any ex, any x) {err(ex, x, "No coroutine");}
 
 void unwind(catchFrame *catch) {
    any x;
@@ -797,6 +846,12 @@ void unwind(catchFrame *catch) {
          popErrFiles();
       while (Env.ctlFrames != q->env.ctlFrames)
          popCtlFiles();
+      // terminate skipped coroutines
+      while (Env.coFrames != q->env.coFrames) {
+         if (Env.coFrames->tag != T) // except main coro
+            Env.coFrames->tag = Nil, Stacks--;
+         Env.coFrames = Env.coFrames->link;
+      }
       Env = q->env;
       EVAL(q->fin);
       CatchPtr = q->link;
@@ -817,6 +872,15 @@ void unwind(catchFrame *catch) {
       popErrFiles();
    while (Env.ctlFrames)
       popCtlFiles();
+   // terminate all active coroutines, except main
+   for (i = 1; Stack1[i]; i++) {
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag)) {
+         if (f->active) {
+            f->tag = Nil, f->active = NO, Stacks--;
+         }
+      }
+   }
 }
 
 /*** Evaluation ***/
@@ -2069,9 +2133,10 @@ static void init(int ac, char *av[]) {
       setrlimit(RLIMIT_STACK, &ULim);
    }
    Tio = tcgetattr(STDIN_FILENO, &OrgTermio) == 0;
-   ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
-   ApplyBody = cons(Nil,Nil);
-   ApplyDepth = 0;
+   Env.AF.args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+   Env.AF.body = cons(Nil,Nil);
+   Env.applyFrames = &Env.AF;
+   Env.applyDepth = 0;
    Env.exe = Nil;
    sigfillset(&sigs);
    sigprocmask(SIG_UNBLOCK, &sigs, NULL);
@@ -2090,6 +2155,14 @@ static void init(int ac, char *av[]) {
    signal(SIGTTOU, SIG_IGN);
    gettimeofday(&Tv,NULL);
    USec = (word2)Tv.tv_sec*1000000 + Tv.tv_usec;
+   StkSize = 64 * 1024;
+   // default 16 coroutines
+   Stack1s = 16;
+   Stack1 = alloc(Stack1, (Stack1s + 1) * sizeof(coFrame*));
+   memset(Stack1, 0, (Stack1s + 1) * sizeof(coFrame*));
+   // main coro
+   Env.coFrames = Stack1[Stacks++] = coroInit(coroAlloc(4 * StkSize), T);
+   Env.coFrames->mainCoro = Env.coFrames;
 }
 
 int MAIN(int ac, char *av[]) {
