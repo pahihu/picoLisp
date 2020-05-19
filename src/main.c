@@ -1049,12 +1049,6 @@ static int fetchChar(byte **pbuf) {
 
 #define NATDBG(x)
 
-#if 0
-static void show(char *msg, any x) {
-   outString(msg); print1(x); newline(); flushAll();
-}
-#endif
-
 /* Extract return value(s) with spec x from buf */
 static any natRet(any x, byte **pbuf, int C) {
    any y, ret;
@@ -1258,7 +1252,11 @@ typedef union {
 } CARG;
 
 // Native library interface from pil21 sources (c) abu
+#ifdef __APPLE__
 #include <ffi/ffi.h>
+#else
+#include <ffi.h>
+#endif
 
 typedef struct ffi {
    ffi_cif cif;
@@ -1274,7 +1272,7 @@ typedef struct ffi {
 #endif
 
 static ffi_type *ffiType(any y,int isarg) {
-   NATDBG(show("ffiType ? ",y))
+   NATDBG(show("ffiType ? ",y,1))
    if (isNil(y)) { // 'NIL
       NATDBG(fprintf(stderr,"void\n"))
       return &ffi_type_void;
@@ -1421,9 +1419,9 @@ any doNative(any ex) {
    }
    x = cdr(x), y = EVAL(sym2 = car(x)); // function ptr
    Push(c1, sym2);
-   NATDBG(show("function ptr = ",y))
+   NATDBG(show("function ptr = ",y,1))
    x = evalList(cdr(x)); // eval argument list
-   NATDBG(show("eval'd args = ",x))
+   NATDBG(show("eval'd args = ",x,1))
 
    oldffi = NO;
    if (isNum(y)) {
@@ -1529,13 +1527,13 @@ any doNative(any ex) {
          ; // skip fixed args marker
       else {
          arg = args[i++];
-         NATDBG(show("y = ",y))
+         NATDBG(show("y = ",y,1))
          if (isCell(y)) {
             if (isCell(cdr(y)) && !isNum(cadr(y))) {      // (Tim ^(8 B . 8))
               if (!isNil(car(y))) {     // (^Tim (8 B . 8))
                  NATDBG(
-                    show(" cadr(y) = ",  cadr(y));
-                    show("cdadr(y) = ", cdadr(y));
+                    show(" cadr(y) = ",  cadr(y),1);
+                    show("cdadr(y) = ", cdadr(y),1);
                  )
                  val(car(y)) = natRet(cdadr(y), (byte **)&arg.p, 1);
               }
@@ -2183,3 +2181,14 @@ void myAssert(int cond,const char *expr,const char *path,int line) {
       flushAll(); giveup(msg);
    }
 }
+
+void show(char *msg,any x,int nl) {
+   cell c1;
+   Push(c1, x);
+   outString(msg); print1(x);
+   if (nl) {
+      flushAll(); newline();
+   }
+   drop(c1);
+}
+

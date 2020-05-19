@@ -1328,8 +1328,8 @@ any doPut(any ex) {
    any x;
    cell c1, c2, c3;
 
-   x = cdr(ex),  Push(c1, EVAL(car(x)));
-   x = cdr(x),  Push(c2, EVAL(car(x)));
+   x = cdr(ex),  Push(c1, EVAL(car(x))); // item
+   x = cdr(x),  Push(c2, EVAL(car(x))); // key
    while (isCell(cdr(x = cdr(x)))) {
       if (isCell(data(c1)))
          data(c1) = getn(data(c2), data(c1));
@@ -1340,17 +1340,25 @@ any doPut(any ex) {
       }
       data(c2) = EVAL(car(x));
    }
-   NeedSym(ex,data(c1));
+   // NeedSym(ex,data(c1));
+   if (isNum(data(c1)))
+      argError(ex,data(c1));
    Push(c3, EVAL(car(x)));
-   if (isNum(data(c2)) && IsZero(data(c2))) {
-      Touch(ex,data(c1));
-      CheckVar(ex,data(c1));
-      val(data(c1)) = x = data(c3);
+   if (isCell(data(c1))) {
+      // XXX
+      ;
    }
    else {
-      if (isExt(data(c1)))
-         db(ex, data(c1), !isNil(data(c2))? 2 : 1);
-      put(data(c1), data(c2), x = data(c3));
+      if (isNum(data(c2)) && IsZero(data(c2))) {
+         Touch(ex,data(c1));
+         CheckVar(ex,data(c1));
+         val(data(c1)) = x = data(c3);
+      }
+      else {
+         if (isExt(data(c1)))
+            db(ex, data(c1), !isNil(data(c2))? 2 : 1);
+         put(data(c1), data(c2), x = data(c3));
+      }
    }
    drop(c1);
    return x;

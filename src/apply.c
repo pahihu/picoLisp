@@ -121,14 +121,17 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
       foo = val(foo);
    }
    if (Env.applyDepth++) {
-      af.body = cons(Nil,Nil), af.link = Env.applyFrames;
+      // !!! every time initialize frame fields, before linking to Env !!!
+      af.body = cons(Nil,Nil);
+      af.args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+      af.link = Env.applyFrames;
       Env.applyFrames = &af;
    }
    applyFrame *caf = Env.applyFrames; // current Apply frame
    if (--n < 0)
       cdr(caf->body) = Nil;
    else {
-      any x = Env.applyDepth>1? cons(cons(consSym(Nil,Nil), Nil), Nil) : caf->args;
+      any x = caf->args;
       val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
       while (--n >= 0) {
          if (!isCell(cdr(x)))

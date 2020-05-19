@@ -7,7 +7,7 @@
 (de passwd (Str Salt)
    (if *Salt
       `(if (and *CPU (== 64 64))
-         '(native "libcrypt.so" "crypt" 'S Str (or Salt (salt)))
+         '(native `(shlib "libcrypt") "crypt" 'S Str (or Salt (salt)))
          '(ext:Crypt Str (or Salt (salt))) )
       Str ) )
 

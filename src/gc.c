@@ -69,7 +69,7 @@ static long GcCount = CELLS;
 void gc(long c) {
    any p, *pp, x;
    heap *h;
-   int i, n;
+   int i;
 
 // XXX outString("=== gc ==="); flushAll();
 
@@ -98,7 +98,7 @@ void gc(long c) {
       coFrame *f = (coFrame*)p;
       mark(f->env.nsp); // mark saved ns
    }
-   for (i = 0; i < Stacks; i++) {
+   for (i = 0; Stack1[i]; i++) {
       coFrame *f = Stack1[i];
       if (!isNil(f->tag)) { // used?
          mark(f->tag);
@@ -128,7 +128,7 @@ void gc(long c) {
          else
             *(word*)(pp = &cdr(p)) &= ~1;
    /* Clean up */
-   for (i = 0; i < (n = Stacks); i++) {
+   for (i = 0; Stack1[i]; i++) {
       coFrame *f = Stack1[i];
       any tag = f->tag;
       if (!isNil(tag)) {

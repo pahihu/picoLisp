@@ -521,6 +521,7 @@ int secondByte(any);
 void setCooked(void);
 void setRaw(void);
 bool sharedLib(any);
+void show(char*,any,int);
 void sighandler(any);
 int slow(inFile*,bool);
 void space(void);

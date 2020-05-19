@@ -420,7 +420,7 @@ void initSymbols(void) {
    // Env.nsp contains symbols !!!
    Env.nsp = Pico1 = cons(initSym(Pico,"pico"),Nil); // initial ns lst
 
-   initSym(mkStr(_CPU), "%CPU");
+   initSym(mkStr(_CPU), "*CPU");
    initSym(mkStr(_OS), "*OS");
    DB    = initSym(Nil, "*DB");
    Meth  = initSym(boxFun(doMeth), "meth");
