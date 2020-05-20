@@ -1775,12 +1775,11 @@ any doYield(any ex) {
          yieldError(ex,tag);
       CODBG(show("yield: (1) tgt ",t->tag,1))
       ret = resumeCoro(c,t,ret);
-
-      // returned the coro to the main coro, continue in main
-      // what to do here???
+      // return from main coro
       t = Env.coFrames;
       CODBG(show("yield: (1) return ",t->tag,1))
-      return mainCoRet(1);
+      // if the routine is terminated, we are in the main !!!
+      return mainCoRet(0);
    }
    CODBG(
       coFrame *rtm = Env.coFrames->link;
