@@ -7,6 +7,7 @@ This picoLisp fork can be built in 32bit/64bit mode and picolisp32 has all the
 documented features of pil64, except the external symbols and database format.
 So where you see in the documentation "6bit-only", you can try out the examples.They should work.
 
+* added lst target in put and =:
 * fixed coroutine issues, tankf33der tests are running, except advent2019
 * added coroutines co,yield,stack
 * fixed float/double scaling in native calls

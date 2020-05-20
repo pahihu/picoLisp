@@ -196,6 +196,8 @@ typedef struct coFrame {
    outFile *OutFile;
    catchFrame *CatchPtr; // saved CatchPtr
    stkEnv env; // saved Env
+   char *file; // last pos
+   int line;
    ucontext_t ctx; // context
    char ss[1]; // StkSize'd local stack
 } coFrame;
@@ -424,6 +426,7 @@ any consSym(any,any);
 any consNsp(void);
 void *coroAlloc(int);
 coFrame *coroInit(coFrame*,any);
+bool coroValid(coFrame*);
 void newline(void);
 void ctOpen(any,any,ctlFrame*);
 void db(any,any,int);

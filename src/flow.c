@@ -1453,7 +1453,22 @@ static void closeCoOutFrames(outFrame *f) {
       popOutFrame(f), f = f->link;
 }
 
+#if 0
+#define CODBG(x) x;
+#define COMARK(c,t) \
+   (c)->file = __FILE__; (c)->line = __LINE__; \
+   CODBG( \
+      show("swapCoro: ",(c)->tag,0); \
+      show(" (",box(num(&(c)->ctx)),0); \
+      show(") => ",(t)->tag,0); \
+      show(" (",box(num(&(t)->ctx)),0); \
+      show(") ",mkStr((t)->file),0); \
+      show(":",boxCnt((t)->line),1) \
+   )
+#else
 #define CODBG(x)
+#define COMARK(c,t)
+#endif
 
 /* Save environment */
 void coroSaveEnv(coFrame *e) {
@@ -1564,6 +1579,7 @@ any resumeCoro(coFrame *c, coFrame *t, any ret) {
 resumeOnly:
    t->active = YES; // mark active
    t->ret = ret;
+   COMARK(c,t);
    if (swapcontext(&c->ctx,&t->ctx))
       giveup("resumeCoro:swapcontext()");
 
@@ -1588,15 +1604,50 @@ static void coroMain(any x) {
    CODBG(show("coroMain: return x = ",x,1))
 }
 
+static any mainCoRet(int doswap) {
+   any ret;
+   bool fromMain;
+   coFrame *m, *t;
+   cell c1;
+
+   // either from yield or not yielded
+   t = Env.coFrames;
+   ASSERT(coroValid(t));
+   fromMain = t->fromMain;
+   t->fromMain = NO;
+   t->active = NO;
+   Push(c1, ret = t->ret); // save return value
+   CODBG(
+      show("mainCoRet: return ",t->tag,0);
+      show(" fromMain = ",boxCnt(fromMain),0);
+      show(" ret ",ret,1);
+   )
+   // coroLoadEnv(m = Env.coFrames->env.coFrames); // restore env
+   coroLoadEnv(m = t->mainCoro); // restore env
+   Env = m->env;
+   if (fromMain) {
+      CODBG(show("mainCoRet: stop coro ",t->tag,1))
+      t->tag = Nil, Stacks--;
+   }
+   m->active = YES;
+   if (fromMain && doswap) {
+      m->ret = Pop(c1);
+      CODBG(show("mainCoRet: swap to main ",m->tag,1))
+      COMARK(t,m);
+      if (swapcontext(&t->ctx,&m->ctx))
+         giveup("mainCoRet:swapcontext()");
+      giveup("mainCoRet: (1) return");
+   }
+   return val(At) = Pop(c1);
+}
 // (co 'sym [.prg]) -> any
 any doCo(any ex) {
    any x, tag, ret;
-   bool fromMain;
    int i;
 
    ASSERT(Stack1[0]->mainCoro != NULL);
    x = cdr(ex); tag = EVAL(car(x));
-   CODBG(show("tag = ",tag,1))
+   CODBG(show("co: tag = ",tag,1))
    // main coro cannot be terminated, nor started
    if (tag == T)
       return Nil;
@@ -1618,13 +1669,8 @@ any doCo(any ex) {
          coroSaveEnv(Env.coFrames);
          CODBG(show("co: (1) ",Nil,1))
          ret = resumeCoro(Env.coFrames, t, Nil);
-         CODBG(
-            cell c1; Push(c1, ret);
-            show("co: (1) return ",Env.coFrames->tag,0);
-            show(" ret ",ret,1);
-            drop(c1)
-         )
-         goto coroMainReturn;
+         CODBG(show("co: (1) return ",Nil,1))
+         return mainCoRet(0);
       }
       if (i == Stack1s) { // all slots allocated
          if (fi == Stack1s) { // all slots in use
@@ -1640,7 +1686,7 @@ any doCo(any ex) {
          if (fi < i) // any unused slot before?
             i = fi;
       }
-      CODBG(show("slot = ",boxCnt(i),1))
+      CODBG(show("co: new coro slot = ",boxCnt(i),1))
       Stack1[i] = coroInit(coroAlloc(StkSize), tag); Stacks++;
       t = Stack1[i];
       CODBG(show("main coro ",t->env.coFrames->tag,1))
@@ -1660,32 +1706,12 @@ any doCo(any ex) {
          show("co: from ",m->tag,0);
          show(" to ",t->tag,1)
       )
+      COMARK(m,t);
       if (swapcontext(&m->ctx, &t->ctx))
          giveup("co:swapcontext()");
 
-coroMainReturn:
-      // either from yield or not yielded
-      fromMain = Env.coFrames->fromMain;
-      Env.coFrames->fromMain = NO;
-      Env.coFrames->active = NO;
-      ret = Env.coFrames->ret; // save return value
-      CODBG(
-         cell c1; Push(c1, ret);
-         show("co: return ",Env.coFrames->tag,0);
-         show(" fromMain = ",boxCnt(fromMain),0);
-         show(" ret ",ret,1);
-         drop(c1);
-      )
-      // coroLoadEnv(m = Env.coFrames->env.coFrames); // restore env
-      ASSERT(Env.coFrames->mainCoro != NULL);
-      coroLoadEnv(m = Env.coFrames->mainCoro); // restore env
-      Env = m->env;
-      if (fromMain) {
-         CODBG(show("co: stop coro ",t->tag,1))
-         t->tag = Nil, Stacks--;
-      }
-      m->active = YES;
-      return val(At) = ret;
+      CODBG(show("co: return ",Env.coFrames->tag,1))
+      return mainCoRet(0);
    }
    // stop coro
    if (1 == Stacks) // only main coro
@@ -1702,6 +1728,7 @@ coroMainReturn:
             else {
                closeCoInFrames(f->env.inFrames);
                closeCoOutFrames(f->env.outFrames);
+               CODBG(show("co: kill coro ",f->tag,1))
                f->tag = Nil, Stacks--;
                ret = T;
                break;
@@ -1744,7 +1771,6 @@ any doYield(any ex) {
    // if (!(m = Env.coFrames->link)) {
    m = Env.coFrames->mainCoro;
    if (c == m) { // main coro yield?
-      bool fromMain;
       if (!t)
          yieldError(ex,tag);
       CODBG(show("yield: (1) tgt ",t->tag,1))
@@ -1753,18 +1779,8 @@ any doYield(any ex) {
       // returned the coro to the main coro, continue in main
       // what to do here???
       t = Env.coFrames;
-      fromMain = t->fromMain;
-      t->fromMain = NO;
-      t->active = NO;
-      // ret = Env.coFrames->ret; // save return value
-      CODBG(
-         cell c1; Push(c1, ret);
-         show("yield: (1) return ",t->tag,0);
-         show(" fromMain = ",boxCnt(fromMain),0);
-         show(" ret = ",ret,1);
-         drop(c1)
-      )
-      return ret;
+      CODBG(show("yield: (1) return ",t->tag,1))
+      return mainCoRet(1);
    }
    CODBG(
       coFrame *rtm = Env.coFrames->link;
@@ -1841,6 +1857,7 @@ any doYield(any ex) {
       m->ret = ret;
       m->active = YES;
       CODBG(show("yield: (2) from ",c->tag,0);show(" to ",m->tag,1))
+      COMARK(c,m);
       if (swapcontext(&c->ctx,&m->ctx))
          giveup("yield:swapcontext()");
 

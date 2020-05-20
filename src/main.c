@@ -307,6 +307,14 @@ coFrame *coroInit(coFrame *f, any tag) {
    return f;
 }
 
+bool coroValid(coFrame *f) {
+   if (f->tag == Nil)
+      return NO;
+   if (f->mainCoro == NULL)
+      return NO;
+   return YES;
+}
+
 /* Allocate cell heap */
 void heapAlloc(void) {
    heap *h;

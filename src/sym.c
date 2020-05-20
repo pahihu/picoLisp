@@ -1323,6 +1323,13 @@ any prop(any x, any key) {
    return y;
 }
 
+static any asoq(any x, any y) {
+   for (;  isCell(y);  y = cdr(y))
+      if (isCell(car(y)) && x == caar(y))
+         return car(y);
+   return Nil;
+}
+
 // (put 'sym1|lst ['sym2|cnt ..] 'sym|0 'any) -> any
 any doPut(any ex) {
    any x;
@@ -1345,8 +1352,17 @@ any doPut(any ex) {
       argError(ex,data(c1));
    Push(c3, EVAL(car(x)));
    if (isCell(data(c1))) {
-      // XXX
-      ;
+      any p;
+      if (isNum(data(c2))) {
+         p = nth(unDigU(data(c2)), data(c1));
+         NeedPair(ex,p);
+         car(p) = x = data(c3);
+      }
+      else {
+         p = asoq(data(c2), data(c1));
+         NeedPair(ex,p);
+         cdr(p) = x = data(c3);
+      }
    }
    else {
       if (isNum(data(c2)) && IsZero(data(c2))) {
@@ -1450,17 +1466,34 @@ any doSetCol(any ex) {
          }
       }
    }
-   NeedSym(ex,y);
+   // NeedSym(ex,y);
+   if (isNum(y))
+      argError(ex,y);
    Push(c1, EVAL(car(x)));
-   if (isNum(z) && IsZero(z)) {
-      Touch(ex,y);
-      CheckVar(ex,y);
-      val(y) = x = data(c1);
+   if (isCell(y)) {
+      any p;
+      if (isNum(z)) {
+         p = nth(unDigU(z), y);
+         NeedPair(ex,p);
+         car(p) = x = data(c1);
+      }
+      else {
+         p = asoq(z, y);
+         NeedPair(ex,p);
+         cdr(p) = x = data(c1);
+      }
    }
    else {
-      if (isExt(y))
-         db(ex, y, !isNil(z)? 2 : 1);
-      put(y, z, x = data(c1));
+      if (isNum(z) && IsZero(z)) {
+         Touch(ex,y);
+         CheckVar(ex,y);
+         val(y) = x = data(c1);
+      }
+      else {
+         if (isExt(y))
+            db(ex, y, !isNil(z)? 2 : 1);
+         put(y, z, x = data(c1));
+      }
    }
    drop(c1);
    return x;
