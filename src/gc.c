@@ -94,10 +94,6 @@ void gc(long c) {
       mark(Transient[i]);
    markEnv(&Env); // mark current env
    markCatch(CatchPtr);
-   for (p = (any)Env.coFrames; p; p = (any)((coFrame*)p)->link) {
-      coFrame *f = (coFrame*)p;
-      mark(f->env.nsp); // mark saved ns
-   }
    for (i = 0; Stack1[i]; i++) {
       coFrame *f = Stack1[i];
       if (!isNil(f->tag)) { // used?

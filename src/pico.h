@@ -157,7 +157,7 @@ typedef struct stkEnv {
    int next, protect, trace;
    any cls, key, task, *make, *yoke;
    any nsp; // list of ns
-   struct coFrame *coFrames;
+   struct coFrame *coF;
    inFrame *inFrames;
    outFrame *outFrames;
    errFrame *errFrames;
@@ -167,7 +167,6 @@ typedef struct stkEnv {
    parseFrame *parser;
    void (*get)(void);
    void (*put)(int);
-   applyFrame AF;
 } stkEnv;
 
 typedef struct catchFrame {
@@ -198,6 +197,7 @@ typedef struct coFrame {
    stkEnv env; // saved Env
    char *file; // last pos
    int line;
+   bool attached; // attached to main?
    ucontext_t ctx; // context
    char ss[1]; // StkSize'd local stack
 } coFrame;

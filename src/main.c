@@ -302,8 +302,13 @@ coFrame *coroInit(coFrame *f, any tag) {
    f->At  = Nil;
    f->env = Env;
    f->env.make = f->env.yoke = 0; // clean make env
-   f->env.applyDepth = 1; // always allocate applyFrame
-   f->mainCoro = Env.coFrames; // main coro
+   f->env.applyFrames = alloc(NULL,sizeof(applyFrame));
+   f->env.applyFrames->args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+   f->env.applyFrames->body = cons(Nil,Nil);
+   f->env.applyFrames->link = Env.applyFrames;
+   f->env.applyDepth = 0;
+   f->mainCoro = Env.coF; // main coro
+   f->attached = YES;
    return f;
 }
 
@@ -311,7 +316,8 @@ bool coroValid(coFrame *f) {
    if (f->tag == Nil)
       return NO;
    if (f->mainCoro == NULL)
-      return NO;
+      if (f->tag != T)
+         return NO;
    return YES;
 }
 
@@ -357,8 +363,8 @@ any doStack(any x) {
             StkSize = MINSIGSTKSZ;
          for (i = 0; Stack1[i]; i++)
             free(Stack1[i]), Stack1[i] = NULL;
-         Env.coFrames = Stack1[0] = coroInit(coroAlloc(4 * StkSize), T);
-         Env.coFrames->mainCoro = Env.coFrames;
+         Env.coF = Stack1[0] = coroInit(coroAlloc(4 * StkSize), T);
+         Env.coF->mainCoro = Env.coF;
          return boxCnt(StkSize / 1024);
       }
    }
@@ -780,7 +786,7 @@ void err(any ex, any x, char *fmt, ...) {
    Env.parser = NULL;
    Env.put = putStdout;
    Env.get = getStdin;
-   Env.coFrames = Stack1[0]; Stacks = 1;
+   Env.coF = Stack1[0]; Stacks = 1;
    longjmp(ErrRst, +1);
 }
 
@@ -855,10 +861,10 @@ void unwind(catchFrame *catch) {
       while (Env.ctlFrames != q->env.ctlFrames)
          popCtlFiles();
       // terminate skipped coroutines
-      while (Env.coFrames != q->env.coFrames) {
-         if (Env.coFrames->tag != T) // except main coro
-            Env.coFrames->tag = Nil, Stacks--;
-         Env.coFrames = Env.coFrames->link;
+      while (Env.coF != q->env.coF) {
+         if (Env.coF->tag != T) // except main coro
+            Env.coF->tag = Nil, Stacks--;
+         Env.coF= Env.coF->link;
       }
       Env = q->env;
       EVAL(q->fin);
@@ -2139,9 +2145,10 @@ static void init(int ac, char *av[]) {
       setrlimit(RLIMIT_STACK, &ULim);
    }
    Tio = tcgetattr(STDIN_FILENO, &OrgTermio) == 0;
-   Env.AF.args = cons(cons(consSym(Nil,Nil), Nil), Nil);
-   Env.AF.body = cons(Nil,Nil);
-   Env.applyFrames = &Env.AF;
+   Env.applyFrames = alloc(Env.applyFrames,sizeof(applyFrame));
+   Env.applyFrames->link = NULL;
+   Env.applyFrames->args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+   Env.applyFrames->body = cons(Nil,Nil);
    Env.applyDepth = 0;
    Env.exe = Nil;
    sigfillset(&sigs);
@@ -2167,8 +2174,8 @@ static void init(int ac, char *av[]) {
    Stack1 = alloc(Stack1, (Stack1s + 1) * sizeof(coFrame*));
    memset(Stack1, 0, (Stack1s + 1) * sizeof(coFrame*));
    // main coro
-   Env.coFrames = Stack1[Stacks++] = coroInit(coroAlloc(4 * StkSize), T);
-   Env.coFrames->mainCoro = Env.coFrames;
+   Env.coF= Stack1[Stacks++] = coroInit(coroAlloc(4 * StkSize), T);
+   Env.coF->mainCoro = Env.coF;
 }
 
 int MAIN(int ac, char *av[]) {
