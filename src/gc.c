@@ -8,24 +8,70 @@
 static void mark(any x) {
    cell *p;
 
-   if (isShort(x))
+   if (isShort(x)) // short number
       return;
-
    while (num((p = cellPtr(x))->cdr) & 1) {
       *(word*)&cdr(p) &= ~1;
       if (!isNum(x))
          mark(p->car);
+      if (isNsp(x)) { // namespace
+         any *q = ptrNsp(x);
+         int i;
+// fprintf(stderr,"*** mark ns %p\n",q);
+         for (i = 0; i < IHASH; i++)
+            mark(q[i]);
+      }
       x = p->cdr;
       if (isShort(x))
          break;
    }
 }
 
+static inline void markEnv(stkEnv *env) {
+   any p;
+   int i;
+
+   mark(env->nsp); // mark current ns
+   for (p = (any)env->applyFrames;  p;  p = (any)((applyFrame*)p)->link) {
+      applyFrame *f = (applyFrame*)p;
+      mark(f->body);
+      mark(f->args);
+   }
+   mark(env->exe);
+   for (p = env->stack; p; p = cdr(p))
+      mark(car(p));
+   for (p = (any)env->bind;  p;  p = (any)((bindFrame*)p)->link) {
+      bindFrame *f = (bindFrame*)p;
+      mark(f->exe);
+      for (i = f->cnt;  --i >= 0;) {
+         mark(f->bnd[i].sym);
+         mark(f->bnd[i].val);
+      }
+   }
+}
+
+static inline void markCatch(catchFrame *catchPtr) {
+   any p;
+
+   for (p = (any)catchPtr; p; p = (any)((catchFrame*)p)->link) {
+      catchFrame *f = (catchFrame*)p;
+      if (f->tag)
+         mark(f->tag);
+      mark(f->fin);
+      mark(f->env.nsp); // mark saved ns
+   }
+}
+
+
+static long GcCount = CELLS;
+
 /* Garbage collector */
-static void gc(long c) {
+void gc(long c) {
    any p, *pp, x;
    heap *h;
    int i;
+
+// XXX outString("=== gc ==="); flushAll();
 
    val(DB) = Nil;
    h = Heaps;
@@ -35,29 +81,37 @@ static void gc(long c) {
          *(word*)&cdr(p) |= 1;
       while (--p >= h->cells);
    } while (h = h->next);
+
+// XXX outString("*** heaps "); flushAll(); outNum(mkShort(2*nheaps)); newline();
    /* Mark */
    mark(Nil+1);
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
+   mark(TNsp);
+   mark(Pico1); // mark initial ns
+   for (i = 0; i < NCBL; i++) // mark callbacks
+      mark(Lisp[i].tag), mark(Lisp[i].fun);
    for (i = 0; i < IHASH; ++i)
-      mark(Intern[i]),  mark(Transient[i]);
-   mark(ApplyArgs),  mark(ApplyBody);
-   for (p = Env.stack; p; p = cdr(p))
-      mark(car(p));
-   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
-      for (i = ((bindFrame*)p)->cnt;  --i >= 0;) {
-         mark(((bindFrame*)p)->bnd[i].sym);
-         mark(((bindFrame*)p)->bnd[i].val);
-      }
-   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-      if (((catchFrame*)p)->tag)
-         mark(((catchFrame*)p)->tag);
-      mark(((catchFrame*)p)->fin);
+      mark(Transient[i]);
+   markEnv(&Env); // mark current env
+   markCatch(CatchPtr);
+   for (i = 0; Stack1[i]; i++) {
+      coFrame *f = Stack1[i];
+      if (Env.coF != f) // skip running coro
+         if (!isNil(f->tag)) { // used?
+            mark(f->tag);
+            mark(f->ret);
+            mark(f->At);
+            if (!f->active) { // not active?
+               markEnv(&(f->env));
+               markCatch(f->CatchPtr);
+            }
+         }
    }
    for (i = 0; i < EHASH; ++i)
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
          if (num(val(p->car)) & 1) {
             for (x = tail1(p->car); !isSym(x); x = cdr(cellPtr(x)));
-            if ((x = (any)(num(x) & ~num(1))) == At2  ||  x == At3)
+            if ((x = (any)(num(x) & ~1)) == At2  ||  x == At3)
                mark(p->car);  // Keep if dirty or deleted
          }
    if (num(val(val(DB) = DbVal)) & 1) {
@@ -70,6 +124,21 @@ static void gc(long c) {
             *pp = (cell*)(num(p->cdr) & ~1);
          else
             *(word*)(pp = &cdr(p)) &= ~1;
+   /* Clean up */
+   for (i = 0; Stack1[i]; i++) {
+      coFrame *f = Stack1[i];
+      any tag = f->tag;
+      if (!isNil(tag)) {
+         if (num(tag) & 1)
+            f->tag = Nil, Stacks--;
+         else {
+            // pil64: clear ApplyStack (builds the ApplyFrame on the stack)
+            ;
+         }
+      }
+   }
+   // pil64: clear ApplyStack (builds the ApplyFrame on the stack)
+   *(word*)&cdr(Pico1) &= ~1;
    /* Sweep */
    Avail = NULL;
    h = Heaps;
@@ -78,7 +147,7 @@ static void gc(long c) {
          p = h->cells + CELLS-1;
          do
             if (num(p->cdr) & 1)
-               Free(p),  --c;
+               FreeTyped(p),  --c;
          while (--p >= h->cells);
       } while (h = h->next);
       while (c >= 0)
@@ -89,12 +158,12 @@ static void gc(long c) {
       cell *av;
 
       do {
-         c = CELLS;
+         c = GcCount? GcCount : CELLS;
          av = Avail;
          p = h->cells + CELLS-1;
          do
             if (num(p->cdr) & 1)
-               Free(p),  --c;
+               FreeTyped(p),  --c;
          while (--p >= h->cells);
          if (c)
             hp = &h->next,  h = h->next;
@@ -104,12 +173,21 @@ static void gc(long c) {
    }
 }
 
-// (gc ['cnt]) -> cnt | NIL
-any doGc(any x) {
-   x = cdr(x),  x = EVAL(car(x));
+// (gc ['cnt ['cnt2]]) -> cnt | NIL
+any doGc(any ex) {
+   any x, cnt, cnt2;
+
+   x = cdr(ex),  cnt = EVAL(car(x));
    val(At) = val(At2) = Nil;
-   gc(isNum(x)? CELLS*unBox(x) : CELLS);
-   return x;
+   gc(isNum(cnt)? CELLS*unBox(cnt) : GcCount);
+   if (isCell(x = cdr(x))) {
+      cnt2 = EVAL(car(x));
+      NeedCnt(ex,cnt2);
+      GcCount = CELLS*unBox(cnt2);
+   }
+   else
+      GcCount = CELLS;
+   return cnt;
 }
 
 /* Construct a cell */
@@ -121,10 +199,11 @@ any cons(any x, any y) {
 
       Push(c1,x);
       Push(c2,y);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
+// XXX if (x == TNsp) fprintf(stderr,"*** cons\n");
    Avail = p->car;
    p->car = x;
    p->cdr = y;
@@ -135,12 +214,13 @@ any cons(any x, any y) {
 any consSym(any v, any x) {
    cell *p;
 
+   ASSERT(isNil(x) || isNum(x));
    if (!(p = Avail)) {
       cell c1, c2;
 
       Push(c1,v);
       Push(c2,x);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
@@ -155,11 +235,12 @@ any consSym(any v, any x) {
 any consStr(any x) {
    cell *p;
 
+   ASSERT(isNum(x));
    if (!(p = Avail)) {
       cell c1;
 
       Push(c1,x);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
@@ -178,7 +259,7 @@ any consNum(word n, any x) {
       cell c1;
 
       Push(c1,x);
-      gc(CELLS);
+      gc(GcCount);
       drop(c1);
       p = Avail;
    }
@@ -187,3 +268,22 @@ any consNum(word n, any x) {
    p->cdr = x;
    return numPtr(p);
 }
+
+/* Construct a namespace */
+any consNsp(void) {
+   any x, *p = NULL;
+   int i;
+   word u;
+
+   p = (any*)allocAligned(p,IHASH*sizeof(any),1<<NORMBITS);
+   for (i = 0; i < IHASH; i++)
+      p[i] = Nil;
+   u = num(p);
+#ifndef __LP64__
+   u >>= NORMBITS;
+#endif
+   x = cons(TNsp, mkShort(u));
+// XXX fprintf(stderr,"*** consNsp %p=(%p,%p) ptr=%p\n",x,TNsp,cdr(x),p);
+   return x;
+}
+

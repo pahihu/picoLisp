@@ -3,6 +3,7 @@
  */
 
 #include "pico.h"
+#include <ucontext.h>
 
 static void redefMsg(any x, any y) {
    outFile *oSave = OutFile;
@@ -88,6 +89,7 @@ any doEval(any x) {
       /* XXX struct {any sym; any val;} bnd[length(x)]; */
       bindFrame *f = allocFrame(length(x));
 
+      f->exe = Nil;
       x = cdr(x),  x = EVAL(car(x));
       j = cnt = (int)unBox(y);
       n = f->i = f->cnt = 0;
@@ -153,6 +155,7 @@ any doRun(any x) {
          /* XXX struct {any sym; any val;} bnd[length(x)]; */
          bindFrame *f = allocFrame(length(x));
 
+         f->exe = Nil;
          x = cdr(x),  x = EVAL(car(x));
          j = cnt = (int)unBox(y);
          n = f->i = f->cnt = 0;
@@ -290,6 +293,7 @@ static any evMethod(any o, any expr, any x) {
    /* XXX struct {any sym; any val;} bnd[length(y)+3]; */
    bindFrame *f = allocFrame(length(y)+3);
 
+   f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 2; */
    f->i = length(y) + 1;
@@ -387,7 +391,7 @@ any doNew(any ex) {
       if (isNil(y))
          data(c1) = consSym(Nil,Nil);
       else {
-         y = newId(ex, isNum(y)? (int)unDig(y)/2 : 1);
+         y = newId(ex, isNum(y)? (int)unDigU(y) : 1);
          if (data(c1) = findHash(y, h = Extern + ehash(y)))
             tail(data(c1)) = y;
          else
@@ -625,6 +629,7 @@ any doWith(any ex) {
    if (isNil(x = EVAL(car(x))))
       return Nil;
    NeedSym(ex,x);
+   f.exe = Nil;
    Bind(This,f),  val(This) = x;
    x = prog(cddr(ex));
    Unbind(f);
@@ -643,6 +648,7 @@ any doBind(any ex) {
    if (isSym(y)) {
       bindFrame f;
 
+      f.exe = Nil;
       Bind(y,f);
       x = prog(cdr(x));
       Unbind(f);
@@ -652,6 +658,7 @@ any doBind(any ex) {
       /* XXX struct {any sym; any val;} bnd[length(y)]; */
       bindFrame *f = allocFrame(length(y));
 
+      f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
@@ -685,6 +692,7 @@ any doJob(any ex) {
    bindFrame *f = allocFrame(length(y));
 
    Push(c1,y);
+   f->exe = Nil;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    f->i = f->cnt = 0;
    while (isCell(y)) {
@@ -702,8 +710,48 @@ any doJob(any ex) {
    return x;
 }
 
+static int numsyms2(any x, int n) {
+   if (isNil(x))
+      ;
+   else if (isSym(x))
+      n++;
+   else if (isCell(x))
+      n += (numsyms2(car(x),0) + numsyms2(cdr(x),0));
+   return n;
+}
+
+static int numsyms(any x) {
+   any y;
+   int n = 0;
+
+   do {
+      y = car(x);
+      if (isSym(y))
+        n++;
+      else if (isCell(y))
+        n += numsyms2(y, 0);
+   } while (isCell(x = cddr(x)));
+   return n;
+}
+
+static void destructBind(bindFrame *f, any x, any y) {
+   if (isNil(x))
+      ;
+   else if (isSym(x)) {
+      ASSERT(isSym(x));
+      f->bnd[f->cnt].sym = x;
+      f->bnd[f->cnt].val = val(x);
+      ++(f->cnt);
+      val(x) = y;
+   }
+   else if (isCell(x)) {
+      destructBind(f,car(x),isCell(y)? car(y) : Nil);
+      destructBind(f,cdr(x),isCell(y)? cdr(y) : Nil);
+   }
+}
+
 // (let sym 'any . prg) -> any
-// (let (sym 'any ..) . prg) -> any
+// (let (sym|lst 'any ..) . prg) -> any
 any doLet(any x) {
    any y;
 
@@ -711,21 +759,27 @@ any doLet(any x) {
    if (isSym(y = car(x))) {
       bindFrame f;
 
+      f.exe = Nil;
       x = cdr(x),  Bind(y,f),  val(y) = EVAL(car(x));
       x = prog(cdr(x));
       Unbind(f);
    }
    else {
       /* XXX struct {any sym; any val;} bnd[(length(y)+1)/2]; */
-      bindFrame *f = allocFrame((length(y)+1)/2);
+      bindFrame *f = allocFrame(numsyms(y));
 
+      f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
-         f->bnd[f->cnt].sym = car(y);
-         f->bnd[f->cnt].val = val(car(y));
-         ++(f->cnt);
-         val(car(y)) = EVAL(cadr(y));
+         if (isSym(car(y))) {
+            f->bnd[f->cnt].sym = car(y);
+            f->bnd[f->cnt].val = val(car(y));
+            ++(f->cnt);
+            val(car(y)) = EVAL(cadr(y));
+         }
+         else
+            destructBind(f,car(y),EVAL(cadr(y)));
       } while (isCell(y = cddr(y)));
       x = prog(cdr(x));
       while (--(f->cnt) >= 0)
@@ -743,6 +797,7 @@ any doLetQ(any x) {
    x = cdr(x),  y = car(x),  x = cdr(x);
    if (isNil(z = EVAL(car(x))))
       return Nil;
+   f.exe = Nil;
    Bind(y,f),  val(y) = z;
    x = prog(cdr(x));
    Unbind(f);
@@ -758,6 +813,7 @@ any doUse(any x) {
    if (isSym(y = car(x))) {
       bindFrame f;
 
+      f.exe = Nil;
       Bind(y,f);
       x = prog(cdr(x));
       Unbind(f);
@@ -766,6 +822,7 @@ any doUse(any x) {
       /* XXX struct {any sym; any val;} bnd[length(y)]; */
       bindFrame *f = allocFrame(length(y));
 
+      f->exe = Nil;
       f->link = Env.bind,  Env.bind = (bindFrame*)f;
       f->i = f->cnt = 0;
       do {
@@ -1124,8 +1181,7 @@ any doDo(any x) {
          drop(c1);
          return Nil;
       }
-      if (!shortLike(data(c1)))
-         data(c1) = bigCopy(data(c1));
+      data(c1) = CPY(data(c1));
    }
    x = cdr(x),  z = Nil;
    for (;;) {
@@ -1134,7 +1190,7 @@ any doDo(any x) {
             drop(c1);
             return z;
          }
-         data(c1) = digSub1(data(c1));
+         data(c1) = DEC(data(c1));
       }
       y = x;
       do {
@@ -1168,8 +1224,8 @@ any doDo(any x) {
 
 // (at '(cnt1 . cnt2|NIL) . prg) -> any
 any doAt(any ex) {
-   any x;
-   word n;
+   cell c1;
+   any x, n;
 
    x = cdr(ex),  x = EVAL(car(x));
    NeedPair(ex,x);
@@ -1177,17 +1233,12 @@ any doAt(any ex) {
       return Nil;
    NeedCnt(ex,car(x));
    NeedCnt(ex,cdr(x));
-   n = unDig(car(x))+2;
-   if (shortLike(car(x)))
-      car(x) = box(n);
-   else
-      setDig(car(x), n);
-   if (n < unDig(cdr(x)))
+   Push(c1, car(x));
+   car(x) = n = DADDU1(data(c1));
+   drop(c1);
+   if (unDig(n) < unDig(cdr(x)))
       return Nil;
-   if (shortLike(car(x)))
-      car(x) = box(0);
-   else
-      setDig(car(x), 0);
+   car(x) = Zero;
    return prog(cddr(ex));
 }
 
@@ -1199,13 +1250,12 @@ any doFor(any x) {
    cell c1;
    struct {  // bindFrame
       struct bindFrame *link;
+      any exe;
       int i, cnt;
       struct {any sym; any val;} bnd[2];
    } f;
-   int shortC1;
-   word C1;
 
-   C1 = 0; shortC1 = 0;
+   f.exe = Nil;
    f.link = Env.bind,  Env.bind = (bindFrame*)&f;
    f.i = 0;
    if (!isCell(y = car(x = cdr(x))) || !isCell(cdr(y))) {
@@ -1224,95 +1274,32 @@ any doFor(any x) {
       }
       y = Nil;
       x = cdr(x),  Push(c1, EVAL(car(x)));
-      if (isNum(data(c1))) {
-         val(f.bnd[0].sym) = Zero;
-         if ((shortC1 = shortLike(data(c1))))
-            C1 = num(data(c1));
-      }
-      body = x = cdr(x);
       if (isNum(data(c1)))
+         val(f.bnd[0].sym) = Zero;
+      body = x = cdr(x);
       for (;;) {
-         word VAL;
-         any v = val(f.bnd[0].sym);
+         if (isNum(data(c1))) {
+            any VAL;
+            val(f.bnd[0].sym) = CPY(val(f.bnd[0].sym));
+            val(f.bnd[0].sym) = (VAL = DADDU1(val(f.bnd[0].sym)));
 #ifdef __LP64__
-         val(f.bnd[0].sym) = (any)(VAL = (num(v) + ShortOne));
-         if (VAL > C1)
-            break;
-#else
-         if (shortC1 && isShort(v) && num(v) != ShortMax) {
-            val(f.bnd[0].sym) = (any)(VAL = num(v) + ShortOne);
-            if (VAL > C1)
+            if (num(VAL) > num(data(c1)))
                break;
+#else
+            if (CMP(val(f.bnd[0].sym), data(c1)) > 0)
+               break;
+#endif
          }
          else {
-            v = val(f.bnd[0].sym) = big(v), data(c1) = big(data(c1));
-            shortC1 = 0;
-            v = val(f.bnd[0].sym) = bigCopy(v);
-            v = val(f.bnd[0].sym) = digAdd(v, 2);
-            if (bigCompare(v, data(c1)) > 0)
+            if (!isCell(data(c1)))
                break;
+            val(f.bnd[0].sym) = car(data(c1));
+            if (!isCell(data(c1) = cdr(data(c1))))
+               data(c1) = Nil;
          }
-#endif
          if (f.cnt == 2) {
-            any v = val(f.bnd[1].sym);
-#ifdef __LP64__
-            val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
-#else
-            if (isShort(v) && num(v) != ShortMax)
-              val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
-            else {
-              v = val(f.bnd[1].sym) = copyNum(v);
-              val(f.bnd[1].sym) = digAdd(v, 2);
-            }
-#endif
-         }
-         do {
-            if (!isNum(y = car(x))) {
-               if (isSym(y))
-                  y = val(y);
-               else if (isNil(car(y))) {
-                  y = cdr(y);
-                  if (isNil(a = EVAL(car(y)))) {
-                     y = prog(cdr(y));
-                     goto for1;
-                  }
-                  val(At) = a;
-                  y = Nil;
-               }
-               else if (car(y) == T) {
-                  y = cdr(y);
-                  if (!isNil(a = EVAL(car(y)))) {
-                     val(At) = a;
-                     y = prog(cdr(y));
-                     goto for1;
-                  }
-                  y = Nil;
-               }
-               else
-                  y = evList(y);
-            }
-         } while (isCell(x = cdr(x)));
-         x = body;
-      }
-      else
-      for (;;) {
-         if (!isCell(data(c1)))
-            break;
-         val(f.bnd[0].sym) = car(data(c1));
-         if (!isCell(data(c1) = cdr(data(c1))))
-            data(c1) = Nil;
-         if (f.cnt == 2) {
-            any v = val(f.bnd[1].sym);
-#ifdef __LP64__
-            val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
-#else
-            if (isShort(v) && num(v) != ShortMax)
-              val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
-            else {
-              v = val(f.bnd[1].sym) = copyNum(v);
-              val(f.bnd[1].sym) = digAdd(v, 2);
-            }
-#endif
+            val(f.bnd[1].sym) = CPY(val(f.bnd[1].sym));
+            val(f.bnd[1].sym) = DADDU1(val(f.bnd[1].sym));
          }
          do {
             if (!isNum(y = car(x))) {
@@ -1370,17 +1357,8 @@ any doFor(any x) {
    body = x = cdr(x);
    for (;;) {
       if (f.cnt == 2) {
-         any v = val(f.bnd[1].sym);
-#ifdef __LP64__
-         val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
-#else
-         if (isShort(v) && num(v) != ShortMax)
-            val(f.bnd[1].sym) = (any)(num(v) + ShortOne);
-         else {
-            v = val(f.bnd[1].sym) = copyNum(v);
-            val(f.bnd[1].sym) = digAdd(v, 2);
-         }
-#endif
+         val(f.bnd[1].sym) = CPY(val(f.bnd[1].sym));
+         val(f.bnd[1].sym) = DADDU1(val(f.bnd[1].sym));
       }
       if (isNil(a = EVAL(cond)))
          break;
@@ -1465,9 +1443,488 @@ any doFinally(any x) {
    return Pop(c1);
 }
 
+static void closeCoInFrames(inFrame *f) {
+   while (f)
+      popInFrame(f), f = f->link;
+}
+
+static void closeCoOutFrames(outFrame *f) {
+   while (f)
+      popOutFrame(f), f = f->link;
+}
+
+#if 0
+#define CODBG(x) x;
+#define COMARK(c,t) \
+   (c)->file = __FILE__; (c)->line = __LINE__; \
+   CODBG( \
+      show("swapCoro: ",(c)->tag,0); \
+      show(" (",box(num(&(c)->ctx)),0); \
+      show(") => ",(t)->tag,0); \
+      show(" (",box(num(&(t)->ctx)),0); \
+      show(") ",mkStr((t)->file),0); \
+      show(":",boxCnt((t)->line),1) \
+   )
+#define COATTACHED(c)   (((c)->tag == T && !(c)->attached) || (c)->attached)
+#define CODETACHED(c)   (!(c)->attached)
+#else
+#define CODBG(x)
+#define COMARK(c,t)
+#define COATTACHED(c)
+#define CODETACHED(c)
+#endif
+
+/* each coro contains its activation chain in Env.coF */
+/* co start/resume activates the coro */
+/* yield deactivates the coro */
+
+/* Pop coro env */
+static void coroPopEnv(void) {
+   Env.coF->active = NO;
+}
+
+/* Push coro env, check entry */
+static void coroPushEnv(coFrame *f) {
+   Env = f->env;
+   Env.coF->active = YES;
+}
+
+/* Save environment */
+static void coroSaveEnv(coFrame *e) {
+   e->env = Env;
+   CODBG(
+      show("coroSaveEnv: ",e->tag,0);
+      show(" make ",box(num(Env.make)),1)
+   )
+   CODETACHED(e);
+   e->At  = At;
+   e->Chr = Chr;
+   e->InFile = InFile;
+   e->OutFile = OutFile;
+   e->CatchPtr = CatchPtr;
+}
+
+/* Load environment */
+static void coroLoadEnv(coFrame *e) {
+   CODBG(
+      show("coroLoadEnv: ",e->tag,0);
+      show(" make ",box(num(e->env.make)),1)
+   )
+   CODETACHED(e);
+   At = e->At;
+   Chr = e->Chr;
+   InFile = e->InFile;
+   OutFile = e->OutFile;
+   CatchPtr = e->CatchPtr;
+}
+
+// resume coroutine environment, with return value ret
+any resumeCoro(coFrame *c, coFrame *t, any ret) {
+   int i;
+   bindFrame *mbF, *bF;
+   coFrame *m;
+
+   CODBG(
+      show("resumeCoro: from ",c->tag,0);
+      show(" to ",t->tag,1)
+   )
+   m = t->mainCoro;                             // attach to main
+   coroLoadEnv(t);                              // load environment
+   CODETACHED(t);
+   if (t->tag == T)                             // main coro?
+                                                // main coro is ALWAYS detached
+      goto resumeOnly;
+   ASSERT(!isNil(m->tag));                      // ensure main coro alive
+   coroPushEnv(t);                              // close coroutine frame
+   CODBG(show("resume: restore bindings ",Nil,1))
+   mbF = m->env.bind;                           // restore bindings
+   for (bF = Env.bind; bF;) {
+      if (!bF->i) {
+         for (i = 0; i < bF->cnt; i++) {
+            any v;
+            v = bF->bnd[i].val;
+            bF->bnd[i].val = val(bF->bnd[i].sym);
+            val(bF->bnd[i].sym) = v;
+         }
+      }
+      bindFrame *lnk = bF->link;                // down link
+      bF->link = mbF;                           // undo reversal
+      mbF = bF;
+      bF = lnk;
+   }
+   Env.bind = mbF;
+   CODBG(show("resume: restore catchFrames ",Nil,1))
+   if (CatchPtr) {                              // catchFrames
+      catchFrame *cF = CatchPtr;
+      while (cF->link)
+         cF = cF->link;
+      cF->link = m->CatchPtr;                   // join
+   }
+   else
+      CatchPtr = m->CatchPtr;                   // adapt
+   CODBG(show("resume: restore inFrames ",Nil,1))
+   if (Env.inFrames) {                          // inFrames
+      inFrame *iF = Env.inFrames;
+      while (iF->link)
+         iF = iF->link;
+      iF->link = m->env.inFrames;               // join
+   }
+   else {
+      Chr = m->Chr;                             // adapt
+      InFile = m->InFile;
+      Env.get = m->env.get;
+      Env.inFrames = m->env.inFrames;
+   }
+   CODBG(show("resume: restore outFrames ",Nil,1))
+   if (Env.outFrames) {                         // outFrames
+      outFrame *oF = Env.outFrames;
+      while (oF->link)
+         oF = oF->link;
+      oF->link = m->env.outFrames;              // join
+   }
+   else {
+      OutFile = m->OutFile;                     // adapt
+      Env.put = m->env.put;
+      Env.outFrames = m->env.outFrames;
+   }
+   CODBG(show("resume: restore applyFrames ",Nil,1))
+   if (Env.applyFrames) {                       // applyFrames
+      applyFrame *aF = Env.applyFrames;
+      while (aF->link)
+         aF = aF->link;
+      aF->link = m->env.applyFrames;            // join
+   }
+   else
+      giveup("resume: restore applyFrames");
+   CODBG(show("resume: restore stack ",Nil,1))
+   if (Env.stack) {                             // link to main stack
+      any l = Env.stack;
+      while (l->cdr)
+         l = l->cdr;
+      l->cdr = m->env.stack;
+   }
+   t->attached = YES;
+resumeOnly:
+   t->active = YES;                             // mark active
+   t->ret = ret;
+   COMARK(c,t);
+   COATTACHED(t);
+   if (swapcontext(&c->ctx,&t->ctx))
+      giveup("resumeCoro:swapcontext()");
+
+   CODBG(
+      bool fromMain = Env.coF->fromMain;
+      show("resumeCoro: return ",Env.coF->tag,0);
+      show(" fromMain = ",boxCnt(fromMain),0);
+      show(" ret = ",Env.coF->ret,1)
+   )
+   return Env.coF->ret;
+}
+
+static void coroMain(any x) {
+   cell c1;
+
+   CODBG(show("coroMain: x = ",x,1))
+   Push(c1, x); // save prg
+   x = prog(x); // run prg
+   drop(c1);
+   Env.coF->ret = x;
+   Env.coF->fromMain = YES;
+   CODBG(show("coroMain: return x = ",x,1))
+}
+
+static any mainCoRet(int doswap) {
+   any ret;
+   bool fromMain;
+   coFrame *m, *c;
+   cell c1;
+
+   // either from yield or not yielded
+   c = Env.coF;
+   ASSERT(coroValid(c));
+   fromMain = c->fromMain;
+   c->fromMain = NO;
+   coroPopEnv();
+   Push(c1, ret = c->ret); // save return value
+   CODBG(
+      show("mainCoRet: return ",c->tag,0);
+      show(" fromMain = ",boxCnt(fromMain),0);
+      show(" ret ",ret,1);
+   )
+   coroLoadEnv(m = c->mainCoro); // restore env
+   if (fromMain && c->tag != T) { // terminate coro, except main
+      CODBG(show("mainCoRet: stop coro ",c->tag,1))
+      c->tag = Nil, Stacks--;
+   }
+   coroPushEnv(m);
+   if (fromMain && doswap) {
+      m->ret = Pop(c1);
+      CODBG(show("mainCoRet: swap to main ",m->tag,1))
+      COMARK(c,m);
+      if (swapcontext(&c->ctx,&m->ctx))
+         giveup("mainCoRet:swapcontext()");
+      giveup("mainCoRet: (1) return");
+   }
+   return val(At) = Pop(c1);
+}
+// (co 'sym [.prg]) -> any
+any doCo(any ex) {
+   any x, tag, ret;
+   int i;
+
+   ASSERT(Stack1[0]->mainCoro != NULL);
+   x = cdr(ex); tag = EVAL(car(x));
+   CODBG(show("co: tag = ",tag,1))
+   // main coro cannot be terminated, nor started
+   if (tag == T)
+      return Nil;
+   x = cdr(x);
+   if (isCell(x)) { // prg?
+      coFrame *m, *t;
+      int fi = Stack1s;
+      for (i = 1; Stack1[i]; i++) {
+         coFrame *f = Stack1[i];
+         if (isNil(f->tag))
+            fi = i < fi? i : fi; // remember 1st free
+         else if (f->tag == tag)
+            break;
+      }
+      if (Stack1[i]) { // found
+         t = Stack1[i]; // target
+         if (t->active)
+            reentError(ex, tag);
+         coroSaveEnv(Env.coF);
+         CODBG(show("co: (1) ",Nil,1))
+         ret = resumeCoro(Env.coF, t, Nil);
+         CODBG(show("co: (1) return ",Nil,1))
+         return mainCoRet(0);
+      }
+      if (i == Stack1s) { // all slots allocated
+         if (fi == Stack1s) { // all slots in use
+            CODBG(show(" resize Stacks ",Nil,1))
+            Stack1 = alloc(Stack1, (2 * Stack1s + 1) * sizeof(coFrame*));
+            memset(Stack1 + Stack1s, 0, (Stack1s + 1) * sizeof(coFrame*));
+            Stack1s = 2 * Stack1s;
+         }
+         else
+            i = fi; // select 1st unused slot
+      }
+      else { // not all slots allocated
+         if (fi < i) // any unused slot before?
+            i = fi;
+      }
+      CODBG(show("co: new coro slot = ",boxCnt(i),1))
+      Stack1[i] = coroInit(coroAlloc(StkSize), tag); Stacks++;
+      t = Stack1[i];
+      CODBG(show("main coro ",Env.coF->tag,1))
+      t->tag = tag;
+      coroSaveEnv(m = Env.coF);
+      m->active = NO;
+      t->link = t->mainCoro; t->env.coF = t; // close coroutine frame
+
+      if (getcontext(&t->ctx)) // build ucontext
+         giveup("co:getcontext()");
+      t->ctx.uc_link = &m->ctx; // continue here
+      t->ctx.uc_stack.ss_sp   = t->ss; // set stack
+      t->ctx.uc_stack.ss_size = StkSize;
+      makecontext(&t->ctx, coroMain, 1, x); // execute coroMain(x)
+      CODBG(
+         show("co: from ",m->tag,0);
+         show(" to ",t->tag,1)
+      )
+      coroPushEnv(t); // activate t
+      COMARK(m,t);
+      if (swapcontext(&m->ctx, &t->ctx))
+         giveup("co:swapcontext()");
+
+      CODBG(show("co: return ",Env.coF->tag,1))
+      return mainCoRet(0);
+   }
+   // stop coro
+   if (1 == Stacks) // only main coro
+      return Nil;
+   ret = Nil; // assume not found
+   for (i = 1; Stack1[i]; i++) { // except main coro
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag)) {
+         if (f->tag == tag) {
+            if (f->active) {
+               ret = Nil;
+               break;
+            }
+            else {
+               closeCoInFrames(f->env.inFrames);
+               closeCoOutFrames(f->env.outFrames);
+               CODBG(show("co: kill coro ",f->tag,1))
+               f->tag = Nil, Stacks--;
+               ret = T;
+               break;
+            }
+         }
+      }
+   }
+   return ret;
+}
+
+// (yield 'any ['sym) -> any
+any doYield(any ex) {
+   int i;
+   any x, ret, tag;
+   coFrame *c, *m, *t;
+   cell c1, c2;
+
+   c = Env.coF; // current coro
+   COATTACHED(c);
+   CODBG(show("yield: enter ",c->tag,1))
+   x = cdr(ex); Push(c1, ret = EVAL(car(x)));
+   x = cdr(x);  Push(c2, tag = EVAL(car(x)));
+   t = 0;
+   if (!isNil(tag)) {
+      for (i = 0; Stack1[i]; i++) {
+         coFrame *f = Stack1[i];
+         if (!isNil(f->tag)) {
+            if (f->tag ==  tag)
+               break;
+         }
+      }
+      if (!Stack1[i]) // not found
+         yieldError(ex,tag);
+      t = Stack1[i];
+      if (t->active)
+         reentError(ex,tag);
+      CODBG(show("yield: tgt ",tag,1))
+   }
+   m = c->mainCoro;
+   if (c->tag == T) { // main coro yield?
+      // main coro is ALWAYS detached
+      if (!t)
+         yieldError(ex,tag);
+      CODBG(show("yield: (1) tgt ",t->tag,1))
+      ret = Pop(c1);
+      coroSaveEnv(c);
+      coroPopEnv();
+      ret = resumeCoro(c,t,ret);
+      // return from main coro
+      c = Env.coF;
+      CODBG(show("yield: (1) return ",c->tag,1))
+      // if the routine is terminated, we are in the main !!!
+      COATTACHED(c);
+      return mainCoRet(0);
+   }
+   ASSERT(!isNil(m->tag)); // ensure main coro alive
+   COATTACHED(c);
+   CODBG(
+      coFrame *rtm = c->link;
+      show("rt main = ",rtm->tag,0);
+      show(" main = ",m->tag,1)
+   )
+   // cut everything on main coroutine
+   CODBG(show("yield: cut stack ",Nil,1))
+   if (Env.stack != m->env.stack) { // local stack?
+      any l = Env.stack;
+      while (l->cdr != m->env.stack)
+         l = l->cdr;
+      l->cdr = 0; // cut off
+   }
+   else
+      Env.stack = 0;
+   CODBG(show("yield: cut applyFrames ",Nil,1))
+   if (Env.applyFrames != m->env.applyFrames) { // local applyFrames?
+      applyFrame *aF = Env.applyFrames;
+      while (aF->link != m->env.applyFrames)
+         aF = aF->link;
+      aF->link = 0;
+   }
+   else
+      giveup("yield: cut applyFrames");
+   CODBG(show("yield: cut outFrames ",Nil,1))
+   if (Env.outFrames != m->env.outFrames) { // local outFrames?
+      outFrame *oF = Env.outFrames;
+      while (oF->link != m->env.outFrames)
+         oF = oF->link;
+      oF->link = 0; // cut off
+   }
+   else
+      Env.outFrames = 0;
+   CODBG(show("yield: cut inFrames ",Nil,1))
+   if (Env.inFrames != m->env.inFrames) { // local inFrames?
+      inFrame *iF = Env.inFrames;
+      while (iF->link != m->env.inFrames)
+         iF = iF->link;
+      iF->link = 0;
+   }
+   else
+      Env.inFrames = 0;
+   CODBG(show("yield: cut catchFrames ",Nil,1))
+   if (CatchPtr != m->CatchPtr) { // local catchFrames?
+      catchFrame *cF = CatchPtr;
+      while (cF->link != m->CatchPtr)
+         cF = cF->link;
+      cF->link = 0; // cut off
+   }
+   else
+      CatchPtr = 0;
+   CODBG(show("yield: reverse bindings ",Nil,1))
+   if (Env.bind != m->env.bind) { // reverse bindings
+      bindFrame *c = 0, *b;
+      for (b = Env.bind; b != m->env.bind; ) {
+         if (!b->i) {
+            for (i = 0; i < b->cnt; i++) {
+               any v = b->bnd[i].val; // exchange with saved value
+               b->bnd[i].val = val(b->bnd[i].sym);
+               val(b->bnd[i].sym) = v;
+            }
+         }
+         bindFrame *lnk = b->link;
+         b->link = c;
+         c = b;
+         b = lnk;
+      }
+      Env.bind = c;
+   }
+   else
+      Env.bind = 0;
+   c->attached = NO;
+   ret = Pop(c1);
+   coroSaveEnv(c); // save env
+   if (!t) { // no target, going to main
+      coroPopEnv();
+      coroLoadEnv(m);
+      m->ret = ret;
+      coroPushEnv(m);
+      CODBG(show("yield: (2) from ",c->tag,0);show(" to ",m->tag,1))
+      COMARK(c,m);
+      if (swapcontext(&c->ctx,&m->ctx))
+         giveup("yield:swapcontext()");
+
+      c = Env.coF;
+      COATTACHED(c);
+      CODBG(
+         bool fromMain = c->fromMain;
+         show("yield: (2) return ",c->tag,0);
+         show(" fromMain = ",boxCnt(fromMain),0);
+         show(" ret ",c->ret,1)
+      )
+      return c->ret;
+   }
+   CODBG(show("yield: (3) ",Nil,1))
+   coroPopEnv();
+   ret = resumeCoro(c,t,ret);
+   c = Env.coF;
+   CODBG(
+      Push(c1, ret);
+      show("yield: (3) return ",c->tag,0);
+      show(" ret ",ret,1);
+      drop(c1)
+   )
+   COATTACHED(c);
+   return ret;
+}
+
 static outFrame Out;
 static struct {  // bindFrame
    struct bindFrame *link;
+   any exe;
    int i, cnt;
    struct {any sym; any val;} bnd[3];  // for 'Up', 'Run' and 'At'
 } Brk;
@@ -1475,6 +1932,7 @@ static struct {  // bindFrame
 any brkLoad(any x) {
    if (!Break && isatty(STDIN_FILENO) && isatty(STDOUT_FILENO)) {
       Break = YES;
+      Brk.exe = Nil;
       Brk.cnt = 3;
       Brk.bnd[0].sym = Up,  Brk.bnd[0].val = val(Up),  val(Up) = x;
       Brk.bnd[1].sym = Run,  Brk.bnd[1].val = val(Run),  val(Run) = Nil;
@@ -1627,7 +2085,7 @@ any doCall(any ex) {
       if (Termio)
          tcsetpgrp(0,getpgrp());
       if (!WIFSTOPPED(res)) {
-         val(At2) = box(res+res);
+         val(At2) = boxCnt(res);
          return res == 0? T : Nil;
       }
       load(NULL, '+', Nil);
@@ -1651,15 +2109,15 @@ any doTick(any ex) {
    n1 = (tim.tms_utime - n1) - (ticks1 - save1);
    n2 = (tim.tms_stime - n2) - (ticks2 - save2);
    {
+      cell c1;
+
       any p = cadr(ex);
-      if (shortLike(car(p)))
-         car(p) = box(unDigShort(car(p)) + 2*n1);
-      else
-         setDig(car(p), unDig(car(p)) + 2*n1);
-      if (shortLike(cdr(p)))
-         cdr(p) = box(unDigShort(cdr(p)) + 2*n2);
-      else
-         setDig(cdr(p), unDig(cdr(p)) + 2*n2);
+      Push(c1, car(p));
+      car(p) = DADDU(data(c1), n1);
+      drop(c1);
+      Push(c1, cdr(p));
+      cdr(p) = DADDU(data(c1), n2);
+      drop(c1);
    }
    ticks1 += n1,  ticks2 += n2;
    return x;

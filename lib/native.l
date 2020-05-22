@@ -12,6 +12,15 @@
                "-W" "-Wimplicit" "-Wreturn-type" "-Wunused" "-Wformat"
                "-Wuninitialized" "-Wstrict-prototypes"
                "-pipe" "-D_GNU_SOURCE" (tmp Nm ".c") ) ) )
+      ("Darwin"
+         (quote
+            (apply call L "gcc" "-o" (tmp Nm)
+               "-dynamiclib" "-undefined" "dynamic_lookup"
+               (if 64bit? "-m64" "-m32")
+               "-O2" "-falign-functions=32" "-fomit-frame-pointer"
+               "-W" "-Wimplicit" "-Wreturn-type" "-Wunused" "-Wformat"
+               "-Wuninitialized" "-Wstrict-prototypes" "-Wno-parentheses"
+               "-pipe" "-D_GNU_SOURCE" (tmp Nm ".c") ) ) )
       ("SunOS"
          (quote
             (apply call L "gcc" "-o" (tmp Nm)

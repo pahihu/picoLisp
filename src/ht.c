@@ -101,7 +101,7 @@ static void htFmt(any x) {
       bufString(x, nm);
       if (isExt(x))
          Env.put('-'),  htEncode(nm);
-      else if (hashed(x, Intern[ihash(y)]))
+      else if (hashed(x, Intern+ihash(y)))
          Env.put('$'),  htEncode(nm);
       else if (strchr("$+-", *nm)) {
          putHex(*nm);

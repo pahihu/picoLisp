@@ -5,6 +5,8 @@
 #include "pico.h"
 
 any apply(any ex, any foo, bool cf, int n, cell *p) {
+   applyFrame af;
+
    while (!isNum(foo)) {
       if (isCell(foo)) {
          int i;
@@ -13,6 +15,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          bindFrame *f = allocFrame(length(x)+2);
 
          f->link = Env.bind,  Env.bind = (bindFrame*)f;
+         f->exe = Env.exe;
          f->i = 0;
          f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
          while (isCell(x)) {
@@ -63,6 +66,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
 
             Env.cls = TheCls,  Env.key = TheKey;
             f->link = Env.bind,  Env.bind = (bindFrame*)f;
+            f->exe = Env.exe;
             f->i = 0;
             f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
             --n, ++p;
@@ -116,10 +120,18 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          undefined(foo,ex);
       foo = val(foo);
    }
+   if (Env.applyDepth++) {
+      // !!! every time initialize frame fields, before linking to Env !!!
+      af.body = cons(Nil,Nil);
+      af.args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+      af.link = Env.applyFrames;
+      Env.applyFrames = &af;
+   }
+   applyFrame *caf = Env.applyFrames; // current Apply frame
    if (--n < 0)
-      cdr(ApplyBody) = Nil;
+      cdr(caf->body) = Nil;
    else {
-      any x = ApplyArgs;
+      any x = caf->args;
       val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
       while (--n >= 0) {
          if (!isCell(cdr(x)))
@@ -127,9 +139,12 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          x = cdr(x);
          val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
       }
-      cdr(ApplyBody) = car(x);
+      cdr(caf->body) = car(x);
    }
-   return evSubr(foo, ApplyBody);
+   foo = evSubr(foo, caf->body);
+   if (--Env.applyDepth)
+      Env.applyFrames = af.link;
+   return foo;
 }
 
 // (apply 'fun 'lst ['any ..]) -> any
@@ -227,6 +242,7 @@ any doMapc(any ex) {
       do
          Push(c[n], EVAL(car(x))), ++n;
       while (isCell(x = cdr(x)));
+
       while (isCell(data(c[0]))) {
          x = apply(ex, data(foo), YES, n, c);
          for (i = 0; i < n; ++i)
@@ -533,7 +549,7 @@ any doFully(any ex) {
 // (cnt 'fun 'lst ..) -> cnt
 any doCnt(any ex) {
    any x = cdr(ex);
-   int res;
+   long res;
    cell foo;
 
    res = 0;
@@ -547,13 +563,17 @@ any doCnt(any ex) {
       while (isCell(x = cdr(x)));
       while (isCell(data(c[0]))) {
          if (!isNil(apply(ex, data(foo), YES, n, c)))
-            res += 2;
+            res++;
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
    }
    drop(foo);
-   return box(res);
+#ifdef __LP64__
+   return boxCnt(res);
+#else
+   return box(SHORT(res));
+#endif
 }
 
 // (sum 'fun 'lst ..) -> num
@@ -561,7 +581,7 @@ any doSum(any ex) {
    any x = cdr(ex);
    cell res, foo, c1;
 
-   Push(res, box(0));
+   Push(res, Zero);
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
@@ -573,24 +593,7 @@ any doSum(any ex) {
       while (isCell(data(c[0]))) {
          if (isNum(data(c1) = apply(ex, data(foo), YES, n, c))) {
             Save(c1);
-            if (shortLike(data(res)) && shortLike(data(c1))) {
-               long a = unBoxShort(data(res)), b = unBoxShort(data(c1));
-               data(res) = boxLong(a + b);
-            } else {
-               data(res) = big(data(res)), data(c1) = big(data(c1));
-               if (isNeg(data(res))) {
-                  if (isNeg(data(c1)))
-                     bigAdd(data(res),data(c1));
-                  else
-                     bigSub(data(res),data(c1));
-                  if (!IsZeroBig(data(res)))
-                     neg(data(res));
-               }
-               else if (isNeg(data(c1)))
-                  bigSub(data(res),data(c1));
-               else
-                  bigAdd(data(res),data(c1));
-            }
+            data(res) = ADD(data(res),data(c1));
             drop(c1);
          }
          for (i = 0; i < n; ++i)

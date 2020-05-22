@@ -10,14 +10,11 @@ CC = gcc
 # CCLD is the cc (compiler frontend) to use for the link step.
 CCLD = gcc
 GCCLD = gcc
-
-ifeq ($(target),pil32)
-        M32=-m32
-endif
+CPU = $(shell uname -m)
 
 ifeq ($(debug),yes)
-	CC += -g
-	CCLD += -g
+	CC += -g #-fsanitize=address
+	CCLD += -g #-fsanitize=address
 	OPT = -DPICODEBUG=1
         STRIP = :
 else
@@ -25,11 +22,17 @@ else
         STRIP = strip
 endif
 
+ifeq ($(target),pil32)
+        M32=-m32
+endif
+
 BFLAGS = -pipe \
 	-falign-functions=32 -fno-strict-aliasing \
 	-W -Wimplicit -Wreturn-type -Wunused -Wformat \
 	-Wuninitialized -Wstrict-prototypes \
 	-D_GNU_SOURCE  -D_FILE_OFFSET_BITS=64
+
+LIB-FLAGS = -lffi
 
 CFLAGS = -c $(OPT) $(BFLAGS)
 
@@ -39,7 +42,7 @@ ifeq ($(shell uname), Linux)
 	OS = Linux
 	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm -ldl
+	LIB-FLAGS += -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
 	LCRYPT = -lcrypt
 else
@@ -47,7 +50,7 @@ ifeq ($(shell uname), OpenBSD)
 	OS = OpenBSD
 	BFLAGS += ${M32}
 	PICOLISP-FLAGS = ${M32} -rdynamic -Wl,-E
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = -Wl,-E -Wl,-shared
 	LCRYPT = -lcrypto
 else
@@ -57,7 +60,7 @@ ifeq ($(shell uname), FreeBSD)
 	CCLD = clang
 	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
 	LCRYPT = -lcrypt
 else
@@ -65,20 +68,25 @@ ifeq ($(shell uname), NetBSD)
 	OS = NetBSD
 	BFLAGS += ${M32}
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = ${M32} -shared -export-dynamic
 	LCRYPT = -lcrypto
 else
 ifeq ($(shell uname), Darwin)
 ifeq ($(target), pil32)
 	GCCLD = gcc
+        CPU = i386
+        # BFLAGS += -I$(HOME)/local32/include
+        # LIB-FLAGS = $(HOME)/local32/lib/libffi.a
 else
 	GCCLD = gcc-mp-8
 endif
 	OS = Darwin
-	BFLAGS += ${M32} -mmacosx-version-min=10.6 -Wno-parentheses
+	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
+		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT \
+		  -D_XOPEN_SOURCE -Wno-deprecated
 	PICOLISP-FLAGS = ${M32}
-	LIB-FLAGS = -lc -lm -ldl
+	LIB-FLAGS += -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
         SYSDIRS = -I/opt/local/include -L/opt/local/lib
 	LCRYPT = #-lcrypto
@@ -88,7 +96,7 @@ ifeq ($(shell uname), SunOS)
 	OS = SunOS
 	BFLAGS += ${M32}
 	PICOLISP-FLAGS =
-	LIB-FLAGS = -lm -lnsl -lsocket
+	LIB-FLAGS += -lm -lnsl -lsocket
 	DYNAMIC-LIB-FLAGS = -G
 	LCRYPT = -lcrypt
 else
@@ -96,7 +104,7 @@ ifeq ($(shell uname), AIX)
 	OS = AIX
 	BFLAGS += -maix32
 	PICOLISP-FLAGS = -maix32 -Wl,-brtl -Wl,-bexpall
-	LIB-FLAGS = -lm
+	LIB-FLAGS += -lm
 	DYNAMIC-LIB-FLAGS = -maix32 -Wl,-G -shared -lm
 	LCRYPT = -lcrypt
 else
@@ -104,7 +112,7 @@ ifeq ($(shell uname), HP-UX)
 	OS = HP-UX
 	BFLAGS +=
 	PICOLISP-FLAGS = ${M32} -rdynamic
-	LIB-FLAGS = -lm -ldl
+	LIB-FLAGS += -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -shared
 	LCRYPT =
 else
@@ -134,11 +142,11 @@ endif
 endif
 endif
 
-BFLAGS += -D_OS='"$(OS)"'
+BFLAGS += -D_OS='"$(OS)"' -D_CPU='"$(CPU)"'
 
 
 picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
-# picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 tools: $(bin)/lat1 $(bin)/utf2 $(bin)/balance
 gate: $(bin)/ssl $(bin)/httpGate
 

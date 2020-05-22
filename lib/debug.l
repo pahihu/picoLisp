@@ -456,35 +456,36 @@
                (format (*/ (- (usec) U) 1000) 3)
                " sec" ) ) ) ) )
 
-`(and *CPU (== 64 64))  # Only in the 64-bit version
+# `(== 64 64)  # Only in the 64-bit version
 
 # Backtrace
-(de bt (Flg)
-   (let (S NIL  *Dbg)
-      (for (L (trail T) L)
-         (if (pair (car L))
-            (push 'S (cons (++ L)))
-            (conc
-               (car (default S (cons (cons))))
-               (cons (cons (++ L) (++ L))) ) )
-         (T (== '^ (car L)))
-         (T
-            (and
-               (pair (car L))
-               (== 'bt (caar L)) ) ) )
-      (for L S
-         (let? X (++ L)
-            (pretty
-               (cons
-                  (or
-                     (and (sym? (car X)) (car X))
-                     (less (has (car X)))
-                     (car X) )
-                  (less (cdr X)) ) ) )
-         (prinl)
-         (while L
-            (space 3)
-            (println (caar L) (less (cdr (++ L)))) )
-         (T (and (not Flg) (line)) T) ) ) )
+(when trail
+   (de bt (Flg)
+      (let (S NIL  *Dbg)
+         (for (L (trail T) L)
+            (if (pair (car L))
+               (push 'S (cons (++ L)))
+               (conc
+                  (car (default S (cons (cons))))
+                  (cons (cons (++ L) (++ L))) ) )
+            (T (== '^ (car L)))
+            (T
+               (and
+                  (pair (car L))
+                  (== 'bt (caar L)) ) ) )
+         (for L S
+            (let? X (++ L)
+               (pretty
+                  (cons
+                     (or
+                        (and (sym? (car X)) (car X))
+                        (less (has (car X)))
+                        (car X) )
+                     (less (cdr X)) ) ) )
+            (prinl)
+            (while L
+               (space 3)
+               (println (caar L) (less (cdr (++ L)))) )
+            (T (and (not Flg) (line)) T) ) ) ) )
 
 # vi:et:ts=3:sw=3

@@ -31,12 +31,14 @@ static symInit Symbols[] = {
    {doBitOr, "|"},
    {doBitQ, "bit?"},
    {doBitXor, "x|"},
+   {doBlk, "blk"},
    {doBool, "bool"},
    {doBox, "box"},
    {doBoxQ, "box?"},
    {doBreak, "!"},
    {doBy, "by"},
    {doBye, "bye"},
+   {doByte, "byte"},
    {doBytes, "bytes"},
    {doCaaaar, "caaaar"},
    {doCaaadr, "caaadr"},
@@ -82,6 +84,7 @@ static symInit Symbols[] = {
    {doClose, "close"},
    {doCmd, "cmd"},
    {doCnt, "cnt"},
+   {doCo, "co"},
    {doCol, ":"},
    {doCommit, "commit"},
    {doCon, "con"},
@@ -119,6 +122,7 @@ static symInit Symbols[] = {
    {doEqT, "=T"},
    {doEqual, "="},
    {doErr, "err"},
+   {doErrno, "errno"},
    {doEval, "eval"},
    {doExec, "exec"},
    {doExt, "ext"},
@@ -191,6 +195,7 @@ static symInit Symbols[] = {
    {doLine, "line"},
    {doLines, "lines"},
    {doLink, "link"},
+   {doLisp, "lisp"},
    {doList, "list"},
    {doListen, "listen"},
    {doLit, "lit"},
@@ -228,6 +233,7 @@ static symInit Symbols[] = {
    {doMulDiv, "*/"},
    {doName, "name"},
    {doNand, "nand"},
+   {doNative, "native"},
    {doNEq, "n=="},
    {doNEq0, "n0"},
    {doNEqT, "nT"},
@@ -239,6 +245,7 @@ static symInit Symbols[] = {
    {doNond, "nond"},
    {doNor, "nor"},
    {doNot, "not"},
+   {doNsp, "nsp"},
    {doNth, "nth"},
    {doNumQ, "num?"},
    {doOff, "off"},
@@ -262,6 +269,7 @@ static symInit Symbols[] = {
    {doPlace, "place"},
    {doPoll, "poll"},
    {doPool, "pool"},
+   {doPool2, "pool2"},
    {doPop, "pop"},
    {doPopq, "++"},
    {doPort, "port"},
@@ -322,17 +330,20 @@ static symInit Symbols[] = {
    {doSplit, "split"},
    {doSpQ, "sp?"},
    {doSqrt, "sqrt"},
+   {doStack, "stack"},
    {doState, "state"},
    {doStem, "stem"},
    {doStr, "str"},
    {doStrip, "strip"},
    {doStrQ, "str?"},
+   {doStruct, "struct"},
    {doSub, "-"},
    {doSubQ, "sub?"},
    {doSum, "sum"},
    {doSuper, "super"},
    {doSwap, "swap"},
    {doSym, "sym"},
+   {doSymbols, "symbols"},
    {doSymQ, "sym?"},
    {doSync, "sync"},
    {doSys, "sys"},
@@ -346,6 +357,7 @@ static symInit Symbols[] = {
    {doTime, "time"},
    {doTouch, "touch"},
    {doTrace, "$"},
+   {doTrail, "trail"},
    {doTrim, "trim"},
    {doTry, "try"},
    {doType, "type"},
@@ -369,15 +381,19 @@ static symInit Symbols[] = {
    {doWr, "wr"},
    {doXchg, "xchg"},
    {doXor, "xor"},
+   {doYield, "yield"},
    {doYoke, "yoke"},
    {doZap, "zap"},
    {doZero, "zero"},
 };
 
+static any *IniIntern;
+
 static any initSym(any v, char *s) {
    any x, *h;
 
-   h = Intern + ihash(x = mkName(s));
+   h = IniIntern + ihash(x = mkName(s));
+   ASSERT(isSym(car(*h)));
    x = consSym(v,x);
    *h = cons(x,*h);
    return x;
@@ -385,15 +401,26 @@ static any initSym(any v, char *s) {
 
 void initSymbols(void) {
    int i;
+   any Pico;
 
-   Nil = symPtr(Avail),  Avail = Avail->car->car;  // Allocate 2 cells for NIL
+   PicoNil = Nil = symPtr(Avail),  Avail = Avail->car->car;  // Allocate 2 cells for NIL
    val(Nil) = tail(Nil) = val(Nil+1) = tail(Nil+1) = Nil;
    Zero = box(0);
-   One = box(2);
+   One = boxCnt(1);
+   TNsp = BOX(1383865);
+// XXX fprintf(stderr,"*** TNsp = %p\n",TNsp);
    for (i = 0; i < IHASH; ++i)
-      Intern[i] = Transient[i] = Nil;
+      Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)
       Extern[i] = Nil;
+
+   // construct initial namespace
+   // set initial hash tab to value of pico ns
+   IniIntern = ptrNsp(Pico = consNsp());
+   // Env.nsp contains symbols !!!
+   Env.nsp = Pico1 = cons(initSym(Pico,"pico"),Nil); // initial ns lst
+
+   initSym(mkStr(_CPU), "*CPU");
    initSym(mkStr(_OS), "*OS");
    DB    = initSym(Nil, "*DB");
    Meth  = initSym(boxFun(doMeth), "meth");
@@ -403,6 +430,11 @@ void initSymbols(void) {
    mkExt(val(DB) = DbVal = consStr(DbTail = BOX('1')));
    Extern['1'] = cons(DbVal, Nil);
 
+   ISym   = initSym(Nil, "I");
+   NSym   = initSym(Nil, "N");
+   SSym   = initSym(Nil, "S");
+   CSym   = initSym(Nil, "C");
+   BSym   = initSym(Nil, "B");
    Solo   = initSym(Zero, "*Solo");
    PPid   = initSym(Nil, "*PPid");
    Pid    = initSym(boxCnt(getpid()), "*Pid");
@@ -420,6 +452,8 @@ void initSymbols(void) {
    Hup    = initSym(Nil, "*Hup");
    Sig1   = initSym(Nil, "*Sig1");
    Sig2   = initSym(Nil, "*Sig2");
+   Tstp1  = initSym(Nil, "*Tstp1");
+   Tstp2  = initSym(Nil, "*Tstp2");
    Up     = initSym(Nil, "^");
    Err    = initSym(Nil, "*Err");
    Msg    = initSym(Nil, "*Msg");

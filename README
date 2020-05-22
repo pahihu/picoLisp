@@ -3,8 +3,96 @@ Changes
 
 All bugs introduced are mine.
 
+This picoLisp fork can be built in 32bit/64bit mode and pil32 has all the
+documented features of pil64: namespaces, native C calls, coroutines,
+destructuring bind in let, list target in put and =: The external symbols
+and the database format follows the pil32 tradition.
+
+So where you see in the documentation "6bit-only", you can try out the
+examples. They should work.
+
+Note, to call a C function with variable number of arguments, the number of
+fixed arguments must be marked with T, eg:
+
+     (native "@" "printf" "abc%d%s^J" T 7 "XYZ")
+
+The arguments before T are the fixed arguments, the number of arguments
+after the T are variable. This change is due to the native C call
+implementation which uses libffi.
+
+
+What is included?
+
+Coroutines
+   (co 'sym [. prg]) -> any
+   (stack ['cnt]) -> cnt | (.. sym . cnt)
+   (yield 'any ['sym]) -> any
+
+Database
+   (blk fd cnt siz [fd2]) -> lst
+   (blk fd 0) -> (cnt . siz)
+   (pool2 'sym . prg) -> any
+
+Debug
+   (bt ['flg]) -> flg
+   (trail ['flg]) -> lst
+   (up [cnt] sym ['val]) -> any
+
+Misc
+   *CPU
+   (byte 'num ['cnt]) -> cnt
+   (errno) -> cnt
+   (gc ['cnt [cnt2]) -> cnt | NIL
+   *Tstp1, *Tstp2
+   (let (lst 'any ...) . prg) -> any
+      destructuring bind
+   (put ..)
+   (=: ...)
+      final destination as list
+
+Namespaces
+   (nsp 'sym) -> sym
+   pico
+   (symbols) -> lst
+   (symbols 'lst) -> lst
+   (symbols 'lst . prg) -> any
+   (symbols 'sym1 'sym2 ..) -> lst
+   (intern 'sym ['flg]) -> sym
+   (all ['T | '0 | 'sym]) -> lst
+
+Native C Call
+   (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
+   (lisp 'sym ['fun]) -> num
+   (struct 'num 'any 'any ..) -> any
+   long lisp(char*,long,long,long,long,long);
+
+
+* fixed coroutine issues, all tankf33der tests passed
+* tankf33der ping-pong.l works, pil64 core dumps ;)
+* added lst target in put and =:
+* fixed coroutine issues, tankf33der tests are running, except advent2019
+* added coroutines co,yield,stack
+* fixed float/double scaling in native calls
+* fixed float/double result/argument type decoding, both 32bit/64bit target uses
+  lib/math64.l (ie. native calls)
+* fixed 32bit libffi native C calls
+* native C calls thru libffi float/double return values/arguments supported
+* added native, struct, lisp (callbacks), and external lisp() call
+  float/double return values/arguments in native calls not supported (yet)
+* reduced overhead of nested Apply and exe tracking in bindFrame
+* can be used to regenerate pil21 sources
+* fixed up to return any call, load to preserve namespace, nested Apply
+* fixed 64bit seed/rand to match pil64
+* added destructuring bind in let, fixed trail, modified gc
+* added trail, modified up, bt now works
+* fixed namespace deallocation in 32bit target
+* added nsp, pico, symbols, %CPU, modified all, intern
+* added pool2
+* added byte, *Tstp1, *Tstp2
+* added errno, blk, lib/dbgc.l runs
 * passed misc/bigtest
-* optimized arithmetic operations
+* pil 64bit target uses the same short/bigNum fmt as pil64, the 32bit target 
+  supports shortNums
 * added gcc -O3 target, run with pilx
 * fixed SIGSEGV on UTF-8 character tables
 * added build scripts m and m32 in src/ dir
@@ -17,7 +105,7 @@ All bugs introduced are mine.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 6 / 5 / 2020
+pahihu 22 / 5 / 2020
 
 
 

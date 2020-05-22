@@ -31,13 +31,19 @@ outFile *OutFile, **OutFiles;
 int (*getBin)(void);
 void (*putBin)(int);
 any TheKey, TheCls, Thrown;
-any Alarm, Sigio, Line, Zero, One;
-any Intern[IHASH], Transient[IHASH], Extern[EHASH];
-any ApplyArgs, ApplyBody, DbVal, DbTail;
-any Nil, DB, Meth, Quote, T;
+any Alarm, Sigio, Line, Zero, One, Pico1;
+any Transient[IHASH], Extern[EHASH];
+any DbVal, DbTail;
+any PicoNil, Nil, DB, Meth, Quote, T;
+any ISym, NSym, SSym, CSym, BSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
+any Tstp1, Tstp2;
+any TNsp, TCo7;
 bool Break;
+coFrame **Stack1; // coro stacks
+int Stack1s; // #Stack1[] - 1, last elt always NULL
+int Stacks, StkSize; // #stacks, stack size
 sig_atomic_t Signal[NSIG];
 
 static int TtyPid;
@@ -119,6 +125,14 @@ void sighandler(any ex) {
          else if (Signal[SIGHUP]) {
             --Signal[0], --Signal[SIGHUP];
             run(val(Hup));
+         }
+         else if (Signal[SIGTSTP]) {
+            --Signal[0], --Signal[SIGTSTP];
+            run(val(Tstp1));
+         }
+         else if (Signal[SIGCONT]) {
+            --Signal[0], --Signal[SIGCONT];
+            run(val(Tstp2));
          }
          else if (Signal[SIGTERM]) {
             for (flg = NO, i = 0; i < Children; ++i)
@@ -230,7 +244,7 @@ any doKids(any ex __attribute__((unused))) {
 
    for (i = 0, x = Nil; i < Children; ++i)
       if (Child[i].pid)
-         x = cons(box(Child[i].pid * 2), x);
+         x = cons(boxCnt(Child[i].pid), x);
    return x;
 }
 
@@ -247,6 +261,64 @@ void *alloc(void *p, size_t siz) {
    if (!(p = realloc(p,siz)))
       giveup("No memory");
    return p;
+}
+
+/* Allocate aligned memory */
+void *allocAligned(void *p, size_t siz, size_t boundary) {
+#ifdef __LP64__
+   return alloc(p,siz);
+#else
+   char *q, *r;
+
+   q = (char*)alloc(p,siz+1+boundary-1);
+   r = q + 1;
+   r = (char*)(boundary * ((num(r) + boundary - 1) / boundary));
+   *(r - 1) = r - q;
+   return r;
+#endif
+}
+
+/* Free aligned memory */
+void freeAligned(void *p) {
+#ifdef __LP64__
+   free(p);
+#else
+   char *q = p;
+   free(q - *(q - 1));
+#endif
+}
+
+/* Allocate coroutine env. */
+void *coroAlloc(int siz) {
+   void *p = NULL;
+   return alloc(p, sizeof(coFrame) + siz - sizeof(char));
+}
+
+coFrame *coroInit(coFrame *f, any tag) {
+   memset(f, 0, sizeof(coFrame));
+   f->tag = tag;
+   f->active = NO;
+   f->ret = Nil;
+   f->At  = Nil;
+   f->env = Env;
+   f->env.make = f->env.yoke = 0; // clean make env
+   f->env.applyFrames = alloc(NULL,sizeof(applyFrame));
+   f->env.applyFrames->args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+   f->env.applyFrames->body = cons(Nil,Nil);
+   f->env.applyFrames->link = Env.applyFrames;
+   f->env.applyDepth = 0;
+   f->mainCoro = Env.coF; // main coro
+   f->attached = YES;
+   return f;
+}
+
+bool coroValid(coFrame *f) {
+   if (f->tag == Nil)
+      return NO;
+   if (f->mainCoro == NULL)
+      if (f->tag != T)
+         return NO;
+   return YES;
 }
 
 /* Allocate cell heap */
@@ -279,6 +351,32 @@ any doHeap(any x) {
    return boxCnt(n / CELLS);
 }
 
+// (stack ['cnt]) -> cnt | (.. sym . cnt)
+any doStack(any x) {
+   int i;
+   cell c1;
+
+   if (isCell(cdr(x))) {
+      if (1 == Stacks) { // just main stack
+         StkSize = 1024 * evCnt(x,cdr(x));
+         if (StkSize < MINSIGSTKSZ)
+            StkSize = MINSIGSTKSZ;
+         for (i = 0; Stack1[i]; i++)
+            free(Stack1[i]), Stack1[i] = NULL;
+         Env.coF = Stack1[0] = coroInit(coroAlloc(4 * StkSize), T);
+         Env.coF->mainCoro = Env.coF;
+         return boxCnt(StkSize / 1024);
+      }
+   }
+   Push(c1, boxCnt(StkSize / 1024));
+   for (i = 1; Stack1[i]; i++) { // skip main coro
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag))
+         data(c1) = cons(f->tag, data(c1));
+   }
+   return Pop(c1);
+}
+
 // (adr 'var) -> num
 // (adr 'num) -> var
 any doAdr(any x) {
@@ -286,6 +384,23 @@ any doAdr(any x) {
    if (isNum(x = EVAL(car(x))))
       return (any)(unDig(x) * WORD);
    return box(num(x) / WORD);
+}
+
+// (byte 'num ['cnt]) -> cnt
+any doByte(any ex) {
+  char *a;
+  any x, y;
+
+  x = cdr(ex), y = EVAL(car(x));
+  NeedNum(ex,y);
+  a = (char*)unDigU(y);
+  if (isCell(x = cdr(x))) {
+     y = EVAL(car(x));
+     NeedCnt(ex,y);
+     *a = (char)unDigU(y);
+     return y;
+  }
+  return boxCnt(*a);
 }
 
 // (env ['lst] | ['sym 'val] ..) -> lst
@@ -334,7 +449,7 @@ any doEnv(any x) {
    return Pop(c1);
 }
 
-// (up [cnt] sym ['val]) -> any
+// (up [cnt] [sym ['val]]) -> any
 any doUp(any x) {
    any y, *val;
    int cnt, i;
@@ -347,20 +462,60 @@ any doUp(any x) {
       cnt = (int)unBox(y),  x = cdr(x),  y = car(x);
    for (p = Env.bind, val = &val(y);  p;  p = p->link) {
       if (p->i <= 0) {
-         for (i = 0;  i < p->cnt;  ++i)
-            if (p->bnd[i].sym == y) {
-               if (!--cnt) {
-                  if (isCell(x = cdr(x)))
-                     return p->bnd[i].val = EVAL(car(x));
-                  return p->bnd[i].val;
+         if (isNil(y)) {
+            if (At == p->bnd[0].sym && !--cnt)
+               return p->exe;
+         }
+         else
+            for (i = 0;  i < p->cnt;  ++i)
+               if (p->bnd[i].sym == y) {
+                  if (!--cnt) {
+                     if (isCell(x = cdr(x)))
+                        return p->bnd[i].val = EVAL(car(x));
+                     return p->bnd[i].val;
+                  }
+                  val = &p->bnd[i].val;
                }
-               val = &p->bnd[i].val;
-            }
       }
    }
+   if (isNil(y))
+      return Nil;
    if (isCell(x = cdr(x)))
       return *val = EVAL(car(x));
    return *val;
+}
+
+// (trail ['flg]) -> lst
+any doTrail(any x) {
+   int i;
+   bindFrame *p;
+   cell c1;
+   any y;
+
+   x = cdr(x);
+   if (isCell(x))
+      x = EVAL(car(x));
+   Push(c1, Nil);
+   for (p = Env.bind;  p;  p = p->link) {
+      if (p->i == 0) {
+         for (i = p->cnt;  --i >= 0;) {
+            if (At == p->bnd[i].sym && !i)
+               data(c1) = cons(p->exe, data(c1));
+            else if (!isNil(x)) {
+               data(c1) = cons(p->bnd[i].sym, cons(val(p->bnd[i].sym), data(c1)));
+               val(p->bnd[i].sym) = p->bnd[i].val; // set old val
+            }
+         }
+      }
+   }
+   x = data(c1); // restore values
+   while (isCell(x)) {
+      y = car(x); x = cdr(x);
+      if (isSym(y)) {
+         val(y) = car(x); x = cdr(x);
+      }
+   }
+   return Pop(c1);
 }
 
 // (sys 'any ['any]) -> sym
@@ -498,10 +653,7 @@ int compare(any x, any y) {
    if (isNum(x)) {
       if (!isNum(y))
          return isNil(y)? +1 : -1;
-      if (shortLike(x) && shortLike(y))
-         return shortCompare(x,y);
-      x = big(x), y = big(y);
-      return bigCompare(x,y);
+      return CMP(x,y);
    }
    if (isSym(x)) {
       int b1, b2;
@@ -634,6 +786,7 @@ void err(any ex, any x, char *fmt, ...) {
    Env.parser = NULL;
    Env.put = putStdout;
    Env.get = getStdin;
+   Env.coF = Stack1[0]; Stacks = 1;
    longjmp(ErrRst, +1);
 }
 
@@ -655,6 +808,7 @@ void argError(any ex, any x) {err(ex, x, "Bad argument");}
 void numError(any ex, any x) {err(ex, x, "Number expected");}
 void cntError(any ex, any x) {err(ex, x, "Small number expected");}
 void symError(any ex, any x) {err(ex, x, "Symbol expected");}
+void symNsError(any ex, any x) {err(ex, x, "Bad symbol namespace");}
 void extError(any ex, any x) {err(ex, x, "External symbol expected");}
 void pairError(any ex, any x) {err(ex, x, "Cons pair expected");}
 void atomError(any ex, any x) {err(ex, x, "Atom expected");}
@@ -663,6 +817,10 @@ void varError(any ex, any x) {err(ex, x, "Variable expected");}
 void protError(any ex, any x) {err(ex, x, "Protected symbol");}
 
 void pipeError(any ex, char *s) {err(ex, NULL, "Pipe %s error", s);}
+void dlError(any ex, any x) {err(ex, x, "[DLL] %s", dlerror());}
+void cbError(any ex, any x) {err(ex, x, "Too many callbacks");}
+void reentError(any ex, any x) {err(ex, x, "Reentrant coroutine");}
+void yieldError(any ex, any x) {err(ex, x, "No coroutine");}
 
 void unwind(catchFrame *catch) {
    any x;
@@ -702,6 +860,12 @@ void unwind(catchFrame *catch) {
          popErrFiles();
       while (Env.ctlFrames != q->env.ctlFrames)
          popCtlFiles();
+      // terminate skipped coroutines
+      while (Env.coF != q->env.coF) {
+         if (Env.coF->tag != T) // except main coro
+            Env.coF->tag = Nil, Stacks--;
+         Env.coF= Env.coF->link;
+      }
       Env = q->env;
       EVAL(q->fin);
       CatchPtr = q->link;
@@ -722,6 +886,15 @@ void unwind(catchFrame *catch) {
       popErrFiles();
    while (Env.ctlFrames)
       popCtlFiles();
+   // terminate all active coroutines, except main
+   for (i = 1; Stack1[i]; i++) {
+      coFrame *f = Stack1[i];
+      if (!isNil(f->tag)) {
+         if (f->active) {
+            f->tag = Nil, f->active = NO, Stacks--;
+         }
+      }
+   }
 }
 
 /*** Evaluation ***/
@@ -730,6 +903,7 @@ any evExpr(any expr, any x) {
    /* XXX struct {any sym; any val;} bnd[length(y)+2]; */
    bindFrame *f = allocFrame(length(y)+2);
 
+   f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 1; */
    f->i = length(y) + 1;
@@ -787,7 +961,12 @@ any funq(any x) {
    if (isSym(x))
       return Nil;
    if (isNum(x))
-      return (unDig(x)&3) || isNum(nextDig(x))? Nil : x;
+      // negative or odd, or bigNum
+#ifdef __LP64__
+      return isBig(x)? Nil : x;
+#else
+      return isNeg(x) || (unDigU(x)&1) || isNum(nextDig(x))? Nil : x;
+#endif
    if (circ(y = cdr(x)))
       return Nil;
    while (isCell(y)) {
@@ -855,6 +1034,626 @@ void undefined(any x, any ex) {
       err(ex, x, "Undefined");
 }
 
+// (errno) -> cnt
+any doErrno(any ex __attribute__((unused))) {
+   return boxCnt(errno);
+}
+
+static int fetchChar(byte **pbuf) {
+   int c;
+   byte *buf = *pbuf;
+
+   if ((c = *buf++) == 0xFF)
+      return TOP;
+   if (c & 0x80) {
+      if ((c & 0x20) == 0)
+         c &= 0x1F;
+      else {
+         if ((c & 0x10) == 0)
+            c &= 0xF;
+         else
+            c = (c & 0x7) << 6 | *buf++ & 0x3F;
+         c = c << 6 | *buf++ & 0x3F;
+      }
+      c = c << 6 | *buf++ & 0x3F;
+   }
+   *pbuf = buf;
+   return c;
+}
+
+#define NATDBG(x)
+
+/* Extract return value(s) with spec x from buf */
+static any natRet(any x, byte **pbuf, int C) {
+   any y, ret;
+   byte *buf = *pbuf;
+
+   NATDBG(
+      fprintf(stderr,"natRet: buf = %p\n",buf);
+      outString("natRet: spec = "); print1(x); newline(); flushAll();
+   )
+   ret = Nil;
+   if (!isNil(x)) {
+      if (isNum(x)) {
+         double d;
+         if (!isNeg(x)) {
+           d = *(double*)buf;
+           buf += sizeof(double);
+         }
+         else {
+           d = *(float*)buf;
+           buf += sizeof(float);
+         }
+         d *= fabs(numToDouble(x));
+         NATDBG(fprintf(stderr,"Scaled ret = %lf\n", d))
+         ret = doubleToNum(d);
+      }
+      else if (isSym(x)) {
+         if (x == ISym) {
+           int32_t i = *(int32_t*)buf;
+           buf += sizeof(int32_t);
+           NATDBG(fprintf(stderr,"I ret = %d\n", i))
+           ret = boxLong(i);
+         }
+         else if (x == NSym) {
+           long l = *(long*)buf;
+           buf += sizeof(long);
+           NATDBG(fprintf(stderr,"N ret = %ld\n", l))
+           ret = boxLong(l);
+         }
+         else if (x == SSym) {
+           char *s = *(char**)buf;
+           buf += sizeof(char*);
+           NATDBG(fprintf(stderr,"S ret = \"%s\"\n", s))
+           ret = mkStr(s);
+         }
+         else if (x == CSym) {
+           int c = fetchChar(&buf);
+           NATDBG(fprintf(stderr,"C ret = %d \'%c\'\n", c, c))
+           ret = c? mkChar(c) : Nil;
+         }
+         else if (x == BSym) {
+           byte b = *(byte*)buf;
+           buf += sizeof(byte);
+           NATDBG(fprintf(stderr,"B ret = %d (%02X)\n", b, b))
+           ret = box(SHORT(b));
+         }
+      }
+      else if (isCell(x)) {
+         if (!buf) {
+            NATDBG(fprintf(stderr,"ret = Nil, buf = NULL\n"))
+            ret = Nil;
+         }
+         else {
+            NATDBG(fprintf(stderr,"decode ret...buf is ptr!\n"))
+            if (!C)
+               buf = *(byte**)buf;
+            ret = natRet(car(x), &buf, C);
+            if (!isNil(ret) || (car(x) != CSym)) {
+               cell c1;
+
+               Push(c1, y = cons(ret,Nil));
+               do {
+                  any z = cdr(x);
+                  if (isNum(z)) { // (sym . cnt)
+                     word u = unDigU(z);
+                     NATDBG(fprintf(stderr,"(sym . cnt)... cnt = %lu\n", u))
+                     while (--u) {
+                        ret = natRet(car(x), &buf, C);
+                        if (isNil(ret) && (car(x) == CSym))
+                           break;
+                        y = (cdr(y) = cons(ret,Nil));
+                     }
+                  }
+                  if (!isCell(z))
+                     break;
+                  x = z;
+                  ret = natRet(car(x), &buf, C);
+                  if (isNil(ret) && (car(x) == CSym))
+                     break;
+                  y = (cdr(y) = cons(ret,Nil));
+               } while (1);
+               ret = Pop(c1);
+            }
+         }
+      }
+   }
+   *pbuf = buf;
+   return ret;
+}
+
+/* Store x in buf */
+static void natBuf(any x, byte **pbuf, int *pc) {
+   byte *buf = *pbuf;
+   int c = *pc;
+   any y;
+
+   if (!isCell(x)) {
+      if (!isNeg(x)) {
+         NATDBG(fprintf(stderr,"natBuf: B\n"))
+         c--, *buf++ = (byte)unDigU(x);
+      }
+      else {
+         NATDBG(fprintf(stderr,"natBuf: I\n"))
+         *((uint32_t*)buf) = unDigU(x);
+         c -= sizeof(uint32_t), buf += sizeof(uint32_t);
+      }
+      *pbuf = buf, *pc = c;
+      return;
+   }
+   // (num|sym . cnt) or ([-]1.0 . lst)
+   y = cdr(x), x = car(x); // num|sym|[-]1.0
+   if (isNum(y)) {
+       word u = unDigU(y);
+       byte *y = buf;
+       c -= u, buf += u;
+       if (isNum(x)) { // (num . cnt)
+          long n = unBox(x);
+          NATDBG(fprintf(stderr,"natBuf: (num . cnt)...num = %ld cnt = %lu\n",n,u))
+#if BYTE_ORDER==1234
+          do {
+             *y++ = (byte)(n & 255);
+             n >>= 8;
+          } while (--u);
+#else
+          y = buf;
+          do {
+             *--y = (byte)(n & 255);
+             n >>= 8;
+          } while (--u);
+#endif
+       }
+       else if (isSym(x)) { // (sym . cnt)
+          NATDBG(fprintf(stderr,"natBuf: (sym . cnt)... cnt = %lu\n",u))
+          int c = symByte(name(x));
+          while ((*y++ = c) && --u) // XXX check length
+             symByte(NULL);
+       }
+   }
+   else { // ([-]1.0 . lst)
+      double scl = fabs(numToDouble(x));
+      while (isCell(y)) {
+         NATDBG(fprintf(stderr,"natBuf: (%c1.0 . lst)...\n",isNeg(x)? '-' : '+'))
+         double d = numToDouble(car(y)) / scl;
+         if (!isNeg(x)) {
+            *((double*)buf) = d;
+            c -= sizeof(double), buf += sizeof(double);
+         }
+         else {
+            *((float*)buf) = (float)d;
+            c -= sizeof(float), buf += sizeof(float);
+         }
+         y = cdr(y);
+      }
+   }
+   *pbuf = buf, *pc = c;
+   return;
+}
+
+// (struct 'num 'any 'any ..) -> any
+any doStruct(any ex) {
+   int c;
+   byte *buf, *p;
+   any x, y;
+   cell c1, c2;
+
+   c = 0;
+   x = cdr(ex), y = EVAL(car(x));
+   NeedNum(ex, y);
+   p = buf = (byte*)unDigU(y);
+   x = cdr(x), y = EVAL(car(x));
+   Push(c1, y); // result spec
+   while (isCell(x = cdr(x))) {
+      Push(c2, y = EVAL(car(x)));
+      natBuf(data(c2), &p, &c);
+      drop(c2);
+   }
+   if (isSym(data(c1))) {
+      byte *pret = (byte*)&buf;
+      x = natRet(data(c1), &pret, 0);
+   }
+   else
+      x = natRet(data(c1), &buf, 1);
+   drop(c1);
+   return x;
+}
+
+typedef union {
+   long   i;
+   char  *p;
+   double d;
+   float  f;
+} CARG;
+
+// Native library interface from pil21 sources (c) abu
+#ifdef __APPLE__
+#include <ffi/ffi.h>
+#else
+#include <ffi.h>
+#endif
+
+typedef struct ffi {
+   ffi_cif cif;
+   void (*fun)(void);
+   int nfixed,nargs;
+   ffi_type *args[0];
+} ffi;
+
+#ifdef __LP64__
+#define FFI_TYPE_SINT   ffi_type_sint64
+#else
+#define FFI_TYPE_SINT   ffi_type_sint32
+#endif
+
+static ffi_type *ffiType(any y,int isarg) {
+   NATDBG(show("ffiType ? ",y,1))
+   if (isNil(y)) { // 'NIL
+      NATDBG(fprintf(stderr,"void\n"))
+      return &ffi_type_void;
+   }
+   else if (y == ISym) { // 'I
+      NATDBG(fprintf(stderr,"sint32\n"))
+      return &ffi_type_sint32;
+   }
+   else if (y == NSym) { // 'N
+      NATDBG(fprintf(stderr,"sint64\n"))
+      return &FFI_TYPE_SINT;
+   }
+   else if (y == CSym) { // 'C
+      NATDBG(fprintf(stderr,"uint32\n"))
+      return &ffi_type_uint32;
+   }
+   else if (y == BSym) { // 'B
+      NATDBG(fprintf(stderr,"uint8\n"))
+      return &ffi_type_uint8;
+   }
+   else if (isNum(y)) {
+      if (isarg) { // num
+         NATDBG(fprintf(stderr,"sint64\n"))
+         return &FFI_TYPE_SINT;
+      }
+      else { // [-]1.0
+         NATDBG(fprintf(stderr,"float/double\n"))
+         return isNeg(y)? &ffi_type_float : &ffi_type_double;
+      }
+   }
+   else if (isarg && isCell(y) && isNum(cdr(y))) { // (num . scl)
+      NATDBG(fprintf(stderr,"float/double\n"))
+      return isNeg(cdr(y))? &ffi_type_float : &ffi_type_double;
+   }
+   NATDBG(fprintf(stderr,"pointer\n"))
+   return &ffi_type_pointer; // (Typ . Cnt)
+}
+
+// Needs evaluated lst
+static ffi *ffiPrep(void *lib,char *s,any x) {
+   any y = car(x);
+   int i, j, nargs = length(x = cdr(x));
+   ffi *p = malloc(sizeof(ffi) + nargs * sizeof(ffi_type*));
+   ffi_type *rtype;
+   ffi_status fs;
+
+   p->nfixed = 0; // no fixed args
+   p->nargs = nargs;
+   rtype = ffiType(y,0);
+   for (i = 0, j = 0; i < nargs; i++, x = cdr(x)) {
+      if (car(x) == T) {
+         p->nfixed = i;
+         (p->nargs)--;
+      }
+      else
+         p->args[j++] = ffiType(car(x),1);
+   }
+
+   NATDBG(fprintf(stderr,"ffiPrep: %s(), nfixed=%d nargs=%d\n",s,p->nfixed,p->nargs))
+#if 0
+   fs = p->nfixed
+        ? ffi_prep_cif_var(&p->cif,FFI_DEFAULT_ABI,p->nfixed,p->nargs,rtype,p->args)
+        : ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#else
+   fs = ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#endif
+   if ((FFI_OK == fs) && (p->fun = dlsym(lib,s)))
+      return p;
+
+   free(p);
+   return NULL;
+}
+
+static ffi *ffiReprep(ffi *p,any x) {
+   any y = car(x);
+   int i, j, nargs = length(x = cdr(x));
+   ffi_type *rtype;
+   ffi_status fs;
+
+   ASSERT(p->nfixed);
+
+   p = realloc(p, sizeof(ffi) + nargs * sizeof(ffi_type*));
+   p->nfixed = 0; // no fixed args
+   p->nargs = nargs;
+   rtype = ffiType(y,0);
+   for (i = 0, j = 0; i < nargs; i++, x = cdr(x)) {
+      if (car(x) == T) { // fixed arg marker
+         p->nfixed = i;
+         (p->nargs)--;
+      }
+      else
+         p->args[j++] = ffiType(car(x),1);
+   }
+
+   NATDBG(fprintf(stderr,"ffiReprep: nfixed=%d nargs=%d\n",p->nfixed,p->nargs))
+#if 0
+   fs = p->nfixed
+        ? ffi_prep_cif_var(&p->cif,FFI_DEFAULT_ABI,p->nfixed,p->nargs,rtype,p->args)
+        : ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#else
+   fs = ffi_prep_cif(&p->cif,FFI_DEFAULT_ABI,p->nargs,rtype,p->args);
+#endif
+   if (FFI_OK == fs)
+      return p;
+
+   free(p);
+   return NULL;
+}
+
+static any evalList(any x) {
+   any y;
+   cell c1;
+
+   Push(c1, y = cons(EVAL(car(x)),Nil));
+   while (isCell(x = cdr(x)))
+      y = (cdr(y) = cons(EVAL(car(x)),Nil));
+   return Pop(c1);
+}
+
+// (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
+any doNative(any ex) {
+   void *lib;
+   cell c1, c2;
+   int  nargs = length(cdr(ex))-2, i;
+   CARG arg, args[nargs], rvalue; // return value/argument holders
+   byte *prvalue; // ptr to rvalue
+   void *avalues[nargs]; // ptr to args[]
+   any x, y, sym2;
+   ffi *pffi; // FFI structure
+   bool oldffi; // FFI struct old?
+
+   nargs = 0; prvalue = (byte*)&rvalue;
+   x = cdr(ex), y = EVAL(car(x)); // library handle
+   if (isNum(y))
+      lib = (void*)unDig(y);
+   else {
+      NeedSym(ex,y);
+      char buf[bufSize(y)];
+      bufString(y,buf);
+      NATDBG(fprintf(stderr,"doNative: lib=%s\n",buf))
+      if (!(lib = dlopen(strcmp(buf,"@")? buf : 0, RTLD_LAZY | RTLD_GLOBAL)))
+         dlError(ex,y);
+      val(y) = box(num(lib));
+   }
+   x = cdr(x), y = EVAL(sym2 = car(x)); // function ptr
+   Push(c1, sym2);
+   NATDBG(show("function ptr = ",y,1))
+   x = evalList(cdr(x)); // eval argument list
+   NATDBG(show("eval'd args = ",x,1))
+
+   oldffi = NO;
+   if (isNum(y)) {
+      pffi = (ffi*)unDig(y);
+      oldffi = YES;
+   }
+   else {
+      NeedSym(ex,y);
+      char buf[bufSize(y)];
+      bufString(y,buf);
+
+      if (car(x) == T) { // just check
+         void *fun;
+         NATDBG(fprintf(stderr,"doNative: check only %s\n",buf))
+         if (!(fun = dlsym(lib,buf)))
+            dlError(ex,y);
+         return T;
+      }
+      if (!(pffi = ffiPrep(lib,buf,x)))
+         dlError(ex,y);
+      val(y) = box(num(pffi));
+   }
+   if (oldffi && pffi->nfixed) { // variable call
+      if (!(pffi = ffiReprep(pffi,x)))
+         dlError(ex,y);
+      val(sym2) = box(num(pffi));
+   }
+   drop(c1);
+
+   Push(c1, car(x)); // save result spec
+   Push(c2, x = cdr(x)); // save args
+   while (isCell(x)) {
+      y = car(x);
+      avalues[nargs] = &args[nargs];
+      if (y == T) 
+         ; // skip fixed args marker
+      else if (isNum(y)) {
+         args[nargs++].i = arg.i = unBox(y);
+         NATDBG(fprintf(stderr,"arg = %ld\n", arg.i))
+      }
+      else if (isSym(y)) {
+         args[nargs++].p = arg.p = alloca(bufSize(y));
+         bufString(y,arg.p);
+         NATDBG(fprintf(stderr,"arg = \"%s\"\n", arg.p))
+      }
+      else { // pair
+         if (isNum(cdr(y))) { // (num . scl), num/flg as fixpt
+            NATDBG(fprintf(stderr, "(num . scl)...\n"))
+            double d = numToDouble(car(y)) / fabs(numToDouble(cdr(y)));
+            if (!isNeg(cdr(y))) {
+               args[nargs++].d = arg.d = d;
+               NATDBG(fprintf(stderr,"arg = %lf\n", arg.d))
+            }
+            else {
+               args[nargs++].f = arg.f = (float)d;
+               NATDBG(fprintf(stderr,"arg = %f\n", arg.f))
+            }
+         }
+         else {
+            // (Tim (8 B . 8))
+            any e = cdr(y); // (8 B . 8)
+            int c = unDigU(caar(e)), oc = c;
+            byte *buf = alloca(oc), *z = buf;
+            args[nargs++].p = arg.p = (char*)buf;
+            NATDBG(fprintf(stderr,"(cnt Typ . N)...\n"))
+            do {
+               e = cdr(e);
+               if (isNum(e)) {
+                  byte b = unDigU(e);
+                  NATDBG(fprintf(stderr,"fill byte %d (%02X)...\n",b,b))
+                  while (--c) *z++ = b;
+                  break;
+               }
+               if (!isCell(e))
+                  break;
+               natBuf(car(e), &z, &c);
+            } while (c);
+            NATDBG(
+               fprintf(stderr,"arg = %p, len = %d [\n", buf, oc);
+               for (i = 0; i < oc; i++)
+                  fprintf(stderr," %02x", buf[i]);
+               fprintf(stderr,"]\n");
+            )
+         }
+      }
+      x = cdr(x);
+   }
+
+   // call C
+   ffi_call(&pffi->cif, pffi->fun, &rvalue, avalues);
+   NATDBG(
+      fprintf(stderr," rvalue = %p (%lu)\n", rvalue.p, rvalue.i);
+      fprintf(stderr,"prvalue = %p\n", prvalue);
+      fprintf(stderr,"decoding return value...\n");
+   )
+
+   data(c1) = natRet(data(c1), &prvalue, 0);
+   i = 0; x = data(c2);
+   NATDBG(fprintf(stderr,"decoding args...\n"))
+   while (isCell(x)) {
+      y = car(x);   // ^(Tim (8 B . 8))
+      if (y == T)
+         ; // skip fixed args marker
+      else {
+         arg = args[i++];
+         NATDBG(show("y = ",y,1))
+         if (isCell(y)) {
+            if (isCell(cdr(y)) && !isNum(cadr(y))) {      // (Tim ^(8 B . 8))
+              if (!isNil(car(y))) {     // (^Tim (8 B . 8))
+                 NATDBG(
+                    show(" cadr(y) = ",  cadr(y),1);
+                    show("cdadr(y) = ", cdadr(y),1);
+                 )
+                 val(car(y)) = natRet(cdadr(y), (byte **)&arg.p, 1);
+              }
+            }
+         }
+      }
+      x = cdr(x);
+   }
+   return Pop(c1);;
+}
+
+/* Callbacks */
+long lisp(char *s,long a1,long a2,long a3,long a4,long a5) {
+   long r;
+   any x;
+   cell nm, foo, c[5];
+
+// XXX fprintf(stderr,"lisp(%s,%ld,%ld,%ld,%ld,%ld)\n",s,a1,a2,a3,a4,a5);
+
+   Push(nm, x = mkName(s));
+   Push(foo, EVAL(findSym(x, Intern + ihash(x))));
+
+   Push(c[0], boxLong(a1));
+   Push(c[1], boxLong(a2));
+   Push(c[2], boxLong(a3));
+   Push(c[3], boxLong(a4));
+   Push(c[4], boxLong(a5));
+
+   x = apply(Nil, data(foo), NO, 5, c);
+   drop(nm);
+
+   r = unBox(x);
+// XXX fprintf(stderr,"ret=%ld\n",r);
+   return r;
+}
+
+long cb(int i,long a1,long a2,long a3,long a4,long a5) {
+   long r;
+   any x;
+   cell foo, c[5];
+
+// XXX fprintf(stderr,"cb%d(%d,%d,%d,%d,%d)\n",i,a1,a2,a3,a4,a5);
+
+   Push(foo, Lisp[i].fun);
+
+   Push(c[0], boxLong(a1));
+   Push(c[1], boxLong(a2));
+   Push(c[2], boxLong(a3));
+   Push(c[3], boxLong(a4));
+   Push(c[4], boxLong(a5));
+
+   x = apply(Nil, data(foo), NO, 5, c);
+   drop(foo);
+
+   r = unBox(x);
+// XXX fprintf(stderr,"ret=%ld\n",r);
+   return r;
+}
+
+#define MKCB(n) \
+long cb##n(long a1,long a2,long a3,long a4,long a5) { \
+   return cb(n##L,a1,a2,a3,a4,a5); \
+}
+
+MKCB( 0) MKCB( 1) MKCB( 2) MKCB( 3) MKCB( 4) MKCB( 5) MKCB( 6) MKCB( 7)
+MKCB( 8) MKCB( 9) MKCB(10) MKCB(11) MKCB(12) MKCB(13) MKCB(14) MKCB(15)
+MKCB(16) MKCB(17) MKCB(18) MKCB(19) MKCB(20) MKCB(21) MKCB(22) MKCB(23)
+MKCB(24) MKCB(25) MKCB(26) MKCB(27) MKCB(28) MKCB(29) MKCB(30) MKCB(31)
+
+#define NCBL 32
+
+#define INICB(n) {NULL, NULL, cb##n},
+
+CBL Lisp[NCBL] = {
+INICB( 0) INICB( 1) INICB( 2) INICB( 3) INICB( 4) INICB( 5) INICB( 6) INICB( 7)
+INICB( 8) INICB( 9) INICB(10) INICB(11) INICB(12) INICB(13) INICB(14) INICB(15)
+INICB(16) INICB(17) INICB(18) INICB(19) INICB(20) INICB(21) INICB(22) INICB(23)
+INICB(24) INICB(25) INICB(26) INICB(27) INICB(28) INICB(29) INICB(30) INICB(31)
+};
+
+// (lisp 'sym ['fun]) -> num
+any doLisp(any ex) {
+   any x, y;
+   int i, f;
+
+   x = cdr(ex), y = EVAL(car(x));
+   NeedSym(ex,y);
+   f = NCBL;
+   for (i = 0; i < NCBL; i++) {
+      if (Lisp[i].fun == Nil)
+         f = i;
+      else if (Lisp[i].tag == y)
+         break;
+   }
+   if (i == NCBL) { // not found
+      if (f == NCBL) // no free slot
+         cbError(ex, y);
+      i = f;
+   }
+   Lisp[i].tag = y;
+   x = cdr(x), y = EVAL(car(x));
+   Lisp[i].fun = y;
+// XXX fprintf(stderr,"Lisp[i].cb=%p\n",Lisp[i].cb);
+   return boxWord(num(Lisp[i].cb));
+}
+
 static any evList2(any foo, any ex) {
    cell c1;
 
@@ -875,7 +1674,10 @@ static any evList2(any foo, any ex) {
          return foo;
       }
       if (isCell(foo)) {
+         any savExe = Env.exe;
+         Env.exe = ex;
          foo = evExpr(foo, cdr(ex));
+         Env.exe = savExe;
          drop(c1);
          return foo;
       }
@@ -901,10 +1703,16 @@ any evList(any ex) {
          undefined(foo,ex);
       if (*Signal)
          sighandler(ex);
-      if (isNum(foo = val(foo)))
+      if (isNum(foo = val(foo))) {
          return evSubr(foo,ex);
-      if (isCell(foo))
-         return evExpr(foo, cdr(ex));
+      }
+      if (isCell(foo)) {
+         any savExe = Env.exe;
+         Env.exe = ex;
+         foo = evExpr(foo, cdr(ex));
+         Env.exe = savExe;
+         return foo;
+      }
    }
 }
 
@@ -929,7 +1737,11 @@ long evCnt(any ex, any x) {return xCnt(ex, EVAL(car(x)));}
 
 long xCnt(any ex, any x) {
    NeedCnt(ex,x);
+#if 0
+   return unBoxShort(x);
+#else
    return unBox(x);
+#endif
 }
 
 /* Evaluate double */
@@ -1091,7 +1903,7 @@ any doUsec(any ex) {
    if (!isNil(EVAL(cadr(ex))))
       return boxCnt(Tv.tv_usec);
    gettimeofday(&Tv,NULL);
-   return boxWord2((word2)Tv.tv_sec*1000000 + Tv.tv_usec - USec);
+   return shortBoxWord2((word2)Tv.tv_sec*1000000 + Tv.tv_usec - USec);
 }
 
 // (pwd) -> sym
@@ -1125,7 +1937,7 @@ any doCtty(any ex) {
    any x;
 
    if (isNum(x = EVAL(cadr(ex))))
-      TtyPid = unDig(x) / 2;
+      TtyPid = unDigU(x);
    else {
       if (!isSym(x))
          argError(ex,x);
@@ -1166,7 +1978,7 @@ any doInfo(any x) {
       data(c1) = cons(
          (st.st_mode & S_IFMT) == S_IFDIR? T :
          (st.st_mode & S_IFMT) != S_IFREG? Nil :
-         boxWord2((word2)st.st_size), data(c1) );
+         shortBoxWord2((word2)st.st_size), data(c1) );
       return Pop(c1);
    }
 }
@@ -1290,7 +2102,7 @@ any doVersion(any x) {
    Push(c1, Nil);
    i = 3;
    do
-      data(c1) = cons(box(Version[--i] * 2), data(c1));
+      data(c1) = cons(boxCnt(Version[--i]), data(c1));
    while (i);
    return Pop(c1);
 }
@@ -1305,6 +2117,7 @@ any loadAll(any ex) {
 
 /*** Main ***/
 static void init(int ac, char *av[]) {
+   int i;
    char *p;
    sigset_t sigs;
    struct rlimit ALim;
@@ -1313,6 +2126,8 @@ static void init(int ac, char *av[]) {
    AV = av;
    heapAlloc();
    initSymbols();
+   for (i = 0; i < NCBL; i++)
+      Lisp[i].tag = Lisp[i].fun = Nil;
    if (ac >= 2 && strcmp(av[ac-2], "+") == 0)
       val(Dbg) = T,  av[ac-2] = NULL;
    if (av[0] && *av[0] != '-' && (p = strrchr(av[0], '/')) && !(p == av[0]+1 && *av[0] == '.')) {
@@ -1334,8 +2149,12 @@ static void init(int ac, char *av[]) {
       setrlimit(RLIMIT_STACK, &ULim);
    }
    Tio = tcgetattr(STDIN_FILENO, &OrgTermio) == 0;
-   ApplyArgs = cons(cons(consSym(Nil,Nil), Nil), Nil);
-   ApplyBody = cons(Nil,Nil);
+   Env.applyFrames = alloc(Env.applyFrames,sizeof(applyFrame));
+   Env.applyFrames->link = NULL;
+   Env.applyFrames->args = cons(cons(consSym(Nil,Nil), Nil), Nil);
+   Env.applyFrames->body = cons(Nil,Nil);
+   Env.applyDepth = 0;
+   Env.exe = Nil;
    sigfillset(&sigs);
    sigprocmask(SIG_UNBLOCK, &sigs, NULL);
    iSignal(SIGHUP, sig);
@@ -1345,12 +2164,22 @@ static void init(int ac, char *av[]) {
    iSignal(SIGALRM, sig);
    iSignal(SIGTERM, sig);
    iSignal(SIGIO, sig);
+   iSignal(SIGTSTP, sig);
+   iSignal(SIGCONT, sig);
    signal(SIGCHLD, sigChld);
    signal(SIGPIPE, SIG_IGN);
    signal(SIGTTIN, SIG_IGN);
    signal(SIGTTOU, SIG_IGN);
    gettimeofday(&Tv,NULL);
    USec = (word2)Tv.tv_sec*1000000 + Tv.tv_usec;
+   StkSize = 64 * 1024;
+   // default 16 coroutines
+   Stack1s = 16;
+   Stack1 = alloc(Stack1, (Stack1s + 1) * sizeof(coFrame*));
+   memset(Stack1, 0, (Stack1s + 1) * sizeof(coFrame*));
+   // main coro
+   Env.coF= Stack1[Stacks++] = coroInit(coroAlloc(4 * StkSize), T);
+   Env.coF->mainCoro = Env.coF;
 }
 
 int MAIN(int ac, char *av[]) {
@@ -1368,6 +2197,17 @@ void myAssert(int cond,const char *expr,const char *path,int line) {
    char msg[128];
    if (!cond) {
       sprintf(msg,"%s:%d: assertion failed \"%s\"\n",path,line,expr);
-      giveup(msg);
+      flushAll(); giveup(msg);
    }
 }
+
+void show(char *msg,any x,int nl) {
+   cell c1;
+   Push(c1, x);
+   outString(msg); print1(x);
+   if (nl) {
+      flushAll(); newline();
+   }
+   drop(c1);
+}
+

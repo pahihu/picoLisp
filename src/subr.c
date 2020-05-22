@@ -367,55 +367,22 @@ any doRange(any ex) {
          argError(ex,x);
    }
    Push(c4, x = cons(data(c1), Nil));
-   if (shortLike(data(c1)) && shortLike(data(c2)) && shortLike(data(c3))) {
-      long n1 = unBoxShort(data(c1)),
-           n2 = unBoxShort(data(c2)),
-           n3 = unBoxShort(data(c3));
-      if (n2 >= n1) {
-         for (;;) {
-            n1 += n3;
-            if (n2 < n1)
-               break;
-            x = cdr(x) = cons(boxLong(n1), Nil);
-         }
-      } else
-         for (;;) {
-            n1 -= n3;
-            if (n2 > n1)
-               break;
-            x = cdr(x) = cons(boxLong(n1), Nil);
-         }
-   } else {
-      data(c1) = big(data(c1)), data(c2) = big(data(c2)), data(c3) = big(data(c3));
-      if (bigCompare(data(c2), data(c1)) >= 0) {
-         for (;;) {
-            data(c1) = bigCopy(data(c1));
-            if (!isNeg(data(c1)))
-               bigAdd(data(c1), data(c3));
-            else {
-               bigSub(data(c1), data(c3));
-               if (!IsZeroBig(data(c1)))
-                  neg(data(c1));
-            }
-            if (bigCompare(data(c2), data(c1)) < 0)
-               break;
-            x = cdr(x) = cons(data(c1), Nil);
-         }
+   if (CMP(data(c2), data(c1)) >= 0) {
+      for (;;) {
+         data(c1) = CPY(data(c1));
+         data(c1) = ADD(data(c1),data(c3));
+         if (CMP(data(c2), data(c1)) < 0)
+            break;
+         x = cdr(x) = cons(data(c1), Nil);
       }
-      else {
-         for (;;) {
-            data(c1) = bigCopy(data(c1));
-            if (!isNeg(data(c1)))
-               bigSub(data(c1), data(c3));
-            else {
-               bigAdd(data(c1), data(c3));
-               if (!IsZeroBig(data(c1)))
-                  neg(data(c1));
-            }
-            if (bigCompare(data(c2), data(c1)) > 0)
-               break;
-            x = cdr(x) = cons(data(c1), Nil);
-         }
+   }
+   else {
+      for (;;) {
+         data(c1) = CPY(data(c1));
+         data(c1) = SUB(data(c1),data(c3));
+         if (CMP(data(c2), data(c1)) > 0)
+            break;
+         x = cdr(x) = cons(data(c1), Nil);
       }
    }
    drop(c1);
@@ -493,6 +460,7 @@ any doLink(any x) {
    x = cdr(x);
    do {
       y = EVAL(car(x));
+// XXX outString("link: ");print1(y);flushAll();newline();
       Env.make = &cdr(*Env.make = cons(y, Nil));
    } while (isCell(x = cdr(x)));
    return y;
@@ -1040,8 +1008,11 @@ any doEq0(any x) {
 // (=1 'any) -> 1 | NIL
 any doEq1(any x) {
    x = cdr(x);
+   return isNum(x = EVAL(car(x))) && x == One? x : Nil;
+/*
    return isNum(x = EVAL(car(x)))
-          && (unDig(x)==2 && !isNum(nextDig(x))) ? x : Nil;
+          && (unDig(x)==BIG(1) && !isNum(nextDig(x))) ? x : Nil;
+*/
 }
 
 // (=T 'any) -> flg
@@ -1672,7 +1643,7 @@ any doProve(any x) {
                               cons(data(tp1), cons(data(tp2),data(e))) ) ) ),
                      car(data(q)) );
             data(nl) = cons(data(n), data(nl));
-            data(n) = box(2 + unDig(data(n)));
+            data(n) = boxCnt(SHORT(1) + unDigShort(data(n)));
             data(tp2) = cons(cdr(data(tp1)), data(tp2));
             data(tp1) = cdar(data(alt));
             data(alt) = Nil;
@@ -1690,7 +1661,7 @@ any doProve(any x) {
       }
       else if (isNum(caar(x))) {
          data(e) = prog(cdar(x));
-         for (i = unDig(caar(x)), x = data(nl);  (i -= 2) > 0;)
+         for (i = unDigShort(caar(x)), x = data(nl);  (i -= SHORT(1)) > 0;)
             x = cdr(x);
          data(nl) = cons(car(x), data(nl));
          data(tp2) = cons(cdr(data(tp1)), data(tp2));
@@ -1734,7 +1705,7 @@ any doArrow(any x) {
 
    if (!isNum(caddr(x)))
       return lookup(car(data(*Pnl)), cadr(x));
-   for (i = unDig(caddr(x)), y = data(*Pnl);  (i -= 2) > 0;)
+   for (i = unDigShort(caddr(x)), y = data(*Pnl);  (i -= SHORT(1)) > 0;)
       y = cdr(y);
    return lookup(car(y), cadr(x));
 }
@@ -1806,8 +1777,10 @@ any doSort(any ex) {
    Save(out[0]);
    x = cdr(x),  Push(foo, EVAL(car(x)));
    Push(out[1], Nil);
-   Save(in[0]);
-   Save(in[1]);
+   // Save(in[0]);
+   // Save(in[1]);
+   Push(in[0], Nil);
+   Push(in[1], Nil);
    Push(p, Nil);
    Push(last[1], Nil);
    do {

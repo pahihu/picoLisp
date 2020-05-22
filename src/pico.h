@@ -50,9 +50,11 @@ void myAssert(int,const char*,const char*,int);
 #define BITS32 ((int)32)
 #define MASK ((word)-1)
 #define CELLS (1024*1024/sizeof(cell)) // Heap allocation unit 1MB
+// #define CELLS (32*1024/sizeof(cell)) // GC stress: Heap allocation unit 32KB
 #define IHASH 4999                     // Internal hash table size (should be prime)
 #define EHASH 49999                    // External hash table size (should be prime)
 #define TOP 0x110000                   // Character Top
+#define NCBL 32                        // No. of C callbacks
 
 typedef unsigned long word;
 typedef unsigned int  word32;
@@ -94,6 +96,7 @@ typedef struct symVal {
 
 typedef struct bindFrame {
    struct bindFrame *link;
+   any exe;
    int i, cnt;
    struct {any sym; any val;} bnd[1];
 } bindFrame;
@@ -142,15 +145,25 @@ typedef struct parseFrame {
    word dig, eof;
 } parseFrame;
 
+typedef struct applyFrame {
+   struct applyFrame *link;
+   any args, body;
+} applyFrame;
+
 typedef struct stkEnv {
    cell *stack, *arg;
    bindFrame *bind;
+   any exe;
    int next, protect, trace;
    any cls, key, task, *make, *yoke;
+   any nsp; // list of ns
+   struct coFrame *coF;
    inFrame *inFrames;
    outFrame *outFrames;
    errFrame *errFrames;
    ctlFrame *ctlFrames;
+   applyFrame *applyFrames;
+   int applyDepth;
    parseFrame *parser;
    void (*get)(void);
    void (*put)(int);
@@ -163,29 +176,70 @@ typedef struct catchFrame {
    jmp_buf rst;
 } catchFrame;
 
+typedef struct CBL {
+   any tag;
+   any fun;
+   void *cb;
+} CBL;
+
+typedef struct coFrame {
+   struct coFrame *link;
+   any tag; // coro tag
+   bool active; // active?
+   any ret; // return value
+   bool fromMain; // return from coroMain?
+   struct coFrame *mainCoro; // main coro used in (yield 'any)
+   any At;
+   int Chr;
+   inFile *InFile;
+   outFile *OutFile;
+   catchFrame *CatchPtr; // saved CatchPtr
+   stkEnv env; // saved Env
+   char *file; // last pos
+   int line;
+   bool attached; // attached to main?
+   ucontext_t ctx; // context
+   char ss[1]; // StkSize'd local stack
+} coFrame;
+
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
 #define TAG             num(2*WORD-1)
-#define SSIGN           num(2*WORD)
 #define cellNum(x)      (num(x) & ~TAG)
-#define cellPtr(x)      ((any)(num(x) & ~TAG))
+#define cellPtr(x)      ((any)cellNum(x))
 #define typeTag(x)      (num(x) & (TAG-1))
 #define T_NUM           (WORD/2)
 #define T_SYM           (WORD)
-#define T_SHORT         T_SYM
-#define T_SHORTNUM      (T_NUM+T_SHORT)
+
 #ifdef __LP64__
 #define TAGBITS         4
+#define T_SHORT         2
+#define T_SHORTNUM      T_SHORT
+#define NORMBITS        3
+#define NORM            num(WORD-1)
+#define SIGN            num(WORD)
+#define BIG(x)          (x)
+#define POSDIG(x)       (x)
 #else
 #define TAGBITS         3
+#define T_SHORT         T_SYM
+#define T_SHORTNUM      (T_NUM+T_SYM)
+#define NORMBITS        TAGBITS
+#define NORM            TAG
+#define SIGN            num(2*WORD)
+#define BIG(x)          (2*(x))
+#define POSDIG(x)       posDig(x)
 #endif
-#define SHORTMAX        (num(1)<<(BITS-TAGBITS))
+
+
+
+#define SHORTMAX        (num(1)<<(BITS-NORMBITS))
 #define OVFL            (num(1)<<(BITS-1))
 #define LONGMIN         ((long)OVFL)
+#define SHORT(x)        (2*(x))
 
 /* Number access */
 #define num(x)          ((word)(x))
-#define isNeg(x)        (unDig(x) & num(1))
 #define BOX(n)          (consNum(n,Nil))
 #define lo(w)           num((w)&MASK)
 #define hi(w)           num((w)>>BITS)
@@ -234,6 +288,8 @@ typedef struct catchFrame {
 
 #define data(c)         ((c).car)
 #define Save(c)         ((c).cdr=Env.stack, Env.stack=&(c))
+// #define Save(c)         ((c).cdr=Env.stack, Env.stack=CHK(&(c)))
+// #define drop(c)         (Env.stack=(c).cdr, (c).cdr=(any)0xdeadc0de)
 #define drop(c)         (Env.stack=(c).cdr)
 #define Push(c,x)       (data(c)=(x), Save(c))
 #define Tuck(c1,c2,x)   (data(c1)=(x), (c1).cdr=(c2).cdr, (c2).cdr=&(c1))
@@ -244,19 +300,30 @@ typedef struct catchFrame {
 
 /* Predicates */
 #define isNil(x)        ((x)==Nil)
+#ifdef __LP64__
+#define isNum(x)        (num(x)&(T_NUM+T_SHORT))
+#define isShort(x)      ((typeTag(x) & ~SIGN)==T_SHORT)
+#define isSym(x)        (typeTag(x)==T_SYM)
+#else
 #define isNum(x)        (num(x)&T_NUM)
 #define isShort(x)      (typeTag(x)==T_SHORTNUM)
 #define isSym(x)        (typeTag(x)==T_SYM)
+#endif
 #define isCell(x)       (!typeTag(x))
 #define isExt(s)        (num(tail(s))&1)
 #define shortLike(x)    (num(x)&T_SHORT)
 #define symLike(x)      (num(x)&T_SYM)
 #define isBig(x)        (isNum(x)&&!shortLike(x))
 
+// tag of x is known
+#define isNsp(x)        (isCell(x)&&(TNsp==car(x)))
+// tag of x is unknown (ie. cell) when called from FreeTyped()
+#define isNspLike(x)    (isNsp(x)&&isShort(cdr(x)))
+
 /* Evaluation */
 #ifdef __LP64__
-#define boxFun(f)       (box(num(f)))
-#define unBoxFun(f)     (unDigShort(f))
+#define boxFun(f)       ((any)(num(f) | T_SHORT))
+#define unBoxFun(f)     (num(f) ^ T_SHORT)
 #else
 #define boxFun(f)       (BOX(num(f)))
 #define unBoxFun(f)     (unDigBig(f))
@@ -266,7 +333,11 @@ typedef struct catchFrame {
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
+#if 0
+#define NeedCnt(ex,x)   if (!isShort(x)) cntError(ex,x)
+#else
 #define NeedCnt(ex,x)   if (!isNum(x) || isNum(nextDig(x))) cntError(ex,x)
+#endif
 #define NeedSym(ex,x)   if (!isSym(x)) symError(ex,x)
 #define NeedExt(ex,x)   if (!isSym(x) || !isExt(x)) extError(ex,x)
 #define NeedPair(ex,x)  if (!isCell(x)) pairError(ex,x)
@@ -295,29 +366,42 @@ extern outFile *OutFile, **OutFiles;
 extern int (*getBin)(void);
 extern void (*putBin)(int);
 extern any TheKey, TheCls, Thrown;
-extern any Alarm, Sigio, Line, Zero, One;
-extern any Intern[IHASH], Transient[IHASH], Extern[EHASH];
-extern any ApplyArgs, ApplyBody, DbVal, DbTail;
-extern any Nil, DB, Meth, Quote, T;
+extern any Alarm, Sigio, Line, Zero, One, Pico1;
+extern any Transient[IHASH], Extern[EHASH];
+extern CBL Lisp[NCBL];
+extern any DbVal, DbTail;
+extern any PicoNil, Nil, DB, Meth, Quote, T;
+extern any ISym, NSym, SSym, CSym, BSym;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
+extern any Tstp1, Tstp2;
 extern bool Break;
+extern coFrame **Stack1;
+extern int Stack1s, Stacks, StkSize;
 extern sig_atomic_t Signal[NSIG];
 
-static const word ShortOne = ((2*num(1))<<TAGBITS);
-static const word ShortMax = (~num(2*TAG+1));
+static const word ShortOne = ((2*num(1))<<NORMBITS);
+static const word ShortMax = (~num(2*NORM+1));
+// static const word TNsp = ((2*1383865)<<NORMBITS)+T_SHORTNUM+1;
+// static const word TCo7 = ((2*1369447)<<NORMBITS)+T_SHORTNUM+1;
+extern any TNsp;
 
 /* Prototypes */
 void *alloc(void*,size_t);
+void *allocAligned(void*,size_t,size_t);
+void freeAligned(void*);
 any apply(any,any,bool,int,cell*);
 void argError(any,any) __attribute__ ((noreturn));
 void atomError(any,any) __attribute__ ((noreturn));
 void begString(void);
-void bigAdd(any,any);
-int bigCompare(any,any);
+any cvtSigned(any);
+void digMul(any,word);
+void digMul2(any);
+any ADD(any,any);
+int CMP(any,any);
 any bigCopy(any);
-#define copyNum(x)      (shortLike(x) ? (x) : bigCopy(x))
-void bigSub(any,any);
+#define CPY(x)      (shortLike(x) ? (x) : bigCopy(x))
+any SUB(any,any);
 any shorten(any);
 void binPrint(int,any);
 any binRead(int);
@@ -325,6 +409,7 @@ int binSize(any);
 adr blk64(any);
 any boxChar(int,int*,any*);
 any boxWord2(word2);
+any shortBoxWord2(word2);
 any brkLoad(any);
 int bufSize(any);
 void bufString(any,char*);
@@ -342,15 +427,18 @@ any cons(any,any);
 any consNum(word,any);
 any consStr(any);
 any consSym(any,any);
+any consNsp(void);
+void *coroAlloc(int);
+coFrame *coroInit(coFrame*,any);
+bool coroValid(coFrame*);
 void newline(void);
 void ctOpen(any,any,ctlFrame*);
 void db(any,any,int);
 int dbSize(any,any);
-any digAdd(any,word);
-void digDiv2(any);
-any digMul(any,word);
-any digMul2(any);
-any digSub1(any);
+any DADDU(any,word);
+any DADDU1(any);
+any DEC(any);
+void dlError(any,any);
 any doubleToNum(double);
 uint32_t ehash(any);
 any endString(void);
@@ -367,6 +455,8 @@ void execError(char*) __attribute__ ((noreturn));
 void extError(any,any) __attribute__ ((noreturn));
 any extOffs(int,any);
 any findHash(any,any*);
+void checkHashed(any*);
+any findSym(any,any*);
 int firstByte(any);
 bool flush(outFile*);
 void flushAll(void);
@@ -376,7 +466,7 @@ any get(any,any);
 int getChar(void);
 void getStdin(void);
 void giveup(char*) __attribute__ ((noreturn));
-bool hashed(any,any);
+bool hashed(any,any*);
 void heapAlloc(void);
 any idx(any,any,int);
 uint32_t ihash(any);
@@ -413,8 +503,10 @@ void pathString(any,char*);
 void pipeError(any,char*);
 void popCtlFiles(void);
 void popInFiles(void);
+void popInFrame(inFrame*);
 void popErrFiles(void);
 void popOutFiles(void);
+void popOutFrame(outFrame*);
 void pr(int,any);
 void prin(any);
 void prin1(any);
@@ -430,11 +522,13 @@ void put(any,any,any);
 void putStdout(int);
 void rdOpen(any,any,inFrame*);
 any read1(int);
+void reentError(any,any);
 int rdBytes(int,byte*,int,bool);
 int secondByte(any);
 void setCooked(void);
 void setRaw(void);
 bool sharedLib(any);
+void show(char*,any,int);
 void sighandler(any);
 int slow(inFile*,bool);
 void space(void);
@@ -442,6 +536,7 @@ bool subStr(any,any);
 int symByte(any);
 int symChar(any);
 void symError(any,any) __attribute__ ((noreturn));
+void symNsError(any,any) __attribute__ ((noreturn));
 any symToNum(any,int,int,int);
 word2 unBoxWord2(any);
 void undefined(any,any);
@@ -453,6 +548,7 @@ bool wrBytes(int,byte*,int);
 void wrOpen(any,any,outFrame*);
 long xCnt(any,any);
 any xSym(any);
+void yieldError(any,any);
 void zapZero(any);
 
 any doAbs(any);
@@ -479,12 +575,14 @@ any doBitAnd(any);
 any doBitOr(any);
 any doBitQ(any);
 any doBitXor(any);
+any doBlk(any);
 any doBool(any);
 any doBox(any);
 any doBoxQ(any);
 any doBreak(any);
 any doBy(any);
 any doBye(any) __attribute__ ((noreturn));
+any doByte(any);
 any doBytes(any);
 any doCaaaar(any);
 any doCaaadr(any);
@@ -530,6 +628,7 @@ any doClip(any);
 any doClose(any);
 any doCmd(any);
 any doCnt(any);
+any doCo(any);
 any doCol(any);
 any doCommit(any);
 any doCon(any);
@@ -567,6 +666,7 @@ any doEq1(any);
 any doEqT(any);
 any doEqual(any);
 any doErr(any);
+any doErrno(any);
 any doEval(any);
 any doExec(any);
 any doExt(any);
@@ -639,6 +739,7 @@ any doLieu(any);
 any doLine(any);
 any doLines(any);
 any doLink(any);
+any doLisp(any);
 any doList(any);
 any doListen(any);
 any doLit(any);
@@ -677,6 +778,7 @@ any doMul(any);
 any doMulDiv(any);
 any doName(any);
 any doNand(any);
+any doNative(any);
 any doNEq(any);
 any doNEq0(any);
 any doNEqT(any);
@@ -688,6 +790,7 @@ any doNil(any);
 any doNond(any);
 any doNor(any);
 any doNot(any);
+any doNsp(any);
 any doNth(any);
 any doNumQ(any);
 any doOff(any);
@@ -711,6 +814,7 @@ any doPipe(any);
 any doPlace(any);
 any doPoll(any);
 any doPool(any);
+any doPool2(any);
 any doPop(any);
 any doPopq(any);
 any doPort(any);
@@ -772,17 +876,20 @@ any doSpace(any);
 any doSplit(any);
 any doSpQ(any);
 any doSqrt(any);
+any doStack(any);
 any doState(any);
 any doStem(any);
 any doStr(any);
 any doStrip(any);
 any doStrQ(any);
+any doStruct(any);
 any doSub(any);
 any doSubQ(any);
 any doSum(any);
 any doSuper(any);
 any doSwap(any);
 any doSym(any);
+any doSymbols(any);
 any doSymQ(any);
 any doSync(any);
 any doSys(any);
@@ -796,6 +903,7 @@ any doTill(any);
 any doTime(any);
 any doTouch(any);
 any doTrace(any);
+any doTrail(any);
 any doTrim(any);
 any doTry(any);
 any doType(any);
@@ -819,18 +927,35 @@ any doWith(any);
 any doWr(any);
 any doXchg(any);
 any doXor(any);
+any doYield(any);
 any doYoke(any);
 any doZap(any);
 any doZero(any);
 
+static inline any CHK(any x) {
+  int t = 0;
+  any y = car(x);
+
+  if (isBig(y)) t++;
+  if (isShort(y)) t++;
+  if (isSym(y)) t++;
+  if (isCell(y)) t++;
+  ASSERT(t == 1);
+  return x;
+}
+
 // bigNum only
 static inline any numPtr(any x) {
-   return (any)(num(x)+T_NUM);
+   return (any)(num(x) | T_NUM);
 }
 
 static inline any numCell(any n) {
    ASSERT(isBig(n));
-   return (any)(num(n)-T_NUM);
+#ifdef __LP64__
+   return (any)(num(n) & ~(SIGN+T_NUM));
+#else
+   return (any)(num(n) & ~T_NUM);
+#endif
 }
 
 static inline word unDigBig(any x) {
@@ -838,27 +963,40 @@ static inline word unDigBig(any x) {
    return num(car(numCell(x)));
 }
 
+static inline word unDigBigU(any x) {
+   ASSERT(isBig(x));
+#ifdef __LP64__
+   return unDigBig(x);
+#else
+   return unDigBig(x) / 2;
+#endif
+}
+
 // shortNum
 static inline word unDigShort(any x) {
    ASSERT(isShort(x));
-   return num(x) >> TAGBITS;
+   return num(x) >> NORMBITS;
+}
+
+static inline word unDigShortU(any x) {
+   ASSERT(isShort(x));
+   return unDigShort(x) / 2;
 }
 
 static inline long unBoxShort(any x) {
    ASSERT(isShort(x));
    word u = unDigShort(x);
-   long n = u / 2L;
-   return u & num(1)? -n : n;
+   return u & 1? -(long)u : (long)u;
 }
 
 static inline any posShort(any x) {
    ASSERT(isShort(x));
-   return (any)(num(x) & ~(num(1)<<TAGBITS));
+   return (any)(num(x) & ~SIGN);
 }
 
 static inline any negShort(any x) {
    ASSERT(isShort(x));
-   return (any)(num(x) ^ (num(1)<<TAGBITS));
+   return (any)(num(x) ^ SIGN);
 }
 
 static inline int shortCompare(any x, any y) {
@@ -877,7 +1015,7 @@ static inline int shortCompare(any x, any y) {
 
 // shortNum/bigNum
 static inline any mkShort(word n) {
-   return (any)((n << TAGBITS) + T_SHORTNUM);
+   return (any)((n << NORMBITS) + T_SHORTNUM);
 }
 
 static inline any box(word n) {
@@ -893,11 +1031,17 @@ static inline word unDig(any x) {
    return num(car(numCell(x)));
 }
 
-static inline any big(any x) {
+static inline word posDig(word u) {
+   return u & ~1;
+}
+
+static inline word negDig(word u) {
+   return u ^ 1;
+}
+
+static inline word unDigU(any x) {
    ASSERT(isNum(x));
-   if (shortLike(x))
-      return BOX(unDigShort(x));
-   return x;
+   return shortLike(x)? unDigShortU(x) : unDigBigU(x);
 }
 
 static inline any nextDigBig(any x) {
@@ -930,53 +1074,139 @@ static inline any setDig(any x,word v) {
 }
 
 static inline any pos(any x) {
+#ifdef __LP64__
+   ASSERT(isNum(x));
+   x = (any)(num(x) & ~SIGN);
+#else
    ASSERT(isBig(x));
-   car(numCell(x)) = (any)(unDig(x) & ~num(1));
+   car(numCell(x)) = (any)(posDig(unDigBig(x)));
+#endif
    return x;
 }
 
 static inline any neg(any x) {
+#ifdef __LP64__
+   ASSERT(isNum(x));
+   x = (any)(num(x) ^ SIGN);
+#else
    ASSERT(isBig(x));
-   car(numCell(x)) = (any)(unDig(x) ^ num(1));
+   car(numCell(x)) = (any)(negDig(unDigBig(x)));
+#endif
+   return x;
+}
+
+static inline int isNeg(any x) {
+   ASSERT(isNum(x));
+#ifdef __LP64__
+   return num(x) & SIGN ? 1 : 0;
+#else
+   return unDig(x) & 1;
+#endif
+}
+
+static inline any big(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x)) {
+#ifdef __LP64__
+      any z = BOX(unDigShortU(x)); 
+      return isNeg(x)? neg(z) : z;
+#else
+      return BOX(unDigShort(x));
+#endif
+   }
+   return x;
+}
+
+static inline any bigLike(any x) {
+   ASSERT(isNum(x));
+   if (shortLike(x)) {
+      return BOX(unDigShort(x));
+   }
    return x;
 }
 
 static inline long unBox(any x) {
    ASSERT(isNum(x));
-   word u = unDig(x);
-   long n = u / 2L;
-   return u & num(1)? -n : n;
+   long n = unDigU(x);
+   return isNeg(x)? -n : n;
 }
 
 // short/bigNum
 static inline any boxLong(long n) {
+#ifdef __LP64__
    any x;
-   cell c1;
+   int sign = n<0? 1 : 0;
+   if (n == LONGMIN)
+      return neg(BOX(n));
 
-   if (n == LONGMIN) {
-      Push(c1, BOX(1));
-      x = consNum(0, data(c1));
-      drop(c1);
-      return x;
+   word u = sign? -n : n;
+   if (SHORT(u) < SHORTMAX) {
+      return mkShort(SHORT(u) + sign);
    }
-   return box(n>=0?  n*2 : -n*2+1);
+   return x = BOX(u), sign? neg(x) : x;
+#else
+   if (n == LONGMIN)
+      return consNum(1, BOX(1));
+   return box(n>=0?  SHORT(n) : SHORT(-n)+1);
+#endif
 }
 
 static inline any boxWord(word n) {
-   any x;
-   cell c1;
-
-   if (n&(num(1)<<(BITS-1))) {          // MSB set?
-      Push(c1, BOX(1));                 // take MSB alone
-      x = consNum(2*n, data(c1));       // shift n and store
-      drop(c1);
-      return x;
-   }
-   return box(2*n);                     // shift n and box
+#ifdef __LP64__
+   if (n&OVFL)
+      return BOX(n);
+   if (SHORT(n) < SHORTMAX)
+      return mkShort(SHORT(n));
+   return BOX(n);
+#else
+   if (n&OVFL)
+      return consNum(BIG(n), BOX(1));
+   return box(SHORT(n));
+#endif
 }
 
 // always bigNum
-static inline any boxCnt(long n) { return box(n>=0?  n*2 : -n*2+1); }
+static inline any boxCnt(long n) {
+#ifdef __LP64__
+   // always shortNum
+   word u = n>=0? SHORT(n) : SHORT(-n)+1;
+   if (u >= SHORTMAX)
+      giveup("Small number required");
+   return mkShort(u);
+#else
+   return box(n>=0? SHORT(n) : SHORT(-n)+1);
+#endif
+}
+
+/* Namespace hash table ptr */
+static inline any* ptrNsp(any x) {
+   word u;
+   ASSERT(isNsp(x));
+
+   u = unDigShort(cdr(x));
+#ifndef __LP64__
+   u <<= NORMBITS;
+#endif
+   return (any*)u;
+}
+
+/* Global Intern[] table */
+static inline any* InternTab(void) {
+   ASSERT(isCell(Env.nsp) && isSym(car(Env.nsp)));
+
+   return ptrNsp(val(car(Env.nsp)));
+}
+
+#define Intern  (InternTab())
+
+/* Free typed cell */
+static inline void FreeTyped(any p) {
+   if (isNspLike(p)) {
+fprintf(stderr,"*** free %p=(%p,%p)\n",p,car(p),cdr(p));
+      free(ptrNsp(p));
+   }
+   Free(p);
+}
 
 /* List element access */
 static inline any nCdr(int n, any x) {
@@ -993,7 +1223,7 @@ static inline any nth(int n, any x) {
 
 static inline any getn(any x, any y) {
    if (isNum(x)) {
-      long n = unDig(x) / 2;
+      long n = unDigU(x);
 
       if (isNeg(x)) {
          while (--n)
