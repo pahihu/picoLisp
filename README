@@ -7,6 +7,7 @@ This picoLisp fork can be built in 32bit/64bit mode and pil32 has all the
 documented features of pil64: namespaces, native C calls, coroutines,
 destructuring bind in let, list target in put and =: The external symbols
 and the database format follows the pil32 tradition.
+
 So where you see in the documentation "6bit-only", you can try out the
 examples. They should work.
 
@@ -16,7 +17,8 @@ fixed arguments must be marked with T, eg:
      (native "@" "printf" "abc%d%s^J" T 7 "XYZ")
 
 The arguments before T are the fixed arguments, the number of arguments
-after the T are variable.
+after the T are variable. This change is due to the native C call
+implementation which uses libffi.
 
 
 * fixed coroutine issues, all tankf33der tests passed
@@ -28,7 +30,6 @@ after the T are variable.
 * fixed float/double result/argument type decoding, both 32bit/64bit target uses
   lib/math64.l (ie. native calls)
 * fixed 32bit libffi native C calls
-
 * native C calls thru libffi float/double return values/arguments supported
 * added native, struct, lisp (callbacks), and external lisp() call
   float/double return values/arguments in native calls not supported (yet)
