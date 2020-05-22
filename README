@@ -3,9 +3,21 @@ Changes
 
 All bugs introduced are mine.
 
-This picoLisp fork can be built in 32bit/64bit mode and picolisp32 has all the
-documented features of pil64, except the external symbols and database format.
-So where you see in the documentation "6bit-only", you can try out the examples.They should work.
+This picoLisp fork can be built in 32bit/64bit mode and pil32 has all the
+documented features of pil64: namespaces, native C calls, coroutines,
+destructuring bind in let, list target in put and =: The external symbols
+and the database format follows the pil32 tradition.
+So where you see in the documentation "6bit-only", you can try out the
+examples. They should work.
+
+Note, to call a C function with variable number of arguments, the number of
+fixed arguments must be marked with T, eg:
+
+     (native "@" "printf" "abc%d%s^J" T 7 "XYZ")
+
+The arguments before T are the fixed arguments, the number of arguments
+after the T are variable.
+
 
 * fixed coroutine issues, all tankf33der tests passed
 * tankf33der ping-pong.l works, pil64 core dumps ;)
@@ -16,14 +28,6 @@ So where you see in the documentation "6bit-only", you can try out the examples.
 * fixed float/double result/argument type decoding, both 32bit/64bit target uses
   lib/math64.l (ie. native calls)
 * fixed 32bit libffi native C calls
-
-  Note, to call a C function with variable number of arguments, the number
-  of fixed arguments must be marked with T, eg:
-
-     (native "@" "printf" "abc%d%s^J" T 7 "XYZ")
-
-  The arguments before T are the fixed arguments, the number of arguments 
-  after the T are variable.
 
 * native C calls thru libffi float/double return values/arguments supported
 * added native, struct, lisp (callbacks), and external lisp() call
@@ -54,7 +58,7 @@ So where you see in the documentation "6bit-only", you can try out the examples.
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 19 / 5 / 2020
+pahihu 22 / 5 / 2020
 
 
 
