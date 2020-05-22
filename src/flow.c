@@ -1720,8 +1720,7 @@ any doCo(any ex) {
       t->tag = tag;
       coroSaveEnv(m = Env.coF);
       m->active = NO;
-      t->link = m, Env = t->env, Env.coF= t; // close coroutine frame
-      t->active = YES;
+      t->link = t->mainCoro; t->env.coF = t; // close coroutine frame
 
       if (getcontext(&t->ctx)) // build ucontext
          giveup("co:getcontext()");
@@ -1733,6 +1732,7 @@ any doCo(any ex) {
          show("co: from ",m->tag,0);
          show(" to ",t->tag,1)
       )
+      coroPushEnv(t); // activate t
       COMARK(m,t);
       if (swapcontext(&m->ctx, &t->ctx))
          giveup("co:swapcontext()");

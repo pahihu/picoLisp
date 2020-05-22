@@ -683,7 +683,8 @@ any symToNum(any s, int scl, int sep, int ign) {
       return NULL;
    frac = NO;
    Push(c1, s);
-   Push(c2, BOX(BIG(c)));
+   // Push(c2, BOX(BIG(c)));
+   Push(c2, mkShort(SHORT(c)));
    while ((c = symChar(NULL))  &&  (!frac || scl)) {
       if ((int)c == sep) {
          if (frac) {

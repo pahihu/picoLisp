@@ -333,7 +333,11 @@ typedef struct coFrame {
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
+#if 0
+#define NeedCnt(ex,x)   if (!isShort(x)) cntError(ex,x)
+#else
 #define NeedCnt(ex,x)   if (!isNum(x) || isNum(nextDig(x))) cntError(ex,x)
+#endif
 #define NeedSym(ex,x)   if (!isSym(x)) symError(ex,x)
 #define NeedExt(ex,x)   if (!isSym(x) || !isExt(x)) extError(ex,x)
 #define NeedPair(ex,x)  if (!isCell(x)) pairError(ex,x)

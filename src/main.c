@@ -1737,7 +1737,11 @@ long evCnt(any ex, any x) {return xCnt(ex, EVAL(car(x)));}
 
 long xCnt(any ex, any x) {
    NeedCnt(ex,x);
+#if 0
+   return unBoxShort(x);
+#else
    return unBox(x);
+#endif
 }
 
 /* Evaluate double */

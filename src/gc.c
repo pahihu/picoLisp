@@ -96,15 +96,16 @@ void gc(long c) {
    markCatch(CatchPtr);
    for (i = 0; Stack1[i]; i++) {
       coFrame *f = Stack1[i];
-      if (!isNil(f->tag)) { // used?
-         mark(f->tag);
-         mark(f->ret);
-         mark(f->At);
-         if (!f->active) { // not active?
-            markEnv(&(f->env));
-            markCatch(f->CatchPtr);
+      if (Env.coF != f) // skip running coro
+         if (!isNil(f->tag)) { // used?
+            mark(f->tag);
+            mark(f->ret);
+            mark(f->At);
+            if (!f->active) { // not active?
+               markEnv(&(f->env));
+               markCatch(f->CatchPtr);
+            }
          }
-      }
    }
    for (i = 0; i < EHASH; ++i)
       for (p = Extern[i];  isCell(p);  p = (any)(num(p->cdr) & ~1))
