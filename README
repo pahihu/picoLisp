@@ -21,6 +21,52 @@ after the T are variable. This change is due to the native C call
 implementation which uses libffi.
 
 
+What is included?
+
+Coroutines
+   (co 'sym [. prg]) -> any
+   (stack ['cnt]) -> cnt | (.. sym . cnt)
+   (yield 'any ['sym]) -> any
+
+Database
+   (blk fd cnt siz [fd2]) -> lst
+   (blk fd 0) -> (cnt . siz)
+   (pool2 'sym . prg) -> any
+
+Debug
+   (bt ['flg]) -> flg
+   (trail ['flg]) -> lst
+   (up [cnt] sym ['val]) -> any
+
+Misc
+   *CPU
+   (byte 'num ['cnt]) -> cnt
+   (errno) -> cnt
+   (gc ['cnt [cnt2]) -> cnt | NIL
+   *Tstp1, *Tstp2
+   (let (lst 'any ...) . prg) -> any
+      destructuring bind
+   (put ..)
+   (=: ...)
+      final destination as list
+
+Namespaces
+   (nsp 'sym) -> sym
+   pico
+   (symbols) -> lst
+   (symbols 'lst) -> lst
+   (symbols 'lst . prg) -> any
+   (symbols 'sym1 'sym2 ..) -> lst
+   (intern 'sym ['flg]) -> sym
+   (all ['T | '0 | 'sym]) -> lst
+
+Native C Call
+   (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
+   (lisp 'sym ['fun]) -> num
+   (struct 'num 'any 'any ..) -> any
+   long lisp(char*,long,long,long,long,long);
+
+
 * fixed coroutine issues, all tankf33der tests passed
 * tankf33der ping-pong.l works, pil64 core dumps ;)
 * added lst target in put and =:
