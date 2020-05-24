@@ -84,7 +84,7 @@ endif
 	OS = Darwin
 	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
 		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT \
-		  -D_XOPEN_SOURCE -Wno-deprecated
+		  -D_XOPEN_SOURCE -Wno-deprecated-declarations
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS += -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
