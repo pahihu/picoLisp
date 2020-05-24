@@ -8,7 +8,7 @@ documented features of pil64: namespaces, native C calls, coroutines,
 destructuring bind in let, list target in put and =: The external symbols
 and the database format follows the pil32 tradition.
 
-So where you see in the documentation "6bit-only", you can try out the
+So where you see in the documentation "64bit-only", you can try out the
 examples. They should work.
 
 Note, to call a C function with variable number of arguments, the number of
