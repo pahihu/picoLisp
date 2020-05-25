@@ -334,7 +334,7 @@ any binRead(int extn) {
       return shorten(y);
 #endif
    if (c == TRANSIENT)
-      return consStr(y);
+      return consStr(shortenText(y));
    if (c == EXTERN) {
       if (extn)
          y = extOffs(extn, y);
@@ -344,6 +344,7 @@ any binRead(int extn) {
       *h = cons(x,*h);
       return x;
    }
+   y = shortenText(y);
    if (x = findSym(y, h = Intern + ihash(y)))
       return x;
    ASSERT(isSym(car(*h)));
@@ -594,9 +595,9 @@ int symByte(any s) {
       n = unDig(x);
    }
    else if ((n >>= 8) == 0) {
-      if (!isNum(nextDig(x)))
+      if (!isNum(x = nextDig(x)))
          return 0;
-      n = unDig(x = cdr(numCell(x)));
+      n = unDig(x);
    }
    return n & 0xFF;
 }
@@ -627,7 +628,7 @@ int numBytes(any x) {
    word n, m = MASK;
 
    for (cnt = 1;  isNum(nextDig(x));  cnt += WORD)
-         x = cdr(numCell(x));
+         x = nextDig(x);
    for (n = unDig(x); n & (m <<= 8); ++cnt);
    return cnt;
 }
@@ -1260,7 +1261,7 @@ static any rdAtom(int c) {
    i = 0,  Push(c1, y = BOX(c));
    while (Chr > 0) {
       if (Chr == '~') {
-         y = Pop(c1);
+         y = shortenText(Pop(c1));
          x = findSym(y, h = Intern + ihash(y));
          if (!x) {
             ASSERT(isSym(car(*h)));
@@ -1290,7 +1291,7 @@ static any rdAtom(int c) {
       Env.get();
    }
    ret = Nil;
-   y = Pop(c1);
+   data(c1) = shortenText(data(c1)), y = Pop(c1);
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
       ret = Nil;
    else if (x = symToNum(y, (int)unDigU(val(Scl)), '.', 0))
@@ -1432,7 +1433,7 @@ static any read0(bool top) {
             eofErr();
          charSym(Chr, &i, &y);
       }
-      y = Pop(c1),  Env.get();
+      y = shortenText(Pop(c1)),  Env.get();
       if (x = findHash(y, h = Transient + ihash(y)))
          return x;
       x = consStr(y);
@@ -1520,7 +1521,7 @@ any token(any x, int c) {
                Env.get();
             byteSym(Chr, &i, &y);
          }
-         y = Pop(c1);
+         data(c1) = shortenText(data(c1)), y = Pop(c1);
          if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
             return Nil;
          if (x = findSym(y, h = Intern + ihash(y)))
@@ -1584,6 +1585,7 @@ long waitFd(any ex, int fd, long ms) {
    struct timeval tt;
 #endif
 
+// XXX fprintf(stderr,"waitFd: fd = %d ms = %ld\n",fd,ms);
    taskSave = Env.task;
    Push(c1, val(At));
    Save(c2);
@@ -1611,6 +1613,7 @@ long waitFd(any ex, int fd, long ms) {
                if (n < InFDs  &&  InFiles[n]  &&  inReady(InFiles[n]))
                   tp = &tv,  t = 0;
                else {
+// XXX fprintf(stderr,"waitFd: n = %d\n",n);
                   FD_SET(n, &rdSet);
                   if (n > m)
                      m = n;
@@ -3475,7 +3478,7 @@ any doId(any ex) {
    if (isNil(EVAL(car(x))))
       return shortBoxWord2(n);
    Push(c1, shortBoxWord2(n));
-   data(c1) = cons(BOX((F + 1) * 2), data(c1));
+   data(c1) = cons(box((F + 1) * 2), data(c1));
    return Pop(c1);
 }
 
@@ -3679,21 +3682,6 @@ void db(any ex, any s, int a) {
                   err(ex, s, "Bad ID");
                *p  =  a == 1? At : At2;  // loaded : dirty
                rdvp(s,x);
-/*
-               getBin = getBlock;
-               val(s) = binRead(0);
-               if (!isNil(y = binRead(0))) {
-                  tail(s) = ext(x = cons(y,x));
-                  if ((y = binRead(0)) != T)
-                     car(x) = cons(y,car(x));
-                  while (!isNil(y = binRead(0))) {
-                     cdr(x) = cons(y,cdr(x));
-                     if ((y = binRead(0)) != T)
-                        cadr(x) = cons(y,cadr(x));
-                     x = cdr(x);
-                  }
-               }
-*/
                rwUnlock(1);
             }
             else {

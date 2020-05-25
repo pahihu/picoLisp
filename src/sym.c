@@ -21,41 +21,61 @@ uint32_t ehash(any x) {
    uint32_t h;
    word n;
 
-   for (h = 0; isNum(x); x = nextDig(x))
-      for (n = unDig(x); n; n >>= 11)
+   ASSERT(isBig(x));
+
+   for (h = 0; isNum(x); x = nextDigBig(x))
+      for (n = unDigBig(x); n; n >>= 11)
          h += n;
    return h % EHASH;
 }
 
 any findHash(any s, any *p) {
    any x, y, *q, h;
+   int shortS;
 
    if (isCell(h = *p)) {
-      x = s,  y = name(car(h));
-      // x = bigLike(x), y = bigLike(y);
-      // ASSERT(isBig(x) && isBig(y));
-      while (unDig(x) == unDig(y)) {
-         x = nextDig(x);
-         y = nextDig(y);
-         if (!isNum(x) && !isNum(y))
-            return car(h);
-         if (!isNum(x) || !isNum(y))
-            break;
-         // ASSERT(isBig(x) && isBig(y));
-      }
-      while (isCell(h = *(q = &cdr(h)))) {
-         x = s,  y = name(car(h));
-         // ASSERT(isBig(x) && isBig(y));
-         while (unDig(x) == unDig(y)) {
-            x = nextDig(x);
-            y = nextDig(y);
-            if (!isNum(x) && !isNum(y)) {
-               *q = cdr(h),  cdr(h) = *p,  *p = h;
+      shortS = shortLike(s), y = name(car(h));
+      if (shortS) {
+         if (shortLike(y))
+            if (num(s) == num(y))
                return car(h);
+         while (isCell(h = *(q = &cdr(h)))) {
+            y = name(car(h));
+            if (shortLike(y)) {
+               if (num(s) == num(y)) {
+                  *q = cdr(h),  cdr(h) = *p,  *p = h;
+                  return car(h);
+               }
             }
-            if (!isNum(x) || !isNum(y))
-               break;
-            // ASSERT(isBig(x) && isBig(y));
+         }
+      }
+      else {
+         if (!shortLike(y)) {
+            x = s;
+            while (unDigBig(x) == unDigBig(y)) {
+               x = nextDigBig(x);
+               y = nextDigBig(y);
+               if (!isNum(x) && !isNum(y))
+                  return car(h);
+               if (!isNum(x) || !isNum(y))
+                  break;
+            }
+         }
+         while (isCell(h = *(q = &cdr(h)))) {
+            y = name(car(h));
+            if (!shortLike(y)) {
+               x = s;
+               while (unDigBig(x) == unDigBig(y)) {
+                  x = nextDigBig(x);
+                  y = nextDigBig(y);
+                  if (!isNum(x) && !isNum(y)) {
+                     *q = cdr(h),  cdr(h) = *p,  *p = h;
+                     return car(h);
+                  }
+                  if (!isNum(x) || !isNum(y))
+                     break;
+               }
+            }
          }
       }
    }
@@ -222,6 +242,14 @@ any mkName(char *s) {
    any nm;
    cell c1;
 
+   i = strlen(s);
+   if (i * 8 < BITS) {
+      word u = 0;
+      s += i;
+      for (; i; i--)
+         u = (u << 8) + *(byte*)--s;
+      return mkShort(u);
+   }
    i = 0,  Push(c1, nm = BOX(*(byte*)s++));
    while (*s)
       byteSym(*(byte*)s++, &i, &nm);
@@ -403,6 +431,7 @@ any doExtern(any ex) {
    NeedSym(ex,x);
    if (!isNum(x = name(x)))
       return Nil;
+   x = enlarge(x);
    if (!(y = findHash(x, Extern + ehash(x)))) {
       Push(c1, x);
       if ((c = symChar(x)) == '{')
@@ -547,7 +576,7 @@ any doPack(any x) {
    while (isCell(x = cdr(x)))
       pack(data(c1) = EVAL(car(x)), &i, &nm, &c2);
    drop(c1);
-   return nm? consStr(data(c2)) : Nil;
+   return nm? consStr(shortenText(data(c2))) : Nil;
 }
 
 // (glue 'any 'lst) -> sym
@@ -568,7 +597,7 @@ any doGlue(any x) {
       pack(car(x), &i, &nm, &c3);
    }
    drop(c1);
-   return nm? consStr(data(c3)) : Nil;
+   return nm? consStr(shortenText(data(c3))) : Nil;
 }
 
 // (text 'any1 'any ..) -> sym
@@ -615,7 +644,7 @@ any doText(any x) {
          drop(arg[0]);
       else if (nm)
          drop(c1);
-      return nm? consStr(data(c1)) : Nil;
+      return nm? consStr(shortenText(data(c1))) : Nil;
    }
 }
 
@@ -1615,13 +1644,19 @@ static void wipe(any ex, any x) {
       tail(x) = y;
    }
    else {
-      z = numCell(y);
-      while (isNum(cdr(z)))
-         z = numCell(cdr(z));
-      if (isNil(cdr(z)) || cdr(z) == At) {
+      if (isShort(y)) {
          val(x) = Nil;
          Tail(x, y);
-         cdr(z) = Nil;
+      }
+      else {
+         z = numCell(y);
+         while (isNum(cdr(z)))
+            z = numCell(cdr(z));
+         if (isNil(cdr(z)) || cdr(z) == At) {
+            val(x) = Nil;
+            Tail(x, y);
+            cdr(z) = Nil;
+         }
       }
    }
 }

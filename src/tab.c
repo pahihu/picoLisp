@@ -390,12 +390,13 @@ static symInit Symbols[] = {
 static any *IniIntern;
 
 static any initSym(any v, char *s) {
-   any x, *h;
+   any x, y, *h;
 
-   h = IniIntern + ihash(x = mkName(s));
+   h = IniIntern + ihash(y = mkName(s));
    ASSERT(isSym(car(*h)));
-   x = consSym(v,x);
+   x = consSym(v,y);
    *h = cons(x,*h);
+// XXX fprintf(stderr,"initSym: %s = %p\n",s,x);
    return x;
 }
 

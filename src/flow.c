@@ -1186,11 +1186,20 @@ any doDo(any x) {
    x = cdr(x),  z = Nil;
    for (;;) {
       if (isNum(data(c1))) {
+#ifdef __LP64__
+         if (data(c1) == Zero) {
+            drop(c1);
+            return z;
+         }
+         ASSERT(isShort(data(c1)));
+         data(c1) = (any)(num(data(c1)) - ShortOne);
+#else
          if (IsZero(data(c1))) {
             drop(c1);
             return z;
          }
          data(c1) = DEC(data(c1));
+#endif
       }
       y = x;
       do {

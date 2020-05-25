@@ -63,6 +63,7 @@ word2 unBoxWord2(any x) {
    return n;
 }
 
+/* Shorten a bigNum */
 any shorten(any x) {
    ASSERT(isNum(x));
 
@@ -83,7 +84,19 @@ any shorten(any x) {
    return x;
 }
 
-// Convert signed number to short/bigNum
+/* Shorten text (name), sign position contains data */
+any shortenText(any x) {
+   ASSERT(isNum(x));
+
+   if (!shortLike(x) && isNil(cdr(numCell(x)))) {
+      word u = unDigBig(x);
+      if (u < SHORTMAX)
+         return mkShort(u);
+   }
+   return x;
+}
+
+/* Convert signed number to short/bigNum */
 any cvtSigned(any x) {
    int sign;
 
@@ -683,7 +696,6 @@ any symToNum(any s, int scl, int sep, int ign) {
       return NULL;
    frac = NO;
    Push(c1, s);
-   // Push(c2, BOX(BIG(c)));
    Push(c2, mkShort(SHORT(c)));
    while ((c = symChar(NULL))  &&  (!frac || scl)) {
       if ((int)c == sep) {
@@ -724,7 +736,7 @@ any symToNum(any s, int scl, int sep, int ign) {
    if (sign && !IsZero(data(c2)))
       data(c2) = NEG(data(c2));
    drop(c1);
-   return shorten(data(c2));
+   return data(c2);
 }
 
 #ifdef __LP64__

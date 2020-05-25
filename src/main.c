@@ -231,6 +231,7 @@ any doSigio(any ex) {
    any x = EVAL(cadr(ex));
    int fd = (int)xCnt(ex,x);
 
+// XXX fprintf(stderr,"sigio: fd = %d\n",fd);
    Sigio = cddr(ex);
    fcntl(fd, F_SETOWN, unBox(val(Pid)));
    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK|O_ASYNC);
@@ -1688,6 +1689,7 @@ static any evList2(any foo, any ex) {
 any evList(any ex) {
    any foo;
 
+#if 0
    if (!isSym(foo = car(ex))) {
       if (isNum(foo))
          return ex;
@@ -1714,6 +1716,49 @@ any evList(any ex) {
          return foo;
       }
    }
+#else
+   if (isNum(foo = car(ex))) {
+      return ex;
+   }
+   else if (symLike(foo)) {
+      for (;;) {
+         any bar = val(foo);
+         if (*Signal)
+            sighandler(ex);
+#ifdef __LP64__
+         if (isShort(bar)) {
+            return evSubr(bar,ex);
+         }
+         else if (isBig(bar)) {
+            err(ex, foo, "Undefined");
+         }
+#else
+         if (isNum(bar))
+            return evSubr(bar,ex);
+         }
+#endif
+         else if (isCell(bar)) {
+            any savExe = Env.exe;
+            Env.exe = ex;
+            foo = evExpr(bar, cdr(ex));
+            Env.exe = savExe;
+            return foo;
+         }
+         else if (isNil(bar)) {
+            undefined(foo,ex);
+            continue;
+         }
+         else
+            foo = bar;
+      }
+   }
+   if (*Signal)
+      sighandler(ex);
+   if (isNum(foo = evList(foo))) {
+      return evSubr(foo,ex);
+   }
+   return evList2(foo,ex);
+#endif
 }
 
 /* Evaluate any to sym */
@@ -1729,7 +1774,7 @@ any xSym(any x) {
    Push(c1,x);
    nm = NULL,  pack(x, &i, &nm, &c2);
    drop(c1);
-   return nm? consStr(data(c2)) : Nil;
+   return nm? consStr(shortenText(data(c2))) : Nil;
 }
 
 /* Evaluate count */
@@ -1737,7 +1782,7 @@ long evCnt(any ex, any x) {return xCnt(ex, EVAL(car(x)));}
 
 long xCnt(any ex, any x) {
    NeedCnt(ex,x);
-#if 0
+#ifdef __LP64__
    return unBoxShort(x);
 #else
    return unBox(x);
@@ -2204,7 +2249,8 @@ void myAssert(int cond,const char *expr,const char *path,int line) {
 void show(char *msg,any x,int nl) {
    cell c1;
    Push(c1, x);
-   outString(msg); print1(x);
+   outString(msg);
+   print1(x);
    if (nl) {
       flushAll(); newline();
    }

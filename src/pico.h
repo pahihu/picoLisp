@@ -302,18 +302,19 @@ typedef struct coFrame {
 #define isNil(x)        ((x)==Nil)
 #ifdef __LP64__
 #define isNum(x)        (num(x)&(T_NUM+T_SHORT))
-#define isShort(x)      ((typeTag(x) & ~SIGN)==T_SHORT)
+#define isShort(x)      (num(x)&T_SHORT)
 #define isSym(x)        (typeTag(x)==T_SYM)
+#define isBig(x)        (num(x)&T_NUM)
 #else
 #define isNum(x)        (num(x)&T_NUM)
 #define isShort(x)      (typeTag(x)==T_SHORTNUM)
 #define isSym(x)        (typeTag(x)==T_SYM)
+#define isBig(x)        (isNum(x)&&!shortLike(x))
 #endif
 #define isCell(x)       (!typeTag(x))
 #define isExt(s)        (num(tail(s))&1)
 #define shortLike(x)    (num(x)&T_SHORT)
 #define symLike(x)      (num(x)&T_SYM)
-#define isBig(x)        (isNum(x)&&!shortLike(x))
 
 // tag of x is known
 #define isNsp(x)        (isCell(x)&&(TNsp==car(x)))
@@ -333,7 +334,7 @@ typedef struct coFrame {
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
-#if 0
+#ifdef __LP64__
 #define NeedCnt(ex,x)   if (!isShort(x)) cntError(ex,x)
 #else
 #define NeedCnt(ex,x)   if (!isNum(x) || isNum(nextDig(x))) cntError(ex,x)
@@ -403,6 +404,7 @@ any bigCopy(any);
 #define CPY(x)      (shortLike(x) ? (x) : bigCopy(x))
 any SUB(any,any);
 any shorten(any);
+any shortenText(any);
 void binPrint(int,any);
 any binRead(int);
 int binSize(any);
@@ -985,8 +987,8 @@ static inline word unDigShortU(any x) {
 
 static inline long unBoxShort(any x) {
    ASSERT(isShort(x));
-   word u = unDigShort(x);
-   return u & 1? -(long)u : (long)u;
+   word u = unDigShortU(x);
+   return num(x) & SIGN? -(long)u : (long)u;
 }
 
 static inline any posShort(any x) {
@@ -997,20 +999,6 @@ static inline any posShort(any x) {
 static inline any negShort(any x) {
    ASSERT(isShort(x));
    return (any)(num(x) ^ SIGN);
-}
-
-static inline int shortCompare(any x, any y) {
-   long a, b;
-
-   ASSERT(isShort(x));
-   ASSERT(isShort(y));
-
-   a = unBoxShort(x), b = unBoxShort(y);
-   if (a < b)
-      return -1;
-   else if (a > b)
-      return +1;
-   return 0;
 }
 
 // shortNum/bigNum
@@ -1117,7 +1105,7 @@ static inline any big(any x) {
    return x;
 }
 
-static inline any bigLike(any x) {
+static inline any enlarge(any x) {
    ASSERT(isNum(x));
    if (shortLike(x)) {
       return BOX(unDigShort(x));

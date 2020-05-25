@@ -84,7 +84,7 @@ endif
 	OS = Darwin
 	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
 		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT \
-		  -D_XOPEN_SOURCE -Wno-deprecated
+		  -D_XOPEN_SOURCE -Wno-deprecated-declarations
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS += -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
@@ -145,8 +145,8 @@ endif
 BFLAGS += -D_OS='"$(OS)"' -D_CPU='"$(CPU)"'
 
 
-#picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
-picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+# picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 tools: $(bin)/lat1 $(bin)/utf2 $(bin)/balance
 gate: $(bin)/ssl $(bin)/httpGate
 

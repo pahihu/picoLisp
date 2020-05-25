@@ -57,7 +57,9 @@ any doPort(any ex) {
       NeedVar(ex,y);
       CheckVar(ex,y);
       val(y) = boxCnt(ntohs(addr.sin6_port));
+// XXX fprintf(stderr,"port: port = %d\n",p);
    }
+// XXX fprintf(stderr,"port: sd = %d\n",sd);
    return boxCnt(sd);
 }
 
