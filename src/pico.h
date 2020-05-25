@@ -210,6 +210,7 @@ typedef struct coFrame {
 #define typeTag(x)      (num(x) & (TAG-1))
 #define T_NUM           (WORD/2)
 #define T_SYM           (WORD)
+#define T_CELL          0
 
 #ifdef __LP64__
 #define TAGBITS         4

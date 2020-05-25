@@ -668,18 +668,36 @@ int compare(any x, any y) {
          return !isNum(name(y))? (long)x - (long)y : -1;
       if (!isNum(b = name(y)))
          return +1;
-      n1 = unDig(a), n2 = unDig(b);
+      if (isShort(a)) {
+         if (!isShort(b))
+            return -1;
+         n1 = unDigShort(a), n2 = unDigShort(b);
+         for (;;) {
+            if ((b1 = n1 & 0xFF) != (b2 = n2 & 0xFF))
+               return b1 - b2;
+            if ((n1 >>= 8) == 0) {
+               if ((n2 >>= 8) != 0)
+                  return -1;
+               return 0;
+            }
+            else if ((n2 >>= 8) == 0)
+               return +1;
+         }
+      }
+      if (isShort(b))
+         return +1;
+      n1 = unDigBig(a), n2 = unDigBig(b);
       for (;;) {
          if ((b1 = n1 & 0xFF) != (b2 = n2 & 0xFF))
             return b1 - b2;
          if ((n1 >>= 8) == 0) {
             if ((n2 >>= 8) != 0)
                return -1;
-            if (!isNum(a = nextDig(a)))
-               return !isNum(b = nextDig(b))? 0 : -1;
-            if (!isNum(b = nextDig(b)))
+            if (!isNum(a = nextDigBig(a)))
+               return !isNum(b = nextDigBig(b))? 0 : -1;
+            if (!isNum(b = nextDigBig(b)))
                return +1;
-            n1 = unDig(a), n2 = unDig(b);
+            n1 = unDigBig(a), n2 = unDigBig(b);
          }
          else if ((n2 >>= 8) == 0)
             return +1;
@@ -1689,7 +1707,6 @@ static any evList2(any foo, any ex) {
 any evList(any ex) {
    any foo;
 
-#if 0
    if (!isSym(foo = car(ex))) {
       if (isNum(foo))
          return ex;
@@ -1701,64 +1718,25 @@ any evList(any ex) {
       return evList2(foo,ex);
    }
    for (;;) {
-      if (isNil(val(foo)))
-         undefined(foo,ex);
+      any bar = val(foo);
       if (*Signal)
          sighandler(ex);
-      if (isNum(foo = val(foo))) {
-         return evSubr(foo,ex);
+      if (isNum(bar)) {
+         return evSubr(bar,ex);
       }
-      if (isCell(foo)) {
+      if (isCell(bar)) {
          any savExe = Env.exe;
          Env.exe = ex;
-         foo = evExpr(foo, cdr(ex));
+         foo = evExpr(bar, cdr(ex));
          Env.exe = savExe;
          return foo;
       }
-   }
-#else
-   if (isNum(foo = car(ex))) {
-      return ex;
-   }
-   else if (symLike(foo)) {
-      for (;;) {
-         any bar = val(foo);
-         if (*Signal)
-            sighandler(ex);
-#ifdef __LP64__
-         if (isShort(bar)) {
-            return evSubr(bar,ex);
-         }
-         else if (isBig(bar)) {
-            err(ex, foo, "Undefined");
-         }
-#else
-         if (isNum(bar))
-            return evSubr(bar,ex);
-         }
-#endif
-         else if (isCell(bar)) {
-            any savExe = Env.exe;
-            Env.exe = ex;
-            foo = evExpr(bar, cdr(ex));
-            Env.exe = savExe;
-            return foo;
-         }
-         else if (isNil(bar)) {
-            undefined(foo,ex);
-            continue;
-         }
-         else
-            foo = bar;
+      if (isNil(bar)) {
+         undefined(foo,ex);
+         continue;
       }
+      foo = bar;
    }
-   if (*Signal)
-      sighandler(ex);
-   if (isNum(foo = evList(foo))) {
-      return evSubr(foo,ex);
-   }
-   return evList2(foo,ex);
-#endif
 }
 
 /* Evaluate any to sym */
