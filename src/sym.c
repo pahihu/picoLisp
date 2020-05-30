@@ -192,7 +192,7 @@ any doName(any ex) {
    NeedSym(ex,data(c1));
    y = name(data(c1));
    if (!isCell(x = cdr(x)))
-      return isNum(y)? consStr(y) : Nil;
+      return isNum(y)? consStr(shortenText(y)) : Nil;
    n = ihash(y);
    if (isNil(data(c1)) || isExt(data(c1)) || hashed(data(c1), Intern+n))
       err(ex, data(c1), "Can't rename");
@@ -233,7 +233,7 @@ any mkChar(int c) {
             (0x80 | c>>6 & 0x3F) << 16  |
             (0x80 | c & 0x3F) << 24;
    }
-   return consStr(box(c));
+   return consStr(shortenText(box(c)));
 }
 
 /* Make name */
@@ -271,7 +271,7 @@ any intern(char *s) {
 */
 
 /* Make string */
-any mkStr(char *s) {return s && *s? consStr(mkName(s)) : Nil;}
+any mkStr(char *s) {return s && *s? consStr(shortenText(mkName(s))) : Nil;}
 
 /* Get first byte of symbol name */
 int firstByte(any s) {
@@ -2288,7 +2288,7 @@ any doLowc(any x) {
    while (c = symChar(NULL))
       charSym(toLowerCase(c), &i, &nm);
    drop(c1);
-   return consStr(data(c2));
+   return consStr(shortenText(data(c2)));
 }
 
 // (uppc 'any) -> any
@@ -2305,7 +2305,7 @@ any doUppc(any x) {
    while (c = symChar(NULL))
       charSym(toUpperCase(c), &i, &nm);
    drop(c1);
-   return consStr(data(c2));
+   return consStr(shortenText(data(c2)));
 }
 
 // (fold 'any ['cnt]) -> sym
@@ -2330,5 +2330,5 @@ any doFold(any ex) {
          charSym(toLowerCase(c), &i, &nm);
       }
    drop(c1);
-   return consStr(data(c2));
+   return consStr(shortenText(data(c2)));
 }

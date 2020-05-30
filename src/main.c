@@ -668,36 +668,18 @@ int compare(any x, any y) {
          return !isNum(name(y))? (long)x - (long)y : -1;
       if (!isNum(b = name(y)))
          return +1;
-      if (isShort(a)) {
-         if (!isShort(b))
-            return -1;
-         n1 = unDigShort(a), n2 = unDigShort(b);
-         for (;;) {
-            if ((b1 = n1 & 0xFF) != (b2 = n2 & 0xFF))
-               return b1 - b2;
-            if ((n1 >>= 8) == 0) {
-               if ((n2 >>= 8) != 0)
-                  return -1;
-               return 0;
-            }
-            else if ((n2 >>= 8) == 0)
-               return +1;
-         }
-      }
-      if (isShort(b))
-         return +1;
-      n1 = unDigBig(a), n2 = unDigBig(b);
+      n1 = unDig(a), n2 = unDig(b);
       for (;;) {
          if ((b1 = n1 & 0xFF) != (b2 = n2 & 0xFF))
             return b1 - b2;
          if ((n1 >>= 8) == 0) {
             if ((n2 >>= 8) != 0)
                return -1;
-            if (!isNum(a = nextDigBig(a)))
-               return !isNum(b = nextDigBig(b))? 0 : -1;
-            if (!isNum(b = nextDigBig(b)))
+            if (!isNum(a = nextDig(a)))
+               return !isNum(b = nextDig(b))? 0 : -1;
+            if (!isNum(b = nextDig(b)))
                return +1;
-            n1 = unDigBig(a), n2 = unDigBig(b);
+            n1 = unDig(a), n2 = unDig(b);
          }
          else if ((n2 >>= 8) == 0)
             return +1;

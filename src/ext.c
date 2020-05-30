@@ -66,7 +66,7 @@ any Snx(any ex) {
          }
       }
    drop(c1);
-   return consStr(data(c2));
+   return consStr(shortenText(data(c2)));
 }
 
 

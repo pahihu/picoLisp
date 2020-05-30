@@ -819,7 +819,7 @@ any numToSym(any x, int scl, int sep, int ign) {
       byteSym(*b++, &i, &x);
       if (!*b) {
          if (ta < acc)
-            return consStr(Pop(c1));
+            return consStr(shortenText(Pop(c1)));
          sprintf(b = buf, "%0*ld", NUM9S, *ta--);
       }
       if (scl == 0)

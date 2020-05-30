@@ -2030,7 +2030,7 @@ any doTill(any ex) {
       Push(c1, boxChar(getChar(), &i, &x));
       while (Env.get(), Chr > 0 && !strchr(buf,Chr))
          charSym(getChar(), &i, &x);
-      return consStr(Pop(c1));
+      return consStr(shortenText(Pop(c1)));
    }
 }
 
@@ -2077,7 +2077,7 @@ any doLine(any ex) {
          while (--n) {
             if (Env.get(), eol()) {
                if (pack)
-                  car(y) = consStr(car(y));
+                  car(y) = consStr(shortenText(car(y)));
                return Pop(c1);
             }
             if (pack)
@@ -2086,7 +2086,7 @@ any doLine(any ex) {
                z = cdr(z) = cons(mkChar(getChar()), Nil);
          }
          if (pack)
-            car(y) = consStr(car(y));
+            car(y) = consStr(shortenText(car(y)));
          if (!isCell(x = cdr(x))) {
             pack = NO;
             break;
@@ -2100,7 +2100,7 @@ any doLine(any ex) {
    }
    for (;;) {
       if (Env.get(), eol())
-         return pack? consStr(Pop(c1)) : Pop(c1);
+         return pack? consStr(shortenText(Pop(c1))) : Pop(c1);
       if (pack)
          charSym(getChar(), &i, &z);
       else
@@ -2190,7 +2190,7 @@ void begString(void) {
 any endString(void) {
    Env.put = PutSave;
    drop(StrCell);
-   return StrP? consStr(data(StrCell)) : Nil;
+   return StrP? consStr(shortenText(data(StrCell))) : Nil;
 }
 
 // (any 'sym) -> any
