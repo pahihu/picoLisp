@@ -67,6 +67,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* applied 20.6 changes
 * fixed coroutine issues, all tankf33der tests passed
 * tankf33der ping-pong.l works, pil64 core dumps ;)
 * added lst target in put and =:

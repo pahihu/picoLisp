@@ -1,3 +1,144 @@
+####### 20.6 #######
+22jun20
+   'private' function
+      lib.l
+      doc/ref.html
+      doc/refE.html
+      doc/refI.html
+      doc/refL.html
+      doc/refP.html
+      doc/refS.html
+
+21jun20
+   Accept auto-symbols for namespaces
+      src64/sym.l
+   'export' function
+      lib.l
+      doc/ref.html
+      doc/refE.html
+      doc/refI.html
+      doc/refL.html
+      doc/refS.html
+
+20jun20
+   Propery symbols not (local)
+      lib/android.l
+
+18jun20
+   Sort directories by date and name
+      lib/vip.l
+
+16jun20
+   Bug in '+Style'
+      lib/form.l
+
+08jun20
+   Sort directories by date, and show times, sizes and symlinks
+      lib/vip.l
+
+28may20
+   Pass list to optional fields in 'bagBag's first chart
+      lib/form.l
+
+26may20
+   Remove default "#" from fill argument in 'ps'
+      lib/svg.l
+
+13may20
+   'EnvApply' obsolete
+      {src64,pilos/src}/glob.l
+      {src64,pilos/src}/apply.l
+      {src64,pilos/src}/flow.l
+      {src64,pilos/src}/gc.l
+
+06may20
+   'requestLocationUpdates' revisited
+      lib/android.l
+
+03may20
+   Remove 'requestLocationUpdates' in 'gps'
+      lib/android.l
+
+27apr20
+   Alexander Shendi added OpenBSD/Arm64 support
+      src64/Makefile
+      src64/sys/arm64.openBsd.defs.l
+      src64/sys/arm64.android.code.l
+
+18apr20
+   Note about 'T' (= disable) in '*Uni' reference
+      refU.html
+
+17apr20
+   Revert set up 'InFrame' in parser functions (17may19)
+      pilos/src/io.l
+
+09apr20
+   Form doc updates (Mattias Sundblad)
+      refC.html
+      refR.html
+
+25mar20
+   Broken optimization for 'rand'
+      {src64,pilos/src}/big.l
+
+23mar20
+   Bug in 'bagBag' for partial init
+      lib/form.l
+
+16mar20
+   Broken links
+      doc/form/refA.html
+      doc/form/refD.html
+
+15mar20
+   Minor optimizations
+      {src64,pilos/src}/big.l
+   Broken link
+      doc/form/refN.html
+
+29feb20
+   Optional 'Name' argument to 'httpEcho'
+      lib/http.l
+
+26feb20
+   Cosmetics
+      lib/vip/draw.l
+
+19feb20
+   Minor example mismatch for 'hash'
+      doc/refH.html
+
+10feb20
+   Cosmetics
+      lib/vip.l
+
+09feb20
+   Minor optimization in 'muluAE_A'
+      {src64,pilos/src}/big.l
+
+08feb20
+   Note about the destination for 32-bit 'put' and '=:'
+      doc/ref_.html
+      doc/refP.html
+
+16jan20
+   'ctl' and 'pos' chart properties in 'bagBag'
+      lib/form.l
+
+03jan20
+   Minor diagram fix
+      doc64/structures
+
+02jan20
+   Disable TLS 1.1 and update cipher list (Mike Pechkin)
+      src/httpGate.c
+      src/ssl.c
+
+31dec19
+   Set '*StatNm' also in 'nextBuf'
+      lib/vip.l
+
 ####### 19.12 #######
 24dec19
    Add 'less', move 'depth'
@@ -45,7 +186,7 @@
       lib/vip.l
 
 21oct19
-   Request camera permission in 'location?' and 'camera?'
+   Request permission in 'location?' and 'camera?'
       lib/android.l
 
 19oct19

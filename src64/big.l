@@ -1,5 +1,4 @@
-# 25nov19abu
-# (c) Software Lab. Alexander Burger
+# 25mar20 Software Lab. Alexander Burger
 
 ### Destructive primitives ###
 # Remove leading zeroes
@@ -984,7 +983,6 @@
          cnt A  # End of safe?
          if nz  # Yes
             call boxNum_A  # Extend safe
-            ld (A DIG) 0
             ld (X BIG) A
          end
          ld (A DIG) C  # Store uppper word
@@ -1030,7 +1028,6 @@
       cnt A  # End of safe?
       if nz  # Yes
          call boxNum_A  # Extend safe
-         ld (A DIG) 0
          ld (X BIG) A
       end
       ld (A DIG) C  # Store uppper word
@@ -2582,7 +2579,7 @@
       test E SIGN
       if nz
          off E SIGN
-         ld B 1
+         inc B
       end
       link
       push ZERO  # <L II> Safe
@@ -2664,8 +2661,8 @@
                   dec (L -I)  # Shift count?
                while nz
                   call halfA_A  # Shift right (destructive)
-                  ld (L I) A
                loop
+               ld (L I) A
             else
                do
                   cmp (L -I) -64  # Large shift count?
@@ -3021,8 +3018,8 @@
             ld E (L III)  # Number
             call cmpuAE_F  # Mask <= number?
          while le  # Yes
-            call twiceA_A  # Times 4
-            call twiceA_A
+            call twiceBigA_A  # Times 4
+            call twiceBigA_A
          loop
          do
             ld A (L I)  # result += mask
@@ -3204,5 +3201,3 @@
    pop Y
    pop X
    jmp boxE_E  # Return short number
-
-# vi:et:ts=3:sw=3
