@@ -1,4 +1,4 @@
-# 05dec19 Software Lab. Alexander Burger
+# 18jun20 Software Lab. Alexander Burger
 # https://picolisp.com/wiki/?vip
 
 (symbols 'vip 'pico)
@@ -180,18 +180,36 @@ beep undo redo evCmd dirty> load> save> view> status)
                      (unless (= "/" (last D))
                         (conc D (list (name "/"))) )
                      (mapcar
-                        '((F)
-                           (conc
-                              (chop (setq F (pack D F)))
-                              (let S (car (info F T))
+                        '((X)
+                           (let (S (cdddr X)  F (caddr X))
+                              (conc
+                                 (chop (stamp (- (car X)) (- (cadr X))))
+                                 (list (name " "))
+                                 (chop F)
                                  (cond
                                     ((=T S) (list (name "/")))
                                     ((not S)
                                        (conc
                                           (chop " -> ")
                                           (in (list "readlink" F)
-                                             (line) ) ) ) ) ) ) )
-                        (sort (dir File T)) ) )
+                                             (line) ) ) )
+                                    (T
+                                       (conc
+                                          (chop " (")
+                                          (chop (/ (+ S 1023) 1024))
+                                          (chop ")") ) ) ) ) ) )
+                        (sort
+                           (extract
+                              '((F)
+                                 (unless (= "." F)
+                                    (setq F (pack D F))
+                                    (when (info F T)
+                                       (cons
+                                          (- (cadr @))
+                                          (- (cddr @))
+                                          F
+                                          (car @) ) ) ) )
+                              (dir File T) ) ) ) )
                   (gc (+ 4 (*/ (car I) 32768)))  # 2 cells / char
                   (if (sys "CCRYPT" (: key))
                      (pipe
@@ -205,8 +223,7 @@ beep undo redo evCmd dirty> load> save> view> status)
       (head '`(chop "# VIP ") (: text 1))
       (split (clip (: text 1 -6)) " ")
       (evCmd
-         (apply script (cdr @) (fName (pack (car @)))) ) )
-   (off *StatNm) )
+         (apply script (cdr @) (fName (pack (car @)))) ) ) )
 
 (dm save> (Win)
    (when (: file)
@@ -425,6 +442,7 @@ shell shFile prCmd reset command vi)
                (=: buffer (fileBuffer File)) )
             (unmark) ) )
       (load> (: buffer) This)
+      (off *StatNm)
       (goto 1 (or Y (: buffer posY)))
       (repaint) ) )
 
@@ -1074,6 +1092,7 @@ shell shFile prCmd reset command vi)
                (car (or (prior M *Buffers) (tail 1 *Buffers))) ) ) )
       (unless (: buffer text)
          (load> (: buffer) This) )
+      (off *StatNm)
       (goto (: buffer posX) (: buffer posY)) ) )
 
 (de shell (S)
@@ -1421,7 +1440,7 @@ shell shFile prCmd reset command vi)
                                  (reload (cdr @) (car @)) ) )
                            (("Q" "^T")  # Pop tag stack
                               (if *TagStack
-                                 (reload (pop '*TagStack) (pop '*TagStack))
+                                 (reload (++ *TagStack) (++ *TagStack))
                                  (beep) ) )
                            (("^[OP" "^[[[A")  # [F1] Highlight on/off
                               (=: buffer flat (not (: buffer flat)))
