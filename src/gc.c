@@ -64,6 +64,7 @@ static inline void markCatch(catchFrame *catchPtr) {
 
 
 static long GcCount = CELLS;
+static long NumGc = 0;
 
 /* Garbage collector */
 void gc(long c) {
@@ -73,6 +74,7 @@ void gc(long c) {
 
 // XXX outString("=== gc ==="); flushAll();
 
+   NumGc++;
    val(DB) = Nil;
    h = Heaps;
    do {
@@ -190,10 +192,23 @@ any doGc(any ex) {
    return cnt;
 }
 
+// (gccount) -> cnt
+any doGcCount(any x) {
+   return boxCnt(NumGc);
+}
+
+static long Consed = 0;
+
+// (consed) -> cnt
+any doConsed(any x) {
+  return boxCnt(Consed);
+}
+
 /* Construct a cell */
 any cons(any x, any y) {
    cell *p;
 
+   Consed++;
    if (!(p = Avail)) {
       cell c1, c2;
 
@@ -215,6 +230,7 @@ any consSym(any v, any x) {
    cell *p;
 
    ASSERT(isNil(x) || isNum(x));
+   Consed++;
    if (!(p = Avail)) {
       cell c1, c2;
 
@@ -236,6 +252,7 @@ any consStr(any x) {
    cell *p;
 
    ASSERT(isNum(x));
+   Consed++;
    if (!(p = Avail)) {
       cell c1;
 
@@ -255,6 +272,7 @@ any consStr(any x) {
 any consNum(word n, any x) {
    cell *p;
 
+   Consed++;
    if (!(p = Avail)) {
       cell c1;
 
