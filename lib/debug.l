@@ -448,17 +448,18 @@
 
 # Benchmarking
 (de bench Prg
-   (let (U (usec) G1 (gccount) G2 0 S1 (consed) S2 0)
+   (let (U (usec) G 0 S 0)
       (prog1
+         (and (consed) (gccount))
          (run Prg 1)
-         (setq S2 (consed) G2 (gccount))
+         (setq S (consed) G (gccount))
          (out 2
             (prinl
                (format (*/ (- (usec) U) 1000) 3)
                " sec "
-               (- G2 G1)
+               G
                " gc "
-               (- S2 S1)
+               S
                " consed") ) ) ) )
 
 # `(== 64 64)  # Only in the 64-bit version

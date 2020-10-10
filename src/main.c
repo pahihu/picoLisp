@@ -996,6 +996,14 @@ any funq(any x) {
    return isNum(y) || y==T? Nil : x;
 }
 
+#ifdef __APPLE__
+void so2dylib(char *buf) {
+  int n = strlen(buf);
+  if (n && strcmp(buf + n - 3, ".so") == 0)
+    strcpy(buf + n - 3, ".dylib");
+}
+#endif
+
 bool sharedLib(any x) {
    void *h;
    char *p, nm[bufSize(x)];
@@ -1007,7 +1015,7 @@ bool sharedLib(any x) {
    {
       int n = Home? strlen(Home) : 0;
 #ifndef __CYGWIN__
-      char buf[n + strlen(nm) + 4 + 1];
+      char buf[n + strlen(nm) + 3 + 4 + 1];
 #else
       char buf[n + strlen(nm) + 4 + 4 + 1];
 #endif
@@ -1022,6 +1030,9 @@ bool sharedLib(any x) {
          strcpy(buf + n + 4 + strlen(nm), ".dll");
 #endif
       }
+#ifdef __APPLE__
+      so2dylib(buf);
+#endif
       if (!(h = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL))  ||  !(h = dlsym(h,p)))
          return NO;
       val(x) = boxFun(num(h));
@@ -1424,9 +1435,12 @@ any doNative(any ex) {
       lib = (void*)unDig(y);
    else {
       NeedSym(ex,y);
-      char buf[bufSize(y)];
+      char buf[bufSize(y) + 3];
       bufString(y,buf);
       NATDBG(fprintf(stderr,"doNative: lib=%s\n",buf))
+#ifdef __APPLE__
+      so2dylib(buf);
+#endif
       if (!(lib = dlopen(strcmp(buf,"@")? buf : 0, RTLD_LAZY | RTLD_GLOBAL)))
          dlError(ex,y);
       val(y) = box(num(lib));

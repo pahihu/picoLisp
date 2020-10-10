@@ -67,6 +67,12 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* automatically translate shared lib names from Linux ".so" to macOS ".dylib"
+  eg. when (native) references "libcrypto.so" on macOS it is translated to
+  "libcrypto.dylib"
+* modified (bench) ro return the number of garbage collections and pairs consed
+* added (gcccount): returns the number of garbage collection since last called
+* added (consed): returns the number of pairs consed since last call called
 * applied 20.6 changes
 * fixed coroutine issues, all tankf33der tests passed
 * tankf33der ping-pong.l works, pil64 core dumps ;)
@@ -106,7 +112,7 @@ Native C Call
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 22 / 5 / 2020
+pahihu 10 / 10 / 2020
 
 
 

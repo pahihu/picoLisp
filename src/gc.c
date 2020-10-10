@@ -194,14 +194,16 @@ any doGc(any ex) {
 
 // (gccount) -> cnt
 any doGcCount(any x) {
-   return boxCnt(NumGc);
+   long val = NumGc;
+   return NumGc = 0, boxCnt(val);
 }
 
 static long Consed = 0;
 
 // (consed) -> cnt
 any doConsed(any x) {
-  return boxCnt(Consed);
+  long val = Consed;
+  return Consed = 0, boxCnt(val);
 }
 
 /* Construct a cell */
