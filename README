@@ -72,7 +72,7 @@ Native C Call
   "libcrypto.dylib"
 * modified (bench) ro return the number of garbage collections and pairs consed
 * added (gcccount): returns the number of garbage collection since last called
-* added (consed): returns the number of pairs consed since last call called
+* added (consed): returns the number of pairs consed since last called
 * applied 20.6 changes
 * fixed coroutine issues, all tankf33der tests passed
 * tankf33der ping-pong.l works, pil64 core dumps ;)
