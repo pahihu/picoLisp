@@ -447,6 +447,10 @@
          "ps" "-H" "-o" "pid,ppid,start,size,pcpu,cmd" ) ) )
 
 # Benchmarking
+(unless gccount   # Pil64
+   (de gccount () 0)
+   (de consed () 0) )
+
 (de bench Prg
    (let (U (usec) G (gccount) S (consed))
       (prog1
