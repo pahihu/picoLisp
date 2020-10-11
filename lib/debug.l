@@ -448,9 +448,8 @@
 
 # Benchmarking
 (de bench Prg
-   (let (U (usec) G 0 S 0)
+   (let (U (usec) G (gccount) S (consed))
       (prog1
-         (and (consed) (gccount))
          (run Prg 1)
          (setq S (consed) G (gccount))
          (out 2
