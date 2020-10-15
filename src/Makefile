@@ -26,8 +26,11 @@ ifeq ($(target),pil32)
         M32=-m32
 endif
 
+ALIGN_FUNCTIONS = -falign-functions=32
+
 BFLAGS = -pipe \
-	-falign-functions=32 -fno-strict-aliasing \
+	$(ALIGN_FUNCTIONS) \
+	-fno-strict-aliasing \
 	-W -Wimplicit -Wreturn-type -Wunused -Wformat \
 	-Wuninitialized -Wstrict-prototypes \
 	-D_GNU_SOURCE  -D_FILE_OFFSET_BITS=64
@@ -75,20 +78,19 @@ else
 ifeq ($(shell uname), Darwin)
 ifeq ($(target), pil32)
 	GCCLD = gcc
-        CPU = i386
-        # BFLAGS += -I$(HOME)/local32/include
-        # LIB-FLAGS = $(HOME)/local32/lib/libffi.a
-else
-	GCCLD = gcc-mp-8
+    CPU = i386
+    # BFLAGS += -I$(HOME)/local32/include
+    # LIB-FLAGS = $(HOME)/local32/lib/libffi.a
 endif
 	OS = Darwin
+	ALIGN_FUNCTIONS = -mllvm -align-all-functions=5
 	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
 		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT \
 		  -D_XOPEN_SOURCE -Wno-deprecated-declarations
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS += -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
-        SYSDIRS = -I/opt/local/include -L/opt/local/lib
+    SYSDIRS = -I/opt/local/include -L/opt/local/lib
 	LCRYPT = #-lcrypto
 	STRIP-FLAGS = -x
 else
@@ -145,7 +147,7 @@ endif
 BFLAGS += -D_OS='"$(OS)"' -D_CPU='"$(CPU)"'
 
 
-picolisp: $(bin)/picolispx $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
+picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 picolisp: $(bin)/picolisp $(lib)/ext$(dll) $(lib)/ht$(dll)
 tools: $(bin)/lat1 $(bin)/utf2 $(bin)/balance
 gate: $(bin)/ssl $(bin)/httpGate
@@ -222,4 +224,4 @@ $(bin)/httpGate: httpGate.c
 clean:
 	rm -f *.o
 
-# vi:noet:ts=4:sw=4
+# vim:noet:ts=4:sw=4
