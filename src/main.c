@@ -38,7 +38,7 @@ any PicoNil, Nil, DB, Meth, Quote, T;
 any ISym, NSym, SSym, CSym, BSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
-any Tstp1, Tstp2;
+any Tstp1, Tstp2, Winch;
 any TNsp, TCo7;
 bool Break;
 coFrame **Stack1; // coro stacks
@@ -133,6 +133,10 @@ void sighandler(any ex) {
          else if (Signal[SIGCONT]) {
             --Signal[0], --Signal[SIGCONT];
             run(val(Tstp2));
+         }
+         else if (Signal[SIGWINCH]) {
+            --Signal[0], --Signal[SIGWINCH];
+            run(val(Winch));
          }
          else if (Signal[SIGTERM]) {
             for (flg = NO, i = 0; i < Children; ++i)
@@ -2180,6 +2184,7 @@ static void init(int ac, char *av[]) {
    iSignal(SIGIO, sig);
    iSignal(SIGTSTP, sig);
    iSignal(SIGCONT, sig);
+   iSignal(SIGWINCH, sig);
    signal(SIGCHLD, sigChld);
    signal(SIGPIPE, SIG_IGN);
    signal(SIGTTIN, SIG_IGN);

@@ -124,6 +124,7 @@
 ### mix ###
 (test '(c d a b) (mix '(a b c d) 3 4 1 2))
 (test '(a A d D) (mix '(a b c d) 1 'A 4 'D))
+(test '((c d) a) (mix '(a b c d) -2 1))
 
 
 ### append ###
