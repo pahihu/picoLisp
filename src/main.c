@@ -386,8 +386,8 @@ any doStack(any x) {
 any doAdr(any x) {
    x = cdr(x);
    if (isNum(x = EVAL(car(x))))
-      return (any)(unDig(x) * WORD);
-   return box(num(x) / WORD);
+      return (any)(unBox(x));
+   return boxLong(num(x));
 }
 
 // (byte 'num ['cnt]) -> cnt
@@ -397,11 +397,11 @@ any doByte(any ex) {
 
   x = cdr(ex), y = EVAL(car(x));
   NeedNum(ex,y);
-  a = (char*)unDigU(y);
+  a = (char*)unBox(y);
   if (isCell(x = cdr(x))) {
      y = EVAL(car(x));
      NeedCnt(ex,y);
-     *a = (char)unDigU(y);
+     *a = (char)unBox(y);
      return y;
   }
   return boxCnt(*a);

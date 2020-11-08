@@ -67,6 +67,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'adr' returns a pointer usable by 'native' and 'struct'
 * 'info' returns the file argument in '@@'
 * path names expand "~" for the HOME directory
 * '*Winch' global SIGWINCH handler
@@ -116,7 +117,7 @@ Native C Call
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 10 / 10 / 2020
+pahihu 08 / 11 / 2020
 
 
 

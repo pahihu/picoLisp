@@ -46,10 +46,10 @@
 (when byte
    (when 64bit?
       (test (hex "12")
-         (byte (>> -4 (adr (1)))) ) )
+         (byte (adr (1))) ) )
    (when (not 64bit?)
       (test (hex "16")
-         (byte (>> -3 (adr (1)))) ) ) )
+         (byte (adr (1))) ) ) )
 
 (when (and byte native)
    (test "ABC"
