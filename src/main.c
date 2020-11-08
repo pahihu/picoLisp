@@ -1990,6 +1990,7 @@ any doInfo(any x) {
       x = cdr(x);
       if ((isNil(EVAL(car(x)))? stat(nm, &st) : lstat(nm, &st)) < 0)
          return Nil;
+      val(At2) = y;
       p = gmtime(&st.st_mtime);
       Push(c1, boxCnt(p->tm_hour * 3600 + p->tm_min * 60 + p->tm_sec));
       data(c1) = cons(mkDat(p->tm_year+1900,  p->tm_mon+1,  p->tm_mday), data(c1));
