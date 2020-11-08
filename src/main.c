@@ -17,8 +17,8 @@
 #endif
 
 /* Globals */
-int Repl, Chr, Slot, Spkr, Mic, Hear, Tell, Children, ExtN;
-char **AV, *AV0, *Home;
+int Repl, Chr, Slot, Spkr, Mic, Hear, Tell, Children, ExtN, UsrLen;
+char **AV, *AV0, *Home, *UsrHome;
 child *Child;
 heap *Heaps;
 cell *Avail;
@@ -2153,6 +2153,8 @@ static void init(int ac, char *av[]) {
       memcpy(Home, av[0], p - av[0] + 1);
       Home[p - av[0] + 1] = '\0';
    }
+   UsrHome = getenv("HOME");
+   if (UsrHome) UsrLen = strlen(UsrHome);
    Env.get = getStdin;
    InFile = initInFile(STDIN_FILENO, NULL);
    Env.put = putStdout;

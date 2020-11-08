@@ -4,6 +4,7 @@
 ### path ###
 (test 'task (cadr (in (path "@lib.l") (read))))
 (test (char "+") (char (path "+@")))
+(test (sys "HOME") (path "~"))
 
 
 ### read ###

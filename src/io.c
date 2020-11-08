@@ -636,13 +636,17 @@ int numBytes(any x) {
 int bufSize(any x) {return isNum(x = name(x))? numBytes(x)+1 : 1;}
 
 int pathSize(any x) {
+   int len;
    int c = firstByte(x);
 
-   if (c != '@'  &&  (c != '+' || secondByte(x) != '@'))
+   if (c != '@'  && c != '~' && (c != '+' || secondByte(x) != '@'))
       return bufSize(x);
-   if (!Home)
-      return numBytes(name(x));
-   return strlen(Home) + numBytes(name(x));
+   len = numBytes(name(x));
+   if (c == '~')
+      len += UsrLen;
+   else if (Home)
+      len += strlen(Home);
+   return len;
 }
 
 void bufString(any x, char *p) {
@@ -658,9 +662,14 @@ void pathString(any x, char *p) {
 
    if ((c = symByte(name(x))) == '+')
       *p++ = c,  c = symByte(NULL);
-   if (c != '@')
+   if (c != '@') {
+      if (c == '~' && UsrLen) {
+         memcpy(p, UsrHome, UsrLen), p += UsrLen;
+         c = symByte(NULL);
+      }
       while (*p++ = c)
          c = symByte(NULL);
+   }
    else {
       if (h = Home)
          do

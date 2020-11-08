@@ -352,8 +352,8 @@ typedef struct coFrame {
 #define Touch(ex,x)     if (isExt(x)) db(ex,x,2)
 
 /* Globals */
-extern int Repl, Chr, Slot, Spkr, Mic, Hear, Tell, Children, ExtN;
-extern char **AV, *AV0, *Home;
+extern int Repl, Chr, Slot, Spkr, Mic, Hear, Tell, Children, ExtN, UsrLen;
+extern char **AV, *AV0, *Home, *UsrHome;
 extern child *Child;
 extern heap *Heaps;
 extern cell *Avail;
