@@ -35,7 +35,7 @@ any Alarm, Sigio, Line, Zero, One, Pico1;
 any Transient[IHASH], Extern[EHASH];
 any DbVal, DbTail;
 any PicoNil, Nil, DB, Meth, Quote, T;
-any ISym, NSym, SSym, CSym, BSym;
+any ISym, NSym, SSym, CSym, BSym, WSym, PSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 any Tstp1, Tstp2, Winch;
@@ -1104,7 +1104,13 @@ static any natRet(any x, byte **pbuf, int C) {
          ret = doubleToNum(d);
       }
       else if (isSym(x)) {
-         if (x == ISym) {
+         if (x == WSym) {
+           short s = *(short*)buf;
+           buf += sizeof(short);
+           NATDBG(fprintf(stderr,"W ret = %d\n", s))
+           ret = boxLong(s);
+         }
+         else if (x == ISym) {
            int32_t i = *(int32_t*)buf;
            buf += sizeof(int32_t);
            NATDBG(fprintf(stderr,"I ret = %d\n", i))
@@ -1115,6 +1121,12 @@ static any natRet(any x, byte **pbuf, int C) {
            buf += sizeof(long);
            NATDBG(fprintf(stderr,"N ret = %ld\n", l))
            ret = boxLong(l);
+         }
+         else if (x == PSym) {
+           word w = *(word*)buf;
+           buf += sizeof(word);
+           NATDBG(fprintf(stderr,"P ret = %ld\n", w))
+           ret = boxWord(w);
          }
          else if (x == SSym) {
            char *s = *(char**)buf;
@@ -1296,8 +1308,10 @@ typedef struct ffi {
 
 #ifdef __LP64__
 #define FFI_TYPE_SINT   ffi_type_sint64
+#define FFI_TYPE_UINT   ffi_type_uint64
 #else
 #define FFI_TYPE_SINT   ffi_type_sint32
+#define FFI_TYPE_UINT   ffi_type_uint32
 #endif
 
 static ffi_type *ffiType(any y,int isarg) {
@@ -1305,6 +1319,10 @@ static ffi_type *ffiType(any y,int isarg) {
    if (isNil(y)) { // 'NIL
       NATDBG(fprintf(stderr,"void\n"))
       return &ffi_type_void;
+   }
+   else if (y == WSym) { // 'W
+      NATDBG(fprintf(stderr,"sint16\n"))
+      return &ffi_type_sint16;
    }
    else if (y == ISym) { // 'I
       NATDBG(fprintf(stderr,"sint32\n"))
@@ -1314,13 +1332,17 @@ static ffi_type *ffiType(any y,int isarg) {
       NATDBG(fprintf(stderr,"sint64\n"))
       return &FFI_TYPE_SINT;
    }
+   else if (y == BSym) { // 'B
+      NATDBG(fprintf(stderr,"uint8\n"))
+      return &ffi_type_uint8;
+   }
    else if (y == CSym) { // 'C
       NATDBG(fprintf(stderr,"uint32\n"))
       return &ffi_type_uint32;
    }
-   else if (y == BSym) { // 'B
-      NATDBG(fprintf(stderr,"uint8\n"))
-      return &ffi_type_uint8;
+   else if (y == PSym) { // 'P
+      NATDBG(fprintf(stderr,"uint64\n"))
+      return &FFI_TYPE_UINT;
    }
    else if (isNum(y)) {
       if (isarg) { // num

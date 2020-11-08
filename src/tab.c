@@ -437,6 +437,8 @@ void initSymbols(void) {
    SSym   = initSym(Nil, "S");
    CSym   = initSym(Nil, "C");
    BSym   = initSym(Nil, "B");
+   WSym   = initSym(Nil, "W");
+   PSym   = initSym(Nil, "P");
    Solo   = initSym(Zero, "*Solo");
    PPid   = initSym(Nil, "*PPid");
    Pid    = initSym(boxCnt(getpid()), "*Pid");

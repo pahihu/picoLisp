@@ -67,6 +67,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'W' and 'P' result specs for 'native' and 'struct'
 * 'adr' returns a pointer usable by 'native' and 'struct'
 * 'info' returns the file argument in '@@'
 * path names expand "~" for the HOME directory
