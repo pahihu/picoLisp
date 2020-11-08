@@ -352,7 +352,7 @@ any doSymbols(any ex) {
    }
    NeedSym(ex,y); // 'sym1 'sym2 ...
    Push(c1, y);
-   if (isNil(val(data(c1))))
+   if (isNil(val(data(c1))) || isSym(val(data(c1))))
       val(data(c1)) = consNsp();
    else if (!isNsp(val(data(c1))))
       symNsError(ex,y);
