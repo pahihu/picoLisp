@@ -67,7 +67,8 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
-* Path names expand "~" for the HOME directory
+* 'info' returns the file argument in '@@'
+* path names expand "~" for the HOME directory
 * '*Winch' global SIGWINCH handler
 * 'mix' accepts also negative arguments
 * automatically translate shared lib names from Linux ".so" to macOS ".dylib"
