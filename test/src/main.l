@@ -75,6 +75,12 @@
          (byte (+ P 3) 0)
          (%@ "strdup" 'S P) ) ) )
 
+(when (and buf plio)
+   (test (1 a (2 b c) d)
+      (buf P 64
+         (plio P 64 (1 a (2 b c) d))
+         (plio P) ) ) )
+
 
 ### adr ###
 (let (X (box 7)  L (123))

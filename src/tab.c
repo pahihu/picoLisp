@@ -271,6 +271,7 @@ static symInit Symbols[] = {
    {doPick, "pick"},
    {doPipe, "pipe"},
    {doPlace, "place"},
+   {doPlio, "plio"},
    {doPoll, "poll"},
    {doPool, "pool"},
    {doPool2, "pool2"},

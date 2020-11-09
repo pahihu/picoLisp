@@ -16,6 +16,7 @@ static cell StrCell, *StrP;
 static bool Sync;
 static pid_t Talking;
 static byte *PipeBuf, *PipePtr;
+static byte *Ptr, *End; // from DB-I/O
 static void (*PutSave)(int);
 static void rdvp(any,any);
 static byte TBuf[] = {INTERN+4, 'T'};
@@ -28,6 +29,7 @@ static void badFd(any ex, any x) {err(ex, x, "Bad FD");}
 static void lockErr(void) {err(NULL, NULL, "File lock: %s", strerror(errno));}
 static void writeErr(char *s) {err(NULL, NULL, "%s write: %s", s, strerror(errno));}
 static void selectErr(any ex) {err(ex, NULL, "Select error: %s", strerror(errno));}
+static void sizeError(void) {err(NULL, NULL, "Size overflow");}
 
 static void lockFile(int fd, int cmd, int typ) {
    struct flock fl;
@@ -2836,6 +2838,38 @@ any doRewind(any ex __attribute__((unused))) {
    return lseek(OutFile->fd, 0L, SEEK_SET) || ftruncate(OutFile->fd, 0)? Nil : T;
 }
 
+static int getPlio(void) {
+   return *Ptr++;
+}
+
+static void putPlio(int c) {
+   if (End == Ptr)
+     sizeError();
+   *Ptr++ = (byte)c;
+}
+
+// (plio 'num) -> any
+// (plio 'num 'cnt 'any) -> cnt
+any doPlio(any ex) {
+   any x, y;
+   byte *P;
+
+   x = cdr(ex); y = EVAL(car(x));
+   NeedNum(ex, y);
+   Ptr = P = (byte*)unBox(y);
+   x = cdr(x);
+   if (isNil(x)) {
+      getBin = getPlio; 
+      x = binRead(ExtN) ?: Nil;
+      return x;
+   }
+   End = Ptr + evCnt(ex, x);
+   x = cdr(x); y = EVAL(car(x));
+   putBin = putPlio;
+   binPrint(ExtN, y);
+   return boxCnt(Ptr - P);
+}
+
 // (ext 'cnt . prg) -> any
 any doExt(any ex) {
    int extn;
@@ -2933,7 +2967,7 @@ static int F, Files, *BlkShift, *BlkFile, *BlkSize, *Fluse, MaxBlkSize;
 static FILE *Jnl, *Log;
 static adr BlkIndex, BlkLink;
 static adr *Marks;
-static byte *Locks, *Ptr, **Mark;
+static byte *Locks, **Mark;
 static byte *Block, *IniBlk;  // 01 00 00 00 00 00 NIL 0
 
 static adr getAdr(byte *p) {

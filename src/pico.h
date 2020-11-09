@@ -816,6 +816,7 @@ any doPeek(any);
 any doPick(any);
 any doPipe(any);
 any doPlace(any);
+any doPlio(any);
 any doPoll(any);
 any doPool(any);
 any doPool2(any);

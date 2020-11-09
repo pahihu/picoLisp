@@ -27,6 +27,8 @@ Pil21
    (buf sym 'cnt . prg) -> any
    (history ['lst]) -> lst
    (intern 'sym ['nsp]) -> sym
+   (plio 'num) -> any
+   (plio 'num 'cnt 'any) -> cnt
    (with 'var . prg) -> any
    (%@ 'cnt|sym 'any 'any ..) -> any
 
@@ -74,6 +76,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'plio' function
 * 'buf' function
 * 'intern' accepts namespace argument
 * 'history' function for lib/(e)led.l
