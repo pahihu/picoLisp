@@ -2051,7 +2051,7 @@ any doFile(any ex __attribute__((unused))) {
    }
    else {
       data(c1) = cons(mkStr(s), data(c1));
-      data(c1) = cons(mkStr("./"), data(c1));
+      data(c1) = cons(Nil, data(c1));
    }
    free(s);
    return Pop(c1);

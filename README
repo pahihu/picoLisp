@@ -67,6 +67,8 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'history' function for lib/(e)led.l
+* 'file' returns NIL instead of "./"
 * 'with' accepts 'var' instead of 'sym'
 * '%@' function for the common case (native "@" ...)
 * 'W' and 'P' result specs for 'native' and 'struct'
@@ -75,6 +77,7 @@ Native C Call
 * path names expand "~" for the HOME directory
 * '*Winch' global SIGWINCH handler
 * 'mix' accepts also negative arguments
+
 * automatically translate shared lib names from Linux ".so" to macOS ".dylib"
   eg. when (native) references "libcrypto.so" on macOS it is translated to
   "libcrypto.dylib"

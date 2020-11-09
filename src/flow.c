@@ -628,7 +628,6 @@ any doWith(any ex) {
    x = cdr(ex);
    if (isNil(x = EVAL(car(x))))
       return Nil;
-   // NeedSym(ex,x);
    NeedVar(ex,x);
    CheckVar(ex,x);
    f.exe = Nil;

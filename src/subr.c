@@ -515,38 +515,26 @@ any doMix(any x) {
    Save(c1);
 
    if (isNum(car(x))) {
-      cell c;
+      any z;
       n = (int)unBox(car(x));
-      Push(c, n<0 ? nth(1-n,data(c1)) : car(nth(n,data(c1))));
-      Push(c2, y = cons(Pop(c), Nil));
+      z = n<0? nth(1-n,data(c1)) : car(nth(n,data(c1)));
+      Push(c2, y = cons(z, Nil));
    }
    else
       Push(c2, y = cons(EVAL(car(x)), Nil));
 
    while (isCell(x = cdr(x))) {
       if (isNum(car(x))) {
-         cell c;
+         any z;
          n = (int)unBox(car(x));
-         Push(c, n<0 ? nth(1-n,data(c1)) : car(nth(n,data(c1))));
-         y = cdr(y) = cons(Pop(c), Nil);
+         z = n<0? nth(1-n,data(c1)) : car(nth(n,data(c1)));
+         y = cdr(y) = cons(z, Nil);
       }
       else
          y = cdr(y) = cons(EVAL(car(x)), Nil);
    }
    drop(c1);
    return data(c2);
-/*
-   Push(c2,
-      y = cons(
-         isNum(car(x))? car(nth((int)unBox(car(x)),data(c1))) : EVAL(car(x)),
-         Nil ) );
-   while (isCell(x = cdr(x)))
-      y = cdr(y) = cons(
-         isNum(car(x))? car(nth((int)unBox(car(x)),data(c1))) : EVAL(car(x)),
-         Nil );
-   drop(c1);
-   return data(c2);
-*/
 }
 
 // (append 'lst ..) -> lst

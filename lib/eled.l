@@ -655,6 +655,11 @@
       (out (pil "history")
          (mapc prinl *History) ) ) )
 
+(de history (Lst)
+   (if Lst
+      (setq *History Lst "HPos" 1)
+      *History) )
+
 # Enable line editing
 (de *Led
    (let ("*Dbg" *Dbg  *Dbg)
