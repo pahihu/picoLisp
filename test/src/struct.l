@@ -38,15 +38,15 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 
 ### native ###
 (test (sys "TERM")
-   (native "@" "getenv" 'S "TERM") )
+   (%@ "getenv" 'S "TERM") )
 
 (setq *Word (if 64bit? 8 4))
 
 (test 8
-   (native "@" "printf" 'I "abc%d%s^J" T (+ 3 4) (pack "X" "Y" "Z")) )
+   (%@ "printf" 'I "abc%d%s^J" T (+ 3 4) (pack "X" "Y" "Z")) )
 
 (test 16
-   (native "@" "printf" 'I "This is %.3f^J" T (123456 . 1000)) )
+   (%@ "printf" 'I "This is %.3f^J" T (123456 . 1000)) )
 
 (test 
    (129 254 139 254 135 87 108 62 203 34 66 111 142 87 132 115 130 145 122 207)
@@ -54,9 +54,9 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 
 (use Tim
    # time_t 8   # Get time_t structure
-   (native "@" "time" NIL (list 'Tim (cons *Word 'B *Word)))  
+   (%@ "time" NIL (list 'Tim (cons *Word 'B *Word)))  
    # Read local time
-   (println (native "@" "localtime" '(I . 9) (cons NIL (list *Word) Tim))) )
+   (println (%@ "localtime" '(I . 9) (cons NIL (list *Word) Tim))) )
 
 # (32 18 13 31 11 109 4 364 0)  # 13:18:32, Dec. 31st, 2009
 
@@ -72,7 +72,7 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 ## } value;
 
 # Allocate structure
-(setq P (native "@" "malloc" 'N (+ 24 4 (* 3 *Word))))
+(setq P (%@ "malloc" 'N (+ 24 4 (* 3 *Word))))
 
 # Store two integers, three doubles, one long, and four characters
 (test P
@@ -89,7 +89,7 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
       -7 -4 (1.0 0.11 0.22 0.33) (cons 7 *Word) 65 66 67 0 ) )
 
 # De-allocate structure
-(native "@" "free" NIL P)
+(%@ "free" NIL P)
 
 (scl 0)
 

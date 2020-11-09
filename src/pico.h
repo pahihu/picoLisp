@@ -780,6 +780,7 @@ any doMul(any);
 any doMulDiv(any);
 any doName(any);
 any doNand(any);
+any doNat(any);
 any doNative(any);
 any doNEq(any);
 any doNEq0(any);

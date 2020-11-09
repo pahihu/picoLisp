@@ -51,16 +51,20 @@
       (test (hex "16")
          (byte (adr (1))) ) ) )
 
-(when (and byte native)
+(when (and native %@)
+   (test (native "@" "cos" 1000000 (1000000 . 1000000))
+      (%@ "cos" 1000000 (1000000 . 1000000)) ) ) 
+
+(when (and byte %@)
    (test "ABC"
-      (let P (native "@" "malloc" 'N 8)
+      (let P (%@ "malloc" 'N 8)
          (byte P (char "A"))
          (byte (inc P) (char "B"))
          (byte (+ P 2) (char "C"))
          (byte (+ P 3) 0)
          (prog1
-            (native "@" "strdup" 'S P)
-            (native "@" "free" NIL P) ) ) ) )
+            (%@ "strdup" 'S P)
+            (%@ "free" NIL P) ) ) ) )
 
 
 ### adr ###

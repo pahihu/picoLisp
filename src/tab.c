@@ -235,6 +235,7 @@ static symInit Symbols[] = {
    {doMulDiv, "*/"},
    {doName, "name"},
    {doNand, "nand"},
+   {doNat, "%@"},
    {doNative, "native"},
    {doNEq, "n=="},
    {doNEq0, "n0"},

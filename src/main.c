@@ -1443,11 +1443,9 @@ static any evalList(any x) {
    return Pop(c1);
 }
 
-// (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
-any doNative(any ex) {
-   void *lib;
+static any natCall(void *lib, any ex) {
    cell c1, c2;
-   int  nargs = length(cdr(ex))-2, i;
+   int  nargs = length(cdr(ex))-1, i;
    CARG arg, args[nargs], rvalue; // return value/argument holders
    byte *prvalue; // ptr to rvalue
    void *avalues[nargs]; // ptr to args[]
@@ -1456,22 +1454,7 @@ any doNative(any ex) {
    bool oldffi; // FFI struct old?
 
    nargs = 0; prvalue = (byte*)&rvalue;
-   x = cdr(ex), y = EVAL(car(x)); // library handle
-   if (isNum(y))
-      lib = (void*)unDig(y);
-   else {
-      NeedSym(ex,y);
-      char buf[bufSize(y) + 3];
-      bufString(y,buf);
-      NATDBG(fprintf(stderr,"doNative: lib=%s\n",buf))
-#ifdef __APPLE__
-      so2dylib(buf);
-#endif
-      if (!(lib = dlopen(strcmp(buf,"@")? buf : 0, RTLD_LAZY | RTLD_GLOBAL)))
-         dlError(ex,y);
-      val(y) = box(num(lib));
-   }
-   x = cdr(x), y = EVAL(sym2 = car(x)); // function ptr
+   x = cdr(ex), y = EVAL(sym2 = car(x)); // function ptr
    Push(c1, sym2);
    NATDBG(show("function ptr = ",y,1))
    x = evalList(cdr(x)); // eval argument list
@@ -1597,6 +1580,34 @@ any doNative(any ex) {
       x = cdr(x);
    }
    return Pop(c1);;
+}
+
+// (%@ 'cnt2|sym2 'any 'any ..) -> any
+any doNat(any ex) {
+   return natCall(RTLD_DEFAULT, ex);
+}
+
+// (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
+any doNative(any ex) {
+   void *lib;
+   any x, y;
+
+   x = cdr(ex), y = EVAL(car(x)); // library handle
+   if (isNum(y))
+      lib = (void*)unDig(y);
+   else {
+      NeedSym(ex,y);
+      char buf[bufSize(y) + 3];
+      bufString(y,buf);
+      NATDBG(fprintf(stderr,"doNative: lib=%s\n",buf))
+#ifdef __APPLE__
+      so2dylib(buf);
+#endif
+      if (!(lib = dlopen(strcmp(buf,"@")? buf : 0, RTLD_LAZY | RTLD_GLOBAL)))
+         dlError(ex,y);
+      val(y) = box(num(lib));
+   }
+   return natCall(lib, x);
 }
 
 /* Callbacks */
