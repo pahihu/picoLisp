@@ -1402,6 +1402,26 @@ for2:
    return Pop(c1);
 }
 
+// (buf sym 'cnt . prg) -> any
+any doBuf(any ex) {
+   any var, x;
+   bindFrame f;
+   void *p;
+
+   x = cdr(ex);  var = car(x);
+   NeedVar(ex, var);
+   CheckVar(ex, var);
+   x = cdr(x);
+   p = alloca(evCnt(ex, x));
+
+   f.exe = Nil;
+   Bind(var, f); val(var) = boxLong((long) p);
+   x = prog(cdr(x));
+   Unbind(f);
+
+   return x;
+}
+   
 // (catch 'any . prg) -> any
 any doCatch(any x) {
    any y;

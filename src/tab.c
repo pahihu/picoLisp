@@ -36,6 +36,7 @@ static symInit Symbols[] = {
    {doBox, "box"},
    {doBoxQ, "box?"},
    {doBreak, "!"},
+   {doBuf, "buf"},
    {doBy, "by"},
    {doBye, "bye"},
    {doByte, "byte"},

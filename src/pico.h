@@ -580,6 +580,7 @@ any doBool(any);
 any doBox(any);
 any doBoxQ(any);
 any doBreak(any);
+any doBuf(any);
 any doBy(any);
 any doBye(any) __attribute__ ((noreturn));
 any doByte(any);

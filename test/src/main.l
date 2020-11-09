@@ -66,6 +66,15 @@
             (%@ "strdup" 'S P)
             (%@ "free" NIL P) ) ) ) )
 
+(when (and byte %@ buf)
+   (test "ABC"
+      (buf P 8
+         (byte P (char "A"))
+         (byte (inc P) (char "B"))
+         (byte (+ P 2) (char "C"))
+         (byte (+ P 3) 0)
+         (%@ "strdup" 'S P) ) ) )
+
 
 ### adr ###
 (let (X (box 7)  L (123))

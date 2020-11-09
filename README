@@ -23,6 +23,13 @@ implementation which uses libffi.
 
 What is included?
 
+Pil21
+   (buf sym 'cnt . prg) -> any
+   (history ['lst]) -> lst
+   (intern 'sym ['nsp]) -> sym
+   (with 'var . prg) -> any
+   (%@ 'cnt|sym 'any 'any ..) -> any
+
 Coroutines
    (co 'sym [. prg]) -> any
    (stack ['cnt]) -> cnt | (.. sym . cnt)
@@ -67,6 +74,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'buf' function
 * 'intern' accepts namespace argument
 * 'history' function for lib/(e)led.l
 * 'file' returns NIL instead of "./"
