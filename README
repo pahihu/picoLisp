@@ -12,13 +12,18 @@ So where you see in the documentation "64bit-only", you can try out the
 examples. They should work.
 
 Note, to call a C function with variable number of arguments, the number of
-fixed arguments must be marked with T, eg:
+fixed arguments must be marked with ..., eg:
 
-     (native "@" "printf" "abc%d%s^J" T 7 "XYZ")
+     (native "@" "printf" "abc%d%s^J" ... 7 "XYZ")
 
-The arguments before T are the fixed arguments, the number of arguments
-after the T are variable. This change is due to the native C call
+The arguments before ... are the fixed arguments, the number of arguments
+after the ... are variable. This change is due to the native C call
 implementation which uses libffi.
+
+Just to assign handle and pointer, use:
+
+     (native "@" "cos" . T)
+
 
 
 What is included?
@@ -76,6 +81,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* changed native to call vararg fns
 * 'plio' function
 * 'buf' function
 * 'intern' accepts namespace argument

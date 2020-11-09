@@ -43,10 +43,10 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 (setq *Word (if 64bit? 8 4))
 
 (test 8
-   (%@ "printf" 'I "abc%d%s^J" T (+ 3 4) (pack "X" "Y" "Z")) )
+   (%@ "printf" 'I "abc%d%s^J" ... (+ 3 4) (pack "X" "Y" "Z")) )
 
 (test 16
-   (%@ "printf" 'I "This is %.3f^J" T (123456 . 1000)) )
+   (%@ "printf" 'I "This is %.3f^J" ... (123456 . 1000)) )
 
 (test 
    (129 254 139 254 135 87 108 62 203 34 66 111 142 87 132 115 130 145 122 207)

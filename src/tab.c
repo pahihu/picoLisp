@@ -442,6 +442,7 @@ void initSymbols(void) {
    BSym   = initSym(Nil, "B");
    WSym   = initSym(Nil, "W");
    PSym   = initSym(Nil, "P");
+   DotSym = initSym(Nil, "..."); val(DotSym) = DotSym;
    Solo   = initSym(Zero, "*Solo");
    PPid   = initSym(Nil, "*PPid");
    Pid    = initSym(boxCnt(getpid()), "*Pid");

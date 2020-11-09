@@ -35,7 +35,7 @@ any Alarm, Sigio, Line, Zero, One, Pico1;
 any Transient[IHASH], Extern[EHASH];
 any DbVal, DbTail;
 any PicoNil, Nil, DB, Meth, Quote, T;
-any ISym, NSym, SSym, CSym, BSym, WSym, PSym;
+any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 any Tstp1, Tstp2, Winch;
@@ -1374,7 +1374,7 @@ static ffi *ffiPrep(void *lib,char *s,any x) {
    p->nargs = nargs;
    rtype = ffiType(y,0);
    for (i = 0, j = 0; i < nargs; i++, x = cdr(x)) {
-      if (car(x) == T) {
+      if (car(x) == DotSym) { // fixed arg marker
          p->nfixed = i;
          (p->nargs)--;
       }
@@ -1410,7 +1410,7 @@ static ffi *ffiReprep(ffi *p,any x) {
    p->nargs = nargs;
    rtype = ffiType(y,0);
    for (i = 0, j = 0; i < nargs; i++, x = cdr(x)) {
-      if (car(x) == T) { // fixed arg marker
+      if (car(x) == DotSym) { // fixed arg marker
          p->nfixed = i;
          (p->nargs)--;
       }
@@ -1457,7 +1457,7 @@ static any natCall(void *lib, any ex) {
    x = cdr(ex), y = EVAL(sym2 = car(x)); // function ptr
    Push(c1, sym2);
    NATDBG(show("function ptr = ",y,1))
-   x = evalList(cdr(x)); // eval argument list
+   x = isCell(cdr(x))? evalList(cdr(x)) : EVAL(cdr(x)); // eval argument list
    NATDBG(show("eval'd args = ",x,1))
 
    oldffi = NO;
@@ -1470,7 +1470,7 @@ static any natCall(void *lib, any ex) {
       char buf[bufSize(y)];
       bufString(y,buf);
 
-      if (car(x) == T) { // just check
+      if (T == x) { // just check
          void *fun;
          NATDBG(fprintf(stderr,"doNative: check only %s\n",buf))
          if (!(fun = dlsym(lib,buf)))
@@ -1493,7 +1493,7 @@ static any natCall(void *lib, any ex) {
    while (isCell(x)) {
       y = car(x);
       avalues[nargs] = &args[nargs];
-      if (y == T) 
+      if (y == DotSym) 
          ; // skip fixed args marker
       else if (isNum(y)) {
          args[nargs++].i = arg.i = unBox(y);
@@ -1560,7 +1560,7 @@ static any natCall(void *lib, any ex) {
    NATDBG(fprintf(stderr,"decoding args...\n"))
    while (isCell(x)) {
       y = car(x);   // ^(Tim (8 B . 8))
-      if (y == T)
+      if (y == DotSym)
          ; // skip fixed args marker
       else {
          arg = args[i++];
