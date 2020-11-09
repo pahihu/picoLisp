@@ -620,7 +620,7 @@ any doExtra(any ex) {
    err(ex, TheKey, "Bad extra");
 }
 
-// (with 'sym . prg) -> any
+// (with 'var . prg) -> any
 any doWith(any ex) {
    any x;
    bindFrame f;
@@ -628,7 +628,9 @@ any doWith(any ex) {
    x = cdr(ex);
    if (isNil(x = EVAL(car(x))))
       return Nil;
-   NeedSym(ex,x);
+   // NeedSym(ex,x);
+   NeedVar(ex,x);
+   CheckVar(ex,x);
    f.exe = Nil;
    Bind(This,f),  val(This) = x;
    x = prog(cddr(ex));

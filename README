@@ -67,6 +67,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'with' accepts 'var' instead of 'sym'
 * '%@' function for the common case (native "@" ...)
 * 'W' and 'P' result specs for 'native' and 'struct'
 * 'adr' returns a pointer usable by 'native' and 'struct'
