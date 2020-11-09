@@ -370,9 +370,9 @@ any doSymbols(any ex) {
    return x;
 }
 
-// (intern 'sym ['flg]) -> sym
+// (intern 'sym ['nsp]) -> sym
 any doIntern(any ex) {
-   any x, y, z, *h, flg;
+   any x, y, z, *h, flg, nsp;
 
    x = cdr(ex),  x = EVAL(car(x));
    NeedSym(ex,x);
@@ -380,12 +380,19 @@ any doIntern(any ex) {
       return Nil;
    if (unDig(y) == ('L'<<16 | 'I'<<8 | 'N'))
       return Nil;
+   nsp = car(Env.nsp);
    flg = cddr(ex);
-   if (!isNil(flg))
+   if (!isNil(flg)) {
       flg = EVAL(car(flg));
+      if (T != flg) {
+         if (!isNsp(flg))
+            symNsError(ex,cddr(ex));
+         nsp = flg;
+      }
+   }
 // XXX outString("*** intern "); flushAll(); print1(x); newline();
    if (z = searchSym(y, h = Intern + ihash(y),
-                        car(Env.nsp),
+                        nsp,
                         isNil(flg) ? cdr(Env.nsp) : Nil))
       return z;
    ASSERT(isSym(car(*h)));

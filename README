@@ -67,6 +67,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'intern' accepts namespace argument
 * 'history' function for lib/(e)led.l
 * 'file' returns NIL instead of "./"
 * 'with' accepts 'var' instead of 'sym'
