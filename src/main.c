@@ -1128,6 +1128,12 @@ static any natRet(any x, byte **pbuf, int C) {
            NATDBG(fprintf(stderr,"P ret = %ld\n", w))
            ret = boxWord(w);
          }
+         else if (x == T) {
+           any a = *(any*)buf;
+           buf += sizeof(any);
+           NATDBG(fprintf(stderr,"T ret = %p\n", a))
+           ret = a;
+         }
          else if (x == SSym) {
            char *s = *(char**)buf;
            buf += sizeof(char*);
@@ -1290,6 +1296,7 @@ typedef union {
    char  *p;
    double d;
    float  f;
+   any    a;
 } CARG;
 
 // Native library interface from pil21 sources (c) abu
@@ -1344,6 +1351,10 @@ static ffi_type *ffiType(any y,int isarg) {
       NATDBG(fprintf(stderr,"uint64\n"))
       return &FFI_TYPE_UINT;
    }
+   else if (y == T) { // 'T
+      NATDBG(fprintf(stderr,"void*\n"))
+      return &ffi_type_pointer;
+   }
    else if (isNum(y)) {
       if (isarg) { // num
          NATDBG(fprintf(stderr,"sint64\n"))
@@ -1353,6 +1364,10 @@ static ffi_type *ffiType(any y,int isarg) {
          NATDBG(fprintf(stderr,"float/double\n"))
          return isNeg(y)? &ffi_type_float : &ffi_type_double;
       }
+   }
+   else if (isarg && isCell(y) && T == car(y)) { // (T . any)
+      NATDBG(fprintf(stderr,"Lisp expr\n"))
+      return &ffi_type_pointer;
    }
    else if (isarg && isCell(y) && isNum(cdr(y))) { // (num . scl)
       NATDBG(fprintf(stderr,"float/double\n"))
@@ -1433,13 +1448,20 @@ static ffi *ffiReprep(ffi *p,any x) {
    return NULL;
 }
 
+static any TEVAL(any x) {
+   if (isCell(x) && car(x) == T) {
+      return cons(T,EVAL(cdr(x)));
+   }
+   return EVAL(x);
+}
+
 static any evalList(any x) {
    any y;
    cell c1;
 
-   Push(c1, y = cons(EVAL(car(x)),Nil));
+   Push(c1, y = cons(TEVAL(car(x)),Nil));
    while (isCell(x = cdr(x)))
-      y = (cdr(y) = cons(EVAL(car(x)),Nil));
+      y = (cdr(y) = cons(TEVAL(car(x)),Nil));
    return Pop(c1);
 }
 
@@ -1505,7 +1527,12 @@ static any natCall(void *lib, any ex) {
          NATDBG(fprintf(stderr,"arg = \"%s\"\n", arg.p))
       }
       else { // pair
-         if (isNum(cdr(y))) { // (num . scl), num/flg as fixpt
+         if (T == car(y)) { // (T . any)
+            NATDBG(fprintf(stderr, "(T . any)...\n"))
+            args[nargs++].a = arg.a = cdr(y);
+            NATDBG(fprintf(stderr,"arg = %p\n", arg.a))
+         }
+         else if (isNum(cdr(y))) { // (num . scl), num/flg as fixpt
             NATDBG(fprintf(stderr, "(num . scl)...\n"))
             double d = numToDouble(car(y)) / fabs(numToDouble(cdr(y)));
             if (!isNeg(cdr(y))) {
@@ -1703,6 +1730,10 @@ any doLisp(any ex) {
    Lisp[i].fun = y;
 // XXX fprintf(stderr,"Lisp[i].cb=%p\n",Lisp[i].cb);
    return boxWord(num(Lisp[i].cb));
+}
+
+any expTest(any x) {
+   return boxCnt(unBox(x) + 1);
 }
 
 static any evList2(any foo, any ex) {

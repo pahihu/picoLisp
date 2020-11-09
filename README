@@ -81,6 +81,8 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'native' (T . any) direct Lisp argument
+* 'native'/'struct' result specifications: 'W', 'P', and 'T'
 * changed native to call vararg fns
 * 'plio' function
 * 'buf' function

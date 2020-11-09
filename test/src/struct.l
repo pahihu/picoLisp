@@ -18,6 +18,7 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
    fprintf(stderr,"lispTest(%s,%ld,%ld,%ld,%ld,%ld)\n",s,a1,a2,a3,a4,a5);
    return lisp(s,a1,a2,a3,a4,a5);
 }
+
 /**/
 
 (test 120
@@ -59,6 +60,9 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
    (println (%@ "localtime" '(I . 9) (cons NIL (list *Word) Tim))) )
 
 # (32 18 13 31 11 109 4 364 0)  # 13:18:32, Dec. 31st, 2009
+
+(test 42
+   (%@ "expTest" T (T . 41)) )
 
 ### struct ###
 (scl 2)
