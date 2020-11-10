@@ -1656,10 +1656,10 @@ any doProve(any x) {
                               cons(data(tp1), cons(data(tp2),data(e))) ) ) ),
                      car(data(q)) );
             data(nl) = cons(data(n), data(nl));
-            // data(n) = boxCnt(SHORT(1) + unDigShort(data(n)));
             // 201110AP tankf33der pil21-tests
             // pilog-rosettacode.l: Zebra puzzle
             // !!! When using checked arithmetic, it overflows !!!
+            // data(n) = boxCnt(SHORT(1) + unDigShort(data(n)));
             data(n) = (any)((SHORT(1)<<NORMBITS) + num(data(n)));
             data(tp2) = cons(cdr(data(tp1)), data(tp2));
             data(tp1) = cdar(data(alt));

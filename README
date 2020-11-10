@@ -81,6 +81,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* map functions accept atomic arguments
 * 'select_pil' script in lib/ to select either Pil21 versions of
   frac.l and simul.l
 * 'prove' fails if using checked arithmetic

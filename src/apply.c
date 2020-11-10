@@ -4,6 +4,9 @@
 
 #include "pico.h"
 
+#define carAtom(x) (cf? (isCell(x)? car(x) : (x)) : (x))
+#define cdrAtom(x) (isCell(x)? cdr(x) : x)
+
 any apply(any ex, any foo, bool cf, int n, cell *p) {
    applyFrame af;
 
@@ -23,12 +26,14 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
             if (isSym(car(x))) {
                f->bnd[f->cnt].sym = car(x);
                f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym);
-               val(f->bnd[f->cnt].sym) = --n<0? Nil : cf? car(data(p[aCnt])) : data(p[aCnt]);
+               val(f->bnd[f->cnt].sym) = --n<0? Nil : carAtom(data(p[aCnt]));
+               // cf? car(data(p[aCnt])) : data(p[aCnt]);
                ++(f->cnt), ++aCnt,  x = cdr(x);
             }
             else {
                any X = car(x); 
-               any Y = --n<0? Nil : cf? car(data(p[aCnt])) : data(p[aCnt]);
+               any Y = --n<0? Nil : carAtom(data(p[aCnt]));
+               // cf? car(data(p[aCnt])) : data(p[aCnt]);
                do {
                   f->bnd[f->cnt].sym = argPop(&X);
                   f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym);
@@ -49,7 +54,10 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          else if (x != At) {
             f->bnd[f->cnt].sym = x,  f->bnd[f->cnt].val = val(x),  val(x) = Nil;
             while (--n >= 0)
-               val(x) = cons(consSym(cf? car(data(p[n+aCnt])) : data(p[n+aCnt]), Nil), val(x));
+               val(x) = cons(consSym(
+                                carAtom(data(p[n+aCnt])),
+                                // cf? car(data(p[n+aCnt])) : data(p[n+aCnt]),
+                                Nil), val(x));
             ++(f->cnt);
             x = prog(cdr(foo));
          }
@@ -61,7 +69,10 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
 
             Env.arg = c;
             for (i = aCnt;  --n >= 0;  ++i)
-               Push(c[n], cf? car(data(p[i])) : data(p[i]));
+               Push(c[n],
+                   carAtom(data(p[i]))
+                   // cf? car(data(p[i])) : data(p[i])
+               );
             x = prog(cdr(foo));
             if (cnt)
                drop(c[cnt-1]);
@@ -75,7 +86,8 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
       if (val(foo) == val(Meth)) {
          any expr, o, x;
 
-         o = cf? car(data(p[0])) : data(p[0]);
+         // o = cf? car(data(p[0])) : data(p[0]);
+         o = carAtom(data(p[0]));
          NeedSym(ex,o);
          Fetch(ex,o);
          TheCls = NULL,  TheKey = foo;
@@ -93,7 +105,9 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
             --n, ++p;
             while (isCell(x)) {
                f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym = car(x));
-               val(f->bnd[f->cnt].sym) = --n<0? Nil : cf? car(data(p[f->cnt-1])) : data(p[f->cnt-1]);
+               val(f->bnd[f->cnt].sym) = --n<0? Nil
+                                              : carAtom(data(p[f->cnt-1]));
+                                              // : cf? car(data(p[f->cnt-1])) : data(p[f->cnt-1]);
                ++(f->cnt), x = cdr(x);
             }
             if (isNil(x)) {
@@ -105,7 +119,10 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
             else if (x != At) {
                f->bnd[f->cnt].sym = x,  f->bnd[f->cnt].val = val(x),  val(x) = Nil;
                while (--n >= 0)
-                  val(x) = cons(consSym(cf? car(data(p[n+f->cnt-1])) : data(p[n+f->cnt-1]), Nil), val(x));
+                  val(x) = cons(consSym(
+                                   carAtom(data(p[n+f->cnt-1])), Nil),
+                                   // cf? car(data(p[n+f->cnt-1])) : data(p[n+f->cnt-1]), Nil),
+                                   val(x));
                ++(f->cnt);
                f->bnd[f->cnt].sym = This;
                f->bnd[(f->cnt)++].val = val(This);
@@ -120,7 +137,10 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
 
                Env.arg = c;
                for (i = f->cnt-1;  --n >= 0;  ++i)
-                  Push(c[n], cf? car(data(p[i])) : data(p[i]));
+                  Push(c[n],
+                       carAtom(data(p[i]))
+                       // cf? car(data(p[i])) : data(p[i])
+                  );
                f->bnd[f->cnt].sym = This;
                f->bnd[(f->cnt)++].val = val(This);
                val(This) = o;
@@ -153,12 +173,14 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
       cdr(caf->body) = Nil;
    else {
       any x = caf->args;
-      val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
+      // val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
+      val(caar(x)) = carAtom(data(p[n]));
       while (--n >= 0) {
          if (!isCell(cdr(x)))
             cdr(x) = cons(cons(consSym(Nil,Nil), car(x)), Nil);
          x = cdr(x);
-         val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
+         // val(caar(x)) = cf? car(data(p[n])) : data(p[n]);
+         val(caar(x)) = carAtom(data(p[n]));
       }
       cdr(caf->body) = car(x);
    }
@@ -221,7 +243,7 @@ any doMaps(any ex) {
    while (isCell(data(c[0]))) {
       x = apply(ex, data(foo), YES, n, c);
       for (i = 0; i < n; ++i)
-         data(c[i]) = cdr(data(c[i]));
+         data(c[i]) = cdrAtom(data(c[i]));
    }
    drop(foo);
    return x;
@@ -243,7 +265,7 @@ any doMap(any ex) {
       while (isCell(data(c[0]))) {
          x = apply(ex, data(foo), NO, n, c);
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -267,7 +289,7 @@ any doMapc(any ex) {
       while (isCell(data(c[0]))) {
          x = apply(ex, data(foo), YES, n, c);
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -293,7 +315,7 @@ any doMaplist(any ex) {
       data(res) = x = cons(apply(ex, data(foo), NO, n, c), Nil);
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          x = cdr(x) = cons(apply(ex, data(foo), NO, n, c), Nil);
       }
    }
@@ -319,7 +341,7 @@ any doMapcar(any ex) {
       data(res) = x = cons(apply(ex, data(foo), YES, n, c), Nil);
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          x = cdr(x) = cons(apply(ex, data(foo), YES, n, c), Nil);
       }
    }
@@ -346,12 +368,12 @@ any doMapcon(any ex) {
          if (!isCell(data(c[0]) = cdr(data(c[0]))))
             return Pop(res);
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
       data(res) = x;
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          while (isCell(cdr(x)))
             x = cdr(x);
          cdr(x) = apply(ex, data(foo), NO, n, c);
@@ -380,12 +402,12 @@ any doMapcan(any ex) {
          if (!isCell(data(c[0]) = cdr(data(c[0]))))
             return Pop(res);
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
       data(res) = x;
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          while (isCell(cdr(x)))
             x = cdr(x);
          cdr(x) = apply(ex, data(foo), YES, n, c);
@@ -414,12 +436,12 @@ any doFilter(any ex) {
          if (!isCell(data(c[0]) = cdr(data(c[0]))))
             return Pop(res);
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
       data(res) = x = cons(car(data(c[0])), Nil);
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          if (!isNil(apply(ex, data(foo), YES, n, c)))
             x = cdr(x) = cons(car(data(c[0])), Nil);
       }
@@ -448,12 +470,12 @@ any doExtract(any ex) {
          if (!isCell(data(c[0]) = cdr(data(c[0]))))
             return Pop(res);
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
       data(res) = x = cons(y, Nil);
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          if (!isNil(y = apply(ex, data(foo), YES, n, c)))
             x = cdr(x) = cons(y, Nil);
       }
@@ -481,7 +503,7 @@ any doSeek(any ex) {
             return data(c[0]);
          }
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -508,7 +530,7 @@ any doFind(any ex) {
             return car(data(c[0]));
          }
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -534,7 +556,7 @@ any doPick(any ex) {
             return x;
          }
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -560,7 +582,7 @@ any doFully(any ex) {
             return Nil;
          }
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -586,7 +608,7 @@ any doCnt(any ex) {
          if (!isNil(apply(ex, data(foo), YES, n, c)))
             res++;
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    drop(foo);
@@ -618,7 +640,7 @@ any doSum(any ex) {
             drop(c1);
          }
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    return Pop(res);
@@ -643,7 +665,7 @@ any doMaxi(any ex) {
          if (compare(x = apply(ex, data(foo), YES, n, c), data(val)) > 0)
             data(res) = car(data(c[0])),  data(val) = x;
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    val(At2) = data(val);
@@ -669,7 +691,7 @@ any doMini(any ex) {
          if (compare(x = apply(ex, data(foo), YES, n, c), data(val)) < 0)
             data(res) = car(data(c[0])),  data(val) = x;
          for (i = 0; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
       }
    }
    val(At2) = data(val);
@@ -717,7 +739,7 @@ any doBy(any ex) {
       data(res) = x = cons(cons(apply(ex, data(foo1), YES, n, c), car(data(c[0]))), Nil);
       while (isCell(data(c[0]) = cdr(data(c[0])))) {
          for (i = 1; i < n; ++i)
-            data(c[i]) = cdr(data(c[i]));
+            data(c[i]) = cdrAtom(data(c[i]));
          x = cdr(x) = cons(cons(apply(ex, data(foo1), YES, n, c), car(data(c[0]))), Nil);
       }
       data(res) = apply(ex, data(foo2), NO, 1, &res);
