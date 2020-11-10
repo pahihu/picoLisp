@@ -901,21 +901,62 @@ void unwind(catchFrame *catch) {
    }
 }
 
+int argLength(any x, int nest) {
+   int n;
+
+   for (n = 0; isCell(x); x = cdr(x)) {
+      if (nest)
+         n += isCell(car(x))? argLength(car(x),0) : 1;
+      else
+         n++;
+   }
+   if (!nest && !isNil(x))
+     n++;
+   return n;
+}
+
+any argPop(any *x) {
+   any y = *x;
+
+   if (isCell(y))
+      return *x = cdr(y), car(y);
+   return y;
+}
+
 /*** Evaluation ***/
 any evExpr(any expr, any x) {
-   any y = car(expr);
+   any y = car(expr), Z;
    /* XXX struct {any sym; any val;} bnd[length(y)+2]; */
-   bindFrame *f = allocFrame(length(y)+2);
+   bindFrame *f = allocFrame(argLength(y,1)+2);
 
    f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
    /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 1; */
-   f->i = length(y) + 1;
+   f->i = argLength(y,1) + 1;
    f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
    while (isCell(y)) {
-      f->bnd[f->cnt].sym = car(y);
-      f->bnd[f->cnt].val = EVAL(car(x));
-      ++f->cnt, x = cdr(x), y = cdr(y);
+      if (isSym(car(y))) {
+         f->bnd[f->cnt].sym = (Z = car(y));
+         f->bnd[f->cnt].val = EVAL(car(x));
+         ++f->cnt, x = cdr(x), y = cdr(y);
+      }
+      else {
+         cell X;
+         any Y = car(y);
+         Push(X, EVAL(car(x)));
+         do {
+           f->bnd[f->cnt].sym = (Z = argPop(&Y));
+           f->bnd[f->cnt].val = (Z = isCell(data(X))? argPop(&data(X)) : Nil);
+           ++f->cnt;
+         } while (isCell(Y));
+         if (!isNil(Y)) {
+           f->bnd[f->cnt].sym = Y;
+           f->bnd[f->cnt].val = data(X);
+           ++f->cnt;
+         }
+         drop(X);
+         x = cdr(x), y = cdr(y);
+      }
    }
    if (isNil(y)) {
       do {

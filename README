@@ -81,6 +81,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* lists of symbols as function parameters (destructuring, one-dimensional)
 * 'native' (T . any) direct Lisp argument
 * 'native'/'struct' result specifications: 'W', 'P', and 'T'
 * changed native to call vararg fns

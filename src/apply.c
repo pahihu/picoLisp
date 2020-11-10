@@ -9,26 +9,47 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
 
    while (!isNum(foo)) {
       if (isCell(foo)) {
-         int i;
+         int i, aCnt;
          any x = car(foo);
          /* XXX struct {any sym; any val;} bnd[length(x)+2]; */
-         bindFrame *f = allocFrame(length(x)+2);
+         bindFrame *f = allocFrame(argLength(x,1)+2);
 
+         // fprintf(stderr,"\r\nargLen = %d\r\n",argLength(x,1));
          f->link = Env.bind,  Env.bind = (bindFrame*)f;
          f->exe = Env.exe;
          f->i = 0;
-         f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
+         aCnt = 0, f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
          while (isCell(x)) {
-            f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym = car(x));
-            val(f->bnd[f->cnt].sym) = --n<0? Nil : cf? car(data(p[f->cnt-1])) : data(p[f->cnt-1]);
-            ++(f->cnt), x = cdr(x);
+            if (isSym(car(x))) {
+               f->bnd[f->cnt].sym = car(x);
+               f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym);
+               val(f->bnd[f->cnt].sym) = --n<0? Nil : cf? car(data(p[aCnt])) : data(p[aCnt]);
+               ++(f->cnt), ++aCnt,  x = cdr(x);
+            }
+            else {
+               any X = car(x); 
+               any Y = --n<0? Nil : cf? car(data(p[aCnt])) : data(p[aCnt]);
+               do {
+                  f->bnd[f->cnt].sym = argPop(&X);
+                  f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym);
+                  val(f->bnd[f->cnt].sym) = isCell(Y)? argPop(&Y) : Nil;
+                  ++(f->cnt);
+               } while (isCell(X));
+               if (!isNil(X)) {
+                  f->bnd[f->cnt].sym = X;
+                  f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym);
+                  val(f->bnd[f->cnt].sym) = Y;
+                  ++(f->cnt);
+               }
+               ++aCnt, x = cdr(x);
+            }
          }
          if (isNil(x))
             x = prog(cdr(foo));
          else if (x != At) {
             f->bnd[f->cnt].sym = x,  f->bnd[f->cnt].val = val(x),  val(x) = Nil;
             while (--n >= 0)
-               val(x) = cons(consSym(cf? car(data(p[n+f->cnt-1])) : data(p[n+f->cnt-1]), Nil), val(x));
+               val(x) = cons(consSym(cf? car(data(p[n+aCnt])) : data(p[n+aCnt]), Nil), val(x));
             ++(f->cnt);
             x = prog(cdr(foo));
          }
@@ -39,7 +60,7 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
             cell c[Env.next = n];
 
             Env.arg = c;
-            for (i = f->cnt-1;  --n >= 0;  ++i)
+            for (i = aCnt;  --n >= 0;  ++i)
                Push(c[n], cf? car(data(p[i])) : data(p[i]));
             x = prog(cdr(foo));
             if (cnt)

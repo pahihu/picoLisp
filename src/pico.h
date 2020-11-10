@@ -392,6 +392,8 @@ void *allocAligned(void*,size_t,size_t);
 void freeAligned(void*);
 any apply(any,any,bool,int,cell*);
 void argError(any,any) __attribute__ ((noreturn));
+int argLength(any,int);
+any argPop(any*);
 void atomError(any,any) __attribute__ ((noreturn));
 void begString(void);
 any cvtSigned(any);

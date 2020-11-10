@@ -174,6 +174,30 @@
       (let (((A . NIL) NIL NIL D) '((1 2 3) (4 5 6) 7 8 9))
          (trail T) ) ) )
 
+### lists of symbols as function parameters ###
+(de xxx (A (B C) D)
+   (list A B C D) )
+(de yyy (A (B . C) D)
+   (list A B C D) )
+
+(test (1 2 3 4)
+   (xxx 1 (2 3) 4) )
+(test (1 2 NIL 4)
+   (xxx 1 (2 . 3) 4) )
+(test (1 2 (3) 4)
+   (yyy 1 (2 3) 4) )
+(test (1 2 3 4)
+   (yyy 1 (2 . 3) 4) )
+
+(test (1 2 3 4)
+   (apply xxx (1 (2 3) 4)) )
+(test (1 2 NIL 4)
+   (apply xxx (1 (2 . 3) 4)) )
+(test (1 2 (3) 4)
+   (apply yyy (1 (2 3) 4)) )
+(test (1 2 3 4)
+   (apply yyy (1 (2 . 3) 4)) )
+
 ### and ###
 (test 7 (and T 123 7))
 (test NIL (and NIL 123))
