@@ -20,7 +20,7 @@ The arguments before ... are the fixed arguments, the number of arguments
 after the ... are variable. This change is due to the native C call
 implementation which uses libffi.
 
-Just to assign handle and pointer, use:
+To skip call, just assign handle and pointer, use:
 
      (native "@" "cos" . T)
 
@@ -144,7 +144,7 @@ Native C Call
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 08 / 11 / 2020
+pahihu 10 / 11 / 2020
 
 
 
