@@ -974,7 +974,7 @@ static inline any ADDU(any x, any y) {
       x = pos(x);
       return digAdd(x, BIG(unDigShortU(y))), x;
    }
-   return bigAdd(x, y), x;
+   return x = pos(x), bigAdd(x, y), x;
 }
 
 static inline any SUBU(any x, any y) {

@@ -81,6 +81,12 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* 'select_pil' script in lib/ to select either Pil21 versions of
+  frac.l and simul.l
+* 'prove' fails if using checked arithmetic
+  (tankf33der's pil21-tests pilog-rosettacode.l)
+* bignum subtract fixed
+  (tankf33der's pil21-tests fern.l test)
 * lists of symbols as function parameters (destructuring, one-dimensional)
 * 'native' (T . any) direct Lisp argument
 * 'native'/'struct' result specifications: 'W', 'P', and 'T'

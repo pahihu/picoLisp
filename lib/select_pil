@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Link files to either Pil or Pil21 versions
+#
+if [ $# -ne 1 ] || ([ $1 != "pil" ] && [ $1 != "pil21" ])
+then
+   echo "usage: select_pil pil|pil21"
+   exit 1
+fi
+
+for f in frac.l simul.l
+do
+   rm -f $f
+   echo "$f.$1 => $f"
+   ln -s $f.$1 $f
+done

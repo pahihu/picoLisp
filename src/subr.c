@@ -703,7 +703,7 @@ any doRemove(any x) {
    Push(c2, y = cons(car(data(c1)), Nil));
    while (isCell(data(c1) = cdr(data(c1))) && --n)
       y = cdr(y) = cons(car(data(c1)), Nil);
-   cdr(y) = cdr(data(c1));
+   cdr(y) = isCell(data(c1))? cdr(data(c1)) : data(c1);
    drop(c1);
    return data(c2);
 }
@@ -1656,7 +1656,11 @@ any doProve(any x) {
                               cons(data(tp1), cons(data(tp2),data(e))) ) ) ),
                      car(data(q)) );
             data(nl) = cons(data(n), data(nl));
-            data(n) = boxCnt(SHORT(1) + unDigShort(data(n)));
+            // data(n) = boxCnt(SHORT(1) + unDigShort(data(n)));
+            // 201110AP tankf33der pil21-tests
+            // pilog-rosettacode.l: Zebra puzzle
+            // !!! When using checked arithmetic, it overflows !!!
+            data(n) = (any)((SHORT(1)<<NORMBITS) + num(data(n)));
             data(tp2) = cons(cdr(data(tp1)), data(tp2));
             data(tp1) = cdar(data(alt));
             data(alt) = Nil;
