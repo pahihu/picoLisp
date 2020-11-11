@@ -42,6 +42,12 @@ CFLAGS = -c $(OPT) $(BFLAGS)
 DYNAMIC-CC-FLAGS=
 
 ifeq ($(shell uname), Linux)
+ifeq ($(target), pil32)
+	GCCLD = gcc
+ifeq ($(CPU), x86_64)
+    CPU = i386
+endif
+endif
 	OS = Linux
 	BFLAGS += ${M32} -fPIC
 	PICOLISP-FLAGS = ${M32} -rdynamic

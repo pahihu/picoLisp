@@ -8,6 +8,7 @@
          (quote
             (apply call L "gcc" "-o" (tmp Nm)
                "-fPIC" "-shared" "-export-dynamic"
+               (if 64bit? "-m64" "-m32")
                "-O" "-falign-functions" "-fomit-frame-pointer"
                "-W" "-Wimplicit" "-Wreturn-type" "-Wunused" "-Wformat"
                "-Wuninitialized" "-Wstrict-prototypes"
