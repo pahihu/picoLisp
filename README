@@ -82,6 +82,8 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* bin/pil script change to reference /usr/local/bin instead of /usr/bin
+* (stack) return coroutine tags and unused space (Pil21)
 * map functions accept atomic arguments
 * 'select_pil' script in lib/ to select either Pil21 versions of
   frac.l and simul.l

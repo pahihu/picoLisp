@@ -102,15 +102,15 @@ the OS distribution.
 If that is not available, you can (as root) create symbolic links from /usr/lib
 and /usr/bin to a local installation directory:
 
-   # ln -s /<installdir> /usr/lib/picolisp
-   # ln -s /usr/lib/picolisp/bin/picolisp /usr/bin
-   # ln -s /usr/lib/picolisp/bin/pil /usr/bin
+   # ln -s /<installdir> /usr/local/lib/picolisp
+   # ln -s /usr/local/lib/picolisp/bin/picolisp /usr/local/bin
+   # ln -s /usr/local/lib/picolisp/bin/pil /usr/local/bin
 
 For additional access to the man pages and some examples:
 
-   # ln -s /<installdir>/man/man1/picolisp.1 /usr/share/man/man1
-   # ln -s /<installdir>/man/man1/pil.1 /usr/share/man/man1
-   # ln -s /<installdir> /usr/share/picolisp
+   # ln -s /<installdir>/man/man1/picolisp.1 /usr/local/share/man/man1
+   # ln -s /<installdir>/man/man1/pil.1 /usr/local/share/man/man1
+   # ln -s /<installdir> /usr/local/share/picolisp
 
 
       Invocation
