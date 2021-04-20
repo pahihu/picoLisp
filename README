@@ -29,6 +29,7 @@ To skip call, just assign handle and pointer, use:
 What is included?
 
 Pil21
+   (stack ['cnt] ['cnt]) -> cnt | (.. (sym . cnt) . cnt)
    (buf sym 'cnt . prg) -> any
    (history ['lst]) -> lst
    (intern 'sym ['nsp]) -> sym

@@ -293,13 +293,16 @@ void freeAligned(void *p) {
 }
 
 /* Allocate coroutine env. */
-void *coroAlloc(int siz) {
+static void *coroAlloc(int siz) {
    void *p = NULL;
    return alloc(p, sizeof(coFrame) + siz - sizeof(char));
 }
 
-coFrame *coroInit(coFrame *f, any tag) {
+coFrame *coroInit(int siz, any tag) {
+   coFrame *f = coroAlloc(siz);
+
    memset(f, 0, sizeof(coFrame));
+   f->ss_size = siz;
    f->tag = tag;
    f->active = NO;
    f->ret = Nil;
@@ -323,6 +326,12 @@ bool coroValid(coFrame *f) {
       if (f->tag != T)
          return NO;
    return YES;
+}
+
+/* Free stack size */
+int coroStkFree(int i) {
+   int ss_free = (char*)Stack1[i]->ctx.uc_stack.ss_sp - Stack1[i]->ss;
+   return !i ? Stack1[i]->ss_size : ss_free;
 }
 
 /* Allocate cell heap */
@@ -355,7 +364,7 @@ any doHeap(any x) {
    return boxCnt(n / CELLS);
 }
 
-// (stack ['cnt]) -> cnt | (.. sym . cnt)
+// (stack ['cnt]) -> cnt | (.. (sym . cnt) . cnt)
 any doStack(any x) {
    int i;
    cell c1;
@@ -367,17 +376,18 @@ any doStack(any x) {
             StkSize = MINSIGSTKSZ;
          for (i = 0; Stack1[i]; i++)
             free(Stack1[i]), Stack1[i] = NULL;
-         Env.coF = Stack1[0] = coroInit(coroAlloc(4 * StkSize), T);
+         Env.coF = Stack1[0] = coroInit(4 * StkSize, T);
          Env.coF->mainCoro = Env.coF;
          return boxCnt(StkSize / 1024);
       }
    }
    Push(c1, boxCnt(StkSize / 1024));
-   for (i = 1; Stack1[i]; i++) { // skip main coro
-      coFrame *f = Stack1[i];
-      if (!isNil(f->tag))
-         data(c1) = cons(f->tag, data(c1));
-   }
+   if (Stacks > 1)
+      for (i = 0; Stack1[i]; i++) { // include main coro
+         coFrame *f = Stack1[i];
+         if (!isNil(f->tag))
+            data(c1) = cons(cons(f->tag, boxCnt(coroStkFree(i) / 1024)), data(c1));
+      }
    return Pop(c1);
 }
 
@@ -2305,7 +2315,7 @@ static void init(int ac, char *av[]) {
    Stack1 = alloc(Stack1, (Stack1s + 1) * sizeof(coFrame*));
    memset(Stack1, 0, (Stack1s + 1) * sizeof(coFrame*));
    // main coro
-   Env.coF= Stack1[Stacks++] = coroInit(coroAlloc(4 * StkSize), T);
+   Env.coF= Stack1[Stacks++] = coroInit(4 * StkSize, T);
    Env.coF->mainCoro = Env.coF;
 }
 

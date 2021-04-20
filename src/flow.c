@@ -1735,7 +1735,7 @@ any doCo(any ex) {
             i = fi;
       }
       CODBG(show("co: new coro slot = ",boxCnt(i),1))
-      Stack1[i] = coroInit(coroAlloc(StkSize), tag); Stacks++;
+      Stack1[i] = coroInit(StkSize, tag); Stacks++;
       t = Stack1[i];
       CODBG(show("main coro ",Env.coF->tag,1))
       t->tag = tag;

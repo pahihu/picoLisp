@@ -199,6 +199,7 @@ typedef struct coFrame {
    int line;
    bool attached; // attached to main?
    ucontext_t ctx; // context
+   int ss_size; // local stack size in KB
    char ss[1]; // StkSize'd local stack
 } coFrame;
 
@@ -430,9 +431,9 @@ any consNum(word,any);
 any consStr(any);
 any consSym(any,any);
 any consNsp(void);
-void *coroAlloc(int);
-coFrame *coroInit(coFrame*,any);
+coFrame *coroInit(int,any);
 bool coroValid(coFrame*);
+int coroStkSize(coFrame*);
 void newline(void);
 void ctOpen(any,any,ctlFrame*);
 void db(any,any,int);

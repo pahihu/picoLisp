@@ -20,7 +20,7 @@
 (test -1
    (mydec) )
 (test (stack)
-   '(dec inc . 200) )
+   '((dec . 199) (inc . 199) (T . 800) . 200) )
 
 (test 2
    (myinc) )
