@@ -85,7 +85,9 @@ static symInit Symbols[] = {
    {doClose, "close"},
    {doCmd, "cmd"},
    {doCnt, "cnt"},
+#if !defined(ANDROID) && !defined(__ANDROID__)
    {doCo, "co"},
+#endif
    {doCol, ":"},
    {doCommit, "commit"},
    {doCon, "con"},
@@ -335,7 +337,9 @@ static symInit Symbols[] = {
    {doSplit, "split"},
    {doSpQ, "sp?"},
    {doSqrt, "sqrt"},
+#if !defined(ANDROID) && !defined(__ANDROID__)
    {doStack, "stack"},
+#endif
    {doState, "state"},
    {doStem, "stem"},
    {doStr, "str"},
@@ -386,7 +390,9 @@ static symInit Symbols[] = {
    {doWr, "wr"},
    {doXchg, "xchg"},
    {doXor, "xor"},
+#if !defined(ANDROID) && !defined(__ANDROID__)
    {doYield, "yield"},
+#endif
    {doYoke, "yoke"},
    {doZap, "zap"},
    {doZero, "zero"},

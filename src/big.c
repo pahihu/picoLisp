@@ -683,8 +683,8 @@ any symToNum(any s, int scl, int sep, int ign) {
       return NULL;
    frac = NO;
    Push(c1, s);
-   // Push(c2, BOX(BIG(c)));
-   Push(c2, mkShort(SHORT(c)));
+   Push(c2, BOX(BIG(c)));
+   // Push(c2, mkShort(SHORT(c)));
    while ((c = symChar(NULL))  &&  (!frac || scl)) {
       if ((int)c == sep) {
          if (frac) {
@@ -959,7 +959,11 @@ static inline any ADDU(any x, any y) {
    if (shortLike(x)) {
       if (shortLike(y)) {
          word a = num(x) & ~SIGN, b = num(y) & ~(SIGN+NORM), c;
+#ifdef __LP64__
+         if ((c = a + b) < a) {
+#else
          if (__builtin_uaddl_overflow(a, b, &c)) {
+#endif
             return BOX(BIG((a >> (1+NORMBITS)) + (b >> (1+NORMBITS))));
          }
          return (any)c;

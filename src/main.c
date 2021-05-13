@@ -2024,7 +2024,7 @@ any doTime(any ex) {
 
 // (tzo) -> cnt
 any doTzo(any ex __attribute__((unused))) {
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
    return boxCnt(localtime(&Tv.tv_sec)->tm_gmtoff);
 #else
    return Zero;

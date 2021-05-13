@@ -82,7 +82,12 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
-* bin/pil script change to reference /usr/local/bin instead of /usr/bin
+* Android: dummy ucontext functions, 'co'/'stack'/'yield' not available
+* enabled 'tzo' on macOS
+* on CentOS 7 coroStkFree() returns 0
+* fixed symToNum(), misc/bigtest passed
+* macOS only SHA1 test in struct.l
+* bin/pil script changed to reference /usr/local/bin instead of /usr/bin
 * (stack) return coroutine tags and unused space (Pil21)
 * map functions accept atomic arguments
 * 'select_pil' script in lib/ to select either Pil21 versions of
@@ -154,7 +159,7 @@ Native C Call
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 10 / 11 / 2020
+pahihu 5 / 13 / 2020
 
 
 

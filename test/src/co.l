@@ -1,5 +1,7 @@
 # (msg "### co/yield/stack tests ###")
 
+(when (and co stack yield)
+
 ### stack ###
 (test  64
    (stack) )
@@ -19,8 +21,9 @@
    (myinc) )
 (test -1
    (mydec) )
-(test (stack)
-   '((dec . 199) (inc . 199) (T . 800) . 200) )
+(if (= *OS "Darwin")
+   (test (stack)
+      '((dec . 199) (inc . 199) (T . 800) . 200) ) )
 
 (test 2
    (myinc) )
@@ -87,5 +90,7 @@
 
 (test "return rt2"
    (myrt2))
+
+)
 
 # (msg 'OK-test-co)

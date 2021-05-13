@@ -232,7 +232,7 @@
 (test 40643 (time (11 17 23)))
 (test NIL (time NIL))
 
-(when (= *OS "Linux")
+(when (member *OS '("Linux" "Darwin"))
    (test
       (use (A B C)
          (loop

@@ -49,9 +49,10 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 (test 16
    (%@ "printf" 'I "This is %.3f^J" ... (123456 . 1000)) )
 
-(test 
-   (129 254 139 254 135 87 108 62 203 34 66 111 142 87 132 115 130 145 122 207)
-   (native `(shlib "libcrypto") "SHA1" '(B . 20) "abcd" 4 0) )
+(when (= *OS "Darwin")
+   (test
+      (129 254 139 254 135 87 108 62 203 34 66 111 142 87 132 115 130 145 122 207)
+      (native `(shlib "libcrypto") "SHA1" '(B . 20) "abcd" 4 0) ) )
 
 (use Tim
    # time_t 8   # Get time_t structure

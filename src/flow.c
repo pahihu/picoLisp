@@ -1539,6 +1539,32 @@ static void coroLoadEnv(coFrame *e) {
    CatchPtr = e->CatchPtr;
 }
 
+#if defined(ANDROID) || defined(__ANDROID__)
+void dummy_makecontext(ucontext_t *ucp, void (*func)(), int argc, ...)
+{
+   errno = ENOSYS;
+}
+
+int dummy_swapcontext(ucontext_t *oucp, const ucontext_t *ucp)
+{
+   errno = ENOSYS;
+   return -1;
+}
+
+int dummy_getcontext(ucontext_t *ucp)
+{
+   errno = ENOSYS;
+   return -1;
+}
+#define pilMakeContext dummy_makecontext
+#define pilSwapContext dummy_swapcontext
+#define pilGetContext  dummy_getcontext
+#else
+#define pilMakeContext makecontext
+#define pilSwapContext swapcontext
+#define pilGetContext  getcontext
+#endif
+
 // resume coroutine environment, with return value ret
 any resumeCoro(coFrame *c, coFrame *t, any ret) {
    int i;
@@ -1630,7 +1656,7 @@ resumeOnly:
    t->ret = ret;
    COMARK(c,t);
    COATTACHED(t);
-   if (swapcontext(&c->ctx,&t->ctx))
+   if (pilSwapContext(&c->ctx,&t->ctx))
       giveup("resumeCoro:swapcontext()");
 
    CODBG(
@@ -1682,7 +1708,7 @@ static any mainCoRet(int doswap) {
       m->ret = Pop(c1);
       CODBG(show("mainCoRet: swap to main ",m->tag,1))
       COMARK(c,m);
-      if (swapcontext(&c->ctx,&m->ctx))
+      if (pilSwapContext(&c->ctx,&m->ctx))
          giveup("mainCoRet:swapcontext()");
       giveup("mainCoRet: (1) return");
    }
@@ -1743,19 +1769,19 @@ any doCo(any ex) {
       m->active = NO;
       t->link = t->mainCoro; t->env.coF = t; // close coroutine frame
 
-      if (getcontext(&t->ctx)) // build ucontext
+      if (pilGetContext(&t->ctx)) // build ucontext
          giveup("co:getcontext()");
       t->ctx.uc_link = &m->ctx; // continue here
       t->ctx.uc_stack.ss_sp   = t->ss; // set stack
       t->ctx.uc_stack.ss_size = StkSize;
-      makecontext(&t->ctx, coroMain, 1, x); // execute coroMain(x)
+      pilMakeContext(&t->ctx, coroMain, 1, x); // execute coroMain(x)
       CODBG(
          show("co: from ",m->tag,0);
          show(" to ",t->tag,1)
       )
       coroPushEnv(t); // activate t
       COMARK(m,t);
-      if (swapcontext(&m->ctx, &t->ctx))
+      if (pilSwapContext(&m->ctx, &t->ctx))
          giveup("co:swapcontext()");
 
       CODBG(show("co: return ",Env.coF->tag,1))
@@ -1915,7 +1941,7 @@ any doYield(any ex) {
       coroPushEnv(m);
       CODBG(show("yield: (2) from ",c->tag,0);show(" to ",m->tag,1))
       COMARK(c,m);
-      if (swapcontext(&c->ctx,&m->ctx))
+      if (pilSwapContext(&c->ctx,&m->ctx))
          giveup("yield:swapcontext()");
 
       c = Env.coF;
