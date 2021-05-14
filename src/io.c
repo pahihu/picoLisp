@@ -2853,7 +2853,9 @@ static void putPlio(int c) {
 any doPlio(any ex) {
    any x, y;
    byte *P;
+   byte *savPtr, *savEnd;
 
+   savPtr = Ptr; savEnd = End;
    x = cdr(ex); y = EVAL(car(x));
    NeedNum(ex, y);
    Ptr = P = (byte*)unBox(y);
@@ -2861,13 +2863,16 @@ any doPlio(any ex) {
    if (isNil(x)) {
       getBin = getPlio; 
       x = binRead(ExtN) ?: Nil;
+      Ptr = savPtr; End = savEnd;
       return x;
    }
    End = Ptr + evCnt(ex, x);
    x = cdr(x); y = EVAL(car(x));
    putBin = putPlio;
    binPrint(ExtN, y);
-   return boxCnt(Ptr - P);
+   x = boxCnt(Ptr - P);
+   Ptr = savPtr; End = savEnd;
+   return x;
 }
 
 // (ext 'cnt . prg) -> any

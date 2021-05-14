@@ -376,7 +376,7 @@ extern any PicoNil, Nil, DB, Meth, Quote, T;
 extern any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
-extern any Tstp1, Tstp2, Winch;
+extern any Tstp1, Tstp2, Winch, Term;
 extern bool Break;
 extern coFrame **Stack1;
 extern int Stack1s, Stacks, StkSize;

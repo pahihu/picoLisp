@@ -1715,13 +1715,16 @@ static any mainCoRet(void) {
    }
    return val(At) = Pop(c1);
 }
-// (co 'sym [.prg]) -> any
+// (co ['sym [.prg]]) -> any
 any doCo(any ex) {
    any x, tag, ret;
    int i;
 
    ASSERT(Stack1[0]->mainCoro != NULL);
-   x = cdr(ex); tag = EVAL(car(x));
+   x = cdr(ex); 
+   if (isNil(x))
+      return Env.coF->tag;
+   tag = EVAL(car(x));
    CODBG(show("co: tag = ",tag,1))
    // main coro cannot be terminated, nor started
    if (tag == T)

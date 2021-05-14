@@ -38,7 +38,7 @@ any PicoNil, Nil, DB, Meth, Quote, T;
 any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
-any Tstp1, Tstp2, Winch;
+any Tstp1, Tstp2, Winch, Term;
 any TNsp, TCo7;
 bool Break;
 coFrame **Stack1; // coro stacks
@@ -139,12 +139,15 @@ void sighandler(any ex) {
             run(val(Winch));
          }
          else if (Signal[SIGTERM]) {
-            for (flg = NO, i = 0; i < Children; ++i)
-               if (Child[i].pid  &&  kill(Child[i].pid, SIGTERM) == 0)
-                  flg = YES;
-            if (flg)
-               break;
-            Signal[0] = 0,  bye(0);
+            --Signal[0], --Signal[SIGTERM];
+            if (isNil(run(val(Winch)))) {
+               for (flg = NO, i = 0; i < Children; ++i)
+                  if (Child[i].pid  &&  kill(Child[i].pid, SIGTERM) == 0)
+                     flg = YES;
+               if (flg)
+                  break;
+               Signal[0] = 0,  bye(0);
+            }
          }
       } while (*Signal);
       Env.protect = 0;

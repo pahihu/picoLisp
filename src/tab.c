@@ -469,6 +469,7 @@ void initSymbols(void) {
    Tstp1  = initSym(Nil, "*Tstp1");
    Tstp2  = initSym(Nil, "*Tstp2");
    Winch  = initSym(Nil, "*Winch");
+   Term   = initSym(Nil, "*Term");
    Up     = initSym(Nil, "^");
    Err    = initSym(Nil, "*Err");
    Msg    = initSym(Nil, "*Msg");
