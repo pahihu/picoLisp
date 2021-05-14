@@ -508,6 +508,11 @@ any doMeth(any ex) {
    NeedSym(ex,data(c1));
    Fetch(ex,data(c1));
    for (TheKey = car(ex); ; TheKey = val(TheKey)) {
+      if (isCell(TheKey)) {
+         cell c2;
+         Push(c2, EVAL(TheKey));
+         TheKey = Pop(c2);
+      }
       if (!isSym(TheKey))
          err(ex, TheKey, "Bad message");
       if (isNum(val(TheKey))) {
@@ -1680,7 +1685,7 @@ static void coroMain(any x) {
    CODBG(show("coroMain: return x = ",x,1))
 }
 
-static any mainCoRet(int doswap) {
+static any mainCoRet(void) {
    any ret;
    bool fromMain;
    coFrame *m, *c;
@@ -1691,26 +1696,22 @@ static any mainCoRet(int doswap) {
    ASSERT(coroValid(c));
    fromMain = c->fromMain;
    c->fromMain = NO;
-   coroPopEnv();
+   c->nesting--;
+   ASSERT(c->nesting >= 0);
    Push(c1, ret = c->ret); // save return value
-   CODBG(
-      show("mainCoRet: return ",c->tag,0);
-      show(" fromMain = ",boxCnt(fromMain),0);
-      show(" ret ",ret,1);
-   )
-   coroLoadEnv(m = c->mainCoro); // restore env
-   if (fromMain && c->tag != T) { // terminate coro, except main
-      CODBG(show("mainCoRet: stop coro ",c->tag,1))
-      c->tag = Nil, Stacks--;
-   }
-   coroPushEnv(m);
-   if (fromMain && doswap) {
-      m->ret = Pop(c1);
-      CODBG(show("mainCoRet: swap to main ",m->tag,1))
-      COMARK(c,m);
-      if (pilSwapContext(&c->ctx,&m->ctx))
-         giveup("mainCoRet:swapcontext()");
-      giveup("mainCoRet: (1) return");
+   if (!c->nesting) { // change to main if not nested
+      coroPopEnv();
+      CODBG(
+         show("mainCoRet: return ",c->tag,0);
+         show(" fromMain = ",boxCnt(fromMain),0);
+         show(" ret ",ret,1);
+      )
+      coroLoadEnv(m = c->mainCoro); // restore env
+      if (fromMain && c->tag != T) { // terminate coro, except main
+         CODBG(show("mainCoRet: stop coro ",c->tag,1))
+         c->tag = Nil, Stacks--;
+      }
+      coroPushEnv(m);
    }
    return val(At) = Pop(c1);
 }
@@ -1727,6 +1728,7 @@ any doCo(any ex) {
       return Nil;
    x = cdr(x);
    if (isCell(x)) { // prg?
+      Env.coF->nesting++;
       coFrame *m, *t;
       int fi = Stack1s;
       for (i = 1; Stack1[i]; i++) {
@@ -1744,7 +1746,7 @@ any doCo(any ex) {
          CODBG(show("co: (1) ",Nil,1))
          ret = resumeCoro(Env.coF, t, Nil);
          CODBG(show("co: (1) return ",Nil,1))
-         return mainCoRet(0);
+         return mainCoRet();
       }
       if (i == Stack1s) { // all slots allocated
          if (fi == Stack1s) { // all slots in use
@@ -1779,13 +1781,14 @@ any doCo(any ex) {
          show("co: from ",m->tag,0);
          show(" to ",t->tag,1)
       )
+      t->nesting = 1;
       coroPushEnv(t); // activate t
       COMARK(m,t);
       if (pilSwapContext(&m->ctx, &t->ctx))
          giveup("co:swapcontext()");
 
       CODBG(show("co: return ",Env.coF->tag,1))
-      return mainCoRet(0);
+      return mainCoRet();
    }
    // stop coro
    if (1 == Stacks) // only main coro
@@ -1823,6 +1826,7 @@ any doYield(any ex) {
    c = Env.coF; // current coro
    COATTACHED(c);
    CODBG(show("yield: enter ",c->tag,1))
+   c->nesting++;
    x = cdr(ex); Push(c1, ret = EVAL(car(x)));
    x = cdr(x);  Push(c2, tag = EVAL(car(x)));
    t = 0;
@@ -1856,7 +1860,7 @@ any doYield(any ex) {
       CODBG(show("yield: (1) return ",c->tag,1))
       // if the routine is terminated, we are in the main !!!
       COATTACHED(c);
-      return mainCoRet(0);
+      return mainCoRet();
    }
    ASSERT(!isNil(m->tag)); // ensure main coro alive
    COATTACHED(c);
@@ -1952,6 +1956,7 @@ any doYield(any ex) {
          show(" fromMain = ",boxCnt(fromMain),0);
          show(" ret ",c->ret,1)
       )
+      c->nesting--;
       return c->ret;
    }
    CODBG(show("yield: (3) ",Nil,1))
@@ -1965,6 +1970,7 @@ any doYield(any ex) {
       drop(c1)
    )
    COATTACHED(c);
+   c->nesting--;
    return ret;
 }
 

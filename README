@@ -82,6 +82,9 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* pil21-tests: 'enum' not supported (yet), fixed 'native'/'struct' bugs,
+  fixed nested 'co'/'yield' calls, advent2015 requires '(gc 256)',
+  fixed interned msg send
 * Android: dummy ucontext functions, 'co'/'stack'/'yield' not available
 * enabled 'tzo' on macOS
 * on CentOS 7 coroStkFree() returns 0
@@ -159,7 +162,7 @@ Native C Call
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 5 / 13 / 2020
+pahihu 5 / 14 / 2020
 
 
 

@@ -1210,8 +1210,10 @@ static any natRet(any x, byte **pbuf, int C) {
          }
          else {
             NATDBG(fprintf(stderr,"decode ret...buf is ptr!\n"))
-            if (!C)
+            if (!C) {
                buf = *(byte**)buf;
+               C = 1;
+            }
             ret = natRet(car(x), &buf, C);
             if (!isNil(ret) || (car(x) != CSym)) {
                cell c1;
@@ -1332,11 +1334,11 @@ any doStruct(any ex) {
       natBuf(data(c2), &p, &c);
       drop(c2);
    }
-   if (isSym(data(c1))) {
-      byte *pret = (byte*)&buf;
-      x = natRet(data(c1), &pret, 0);
-   }
-   else
+   // if (isSym(data(c1))) {
+   //    byte *pret = (byte*)&buf;
+   //    x = natRet(data(c1), &pret, 0);
+   // }
+   // else
       x = natRet(data(c1), &buf, 1);
    drop(c1);
    return x;
@@ -1581,7 +1583,10 @@ static any natCall(void *lib, any ex) {
          if (T == car(y)) { // (T . any)
             NATDBG(fprintf(stderr, "(T . any)...\n"))
             args[nargs++].a = arg.a = cdr(y);
-            NATDBG(fprintf(stderr,"arg = %p\n", arg.a))
+            NATDBG(
+                fprintf(stderr,"arg = %p", arg.a);
+                show(" ",  arg.a,1);
+            )
          }
          else if (isNum(cdr(y))) { // (num . scl), num/flg as fixpt
             NATDBG(fprintf(stderr, "(num . scl)...\n"))
@@ -1607,7 +1612,7 @@ static any natCall(void *lib, any ex) {
                if (isNum(e)) {
                   byte b = unDigU(e);
                   NATDBG(fprintf(stderr,"fill byte %d (%02X)...\n",b,b))
-                  while (--c) *z++ = b;
+                  while (--c >= 0) *z++ = b;
                   break;
                }
                if (!isCell(e))
@@ -1644,7 +1649,9 @@ static any natCall(void *lib, any ex) {
          arg = args[i++];
          NATDBG(show("y = ",y,1))
          if (isCell(y)) {
-            if (isCell(cdr(y)) && !isNum(cadr(y))) {      // (Tim ^(8 B . 8))
+            if (T == car(y)) {
+               NATDBG(fprintf(stderr,"(T . any)\n"))
+            } else if (isCell(cdr(y)) && !isNum(cadr(y))) { // (Tim ^(8 B . 8))
               if (!isNil(car(y))) {     // (^Tim (8 B . 8))
                  NATDBG(
                     show(" cadr(y) = ",  cadr(y),1);
@@ -1657,6 +1664,7 @@ static any natCall(void *lib, any ex) {
       }
       x = cdr(x);
    }
+   NATDBG(fprintf(stderr,"natCall end\n"))
    return Pop(c1);;
 }
 

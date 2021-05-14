@@ -198,6 +198,7 @@ typedef struct coFrame {
    char *file; // last pos
    int line;
    bool attached; // attached to main?
+   int nesting; // co/yield nesting level
    ucontext_t ctx; // context
    int ss_size; // local stack size in KB
    char ss[1]; // StkSize'd local stack
