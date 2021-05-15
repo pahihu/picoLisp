@@ -90,7 +90,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
-* pil21: 'enum' and 'enum?' is not supported yet
+* fixed 32bit 'struct'
 * unwind restores tgt coroutine env
 * clear *Bye and *Run in children
 * added 'shift','rev' functions, optional skip item to 'fish'

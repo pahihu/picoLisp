@@ -1337,7 +1337,7 @@ any doStruct(any ex) {
    c = 0;
    x = cdr(ex), y = EVAL(car(x));
    NeedNum(ex, y);
-   p = buf = (byte*)unDigU(y);
+   p = buf = (byte*)unBox(y);
    x = cdr(x), y = EVAL(car(x));
    Push(c1, y); // result spec
    while (isCell(x = cdr(x))) {
