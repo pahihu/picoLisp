@@ -11,6 +11,9 @@ and the database format follows the pil32 tradition.
 So where you see in the documentation "64bit-only", you can try out the
 examples. They should work.
 
+Implementing the documented pil21 functions is in progress. 'enum' and 
+'enum?' is not supported yet.
+
 Note, to call a C function with variable number of arguments, the number of
 fixed arguments must be marked with ..., eg:
 
