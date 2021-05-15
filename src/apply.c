@@ -698,25 +698,33 @@ any doMini(any ex) {
    return Pop(res);
 }
 
-static void fish(any ex, any foo, any x, cell *r) {
-   if (!isNil(apply(ex, foo, NO, 1, (cell*)&x)))
-      data(*r) = cons(x, data(*r));
-   else if (isCell(x)) {
-      if (!isNil(cdr(x)))
-         fish(ex, foo, cdr(x), r);
-      fish(ex, foo, car(x), r);
+static void fish(any ex, any foo, any x, cell *r, cell *s) {
+   cell c1;
+
+   Push(c1,apply(ex, foo, NO, 1, (cell*)&x));
+   if (isNil(data(c1))) {
+      if (isCell(x)) {
+         if (!isNil(cdr(x)))
+            fish(ex, foo, cdr(x), r, s);
+         fish(ex, foo, car(x), r, s);
+      }
    }
+   else if (data(c1) != data(*s))
+      data(*r) = cons(x, data(*r));
+   drop(c1);
 }
 
-// (fish 'fun 'any) -> lst
+// (fish 'fun 'any ['any2]) -> lst
 any doFish(any ex) {
    any x = cdr(ex);
-   cell res, foo, c1;
+   cell res, foo, c1, c2;
 
    Push(res, Nil);
    Push(foo, EVAL(car(x)));
    x = cdr(x),  Push(c1, EVAL(car(x)));
-   fish(ex, data(foo), data(c1), &res);
+   x = cdr(x),  Push(c2, EVAL(car(x)));
+   fish(ex, data(foo), data(c1), &res, &c2);
+   drop(c2);
    return Pop(res);
 }
 

@@ -554,6 +554,8 @@ long xCnt(any,any);
 any xSym(any);
 void yieldError(any,any);
 void zapZero(any);
+void coroPushEnv(coFrame*);
+void coroLoadEnv(coFrame*);
 
 any doAbs(any);
 any doAccept(any);

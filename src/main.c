@@ -844,6 +844,7 @@ void unwind(catchFrame *catch) {
    int i, j, n;
    bindFrame *p;
    catchFrame *q;
+   bool sameCoro;
 
    while (q = CatchPtr) {
       while (p = Env.bind) {
@@ -878,12 +879,19 @@ void unwind(catchFrame *catch) {
       while (Env.ctlFrames != q->env.ctlFrames)
          popCtlFiles();
       // terminate skipped coroutines
+      sameCoro = Env.coF == q->env.coF;
       while (Env.coF != q->env.coF) {
          if (Env.coF->tag != T) // except main coro
             Env.coF->tag = Nil, Stacks--;
          Env.coF= Env.coF->link;
       }
-      Env = q->env;
+      // change to dst coro env
+      if (sameCoro)
+         Env = q->env;
+      else {
+         coroLoadEnv(q->env.coF);
+         coroPushEnv(q->env.coF);
+      }
       EVAL(q->fin);
       CatchPtr = q->link;
       if (q == catch)

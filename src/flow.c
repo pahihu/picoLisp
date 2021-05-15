@@ -1510,7 +1510,7 @@ static void coroPopEnv(void) {
 }
 
 /* Push coro env, check entry */
-static void coroPushEnv(coFrame *f) {
+void coroPushEnv(coFrame *f) {
    Env = f->env;
    Env.coF->active = YES;
 }
@@ -1531,7 +1531,7 @@ static void coroSaveEnv(coFrame *e) {
 }
 
 /* Load environment */
-static void coroLoadEnv(coFrame *e) {
+void coroLoadEnv(coFrame *e) {
    CODBG(
       show("coroLoadEnv: ",e->tag,0);
       show(" make ",box(num(e->env.make)),1)
@@ -2253,6 +2253,7 @@ pid_t forkLisp(any ex) {
          ((outFrame*)p)->pid = 0;
       for (p = CatchPtr; p; p = ((catchFrame*)p)->link)
          ((catchFrame*)p)->fin = Zero;
+      Bye = Nil; Run = Nil;
       free(Termio),  Termio = NULL;
       if (Repl)
          ++Repl;

@@ -102,6 +102,18 @@
    (fish gt0 '(a -2 (1 b (-3 c 2)) 3 d -1)) )
 (test '(a b c d)
    (fish sym? '(a -2 (1 b (-3 c 2)) 3 d -1)) )
+(test '(a b c d e)
+   (fish atom '((a b) c (d e))) )
+(test '(a b c d)
+   (fish sym? '(a -2 (1 b (-3 c 2)) 3 d -1 7)) )
+(test (3 7)
+   (fish
+      '((X)
+         (if (and (pair X) (=1 (car X)))
+            "skip" # Transient symbol (pointer equal)
+            (gt0 X) ) )
+   '(a -2 (1 b (-3 c 2)) 3 d -1 7)
+   "skip" ) )
 
 
 ### by ###
