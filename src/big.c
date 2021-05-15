@@ -1416,6 +1416,22 @@ any doShr(any ex) {
    return Pop(c1);
 }
 
+// (rev 'cnt1 'cnt2) -> cnt
+any doRev(any ex) {
+   any x;
+   long C, N, R;
+
+   x = cdr(ex);
+   C = evCnt(ex, x = cdr(ex));
+   N = evCnt(ex, cdr(x));
+   R = 0;
+   do {
+      R = 2*R + (N & 1);
+      N >>= 1;
+   } while (--C);
+   return boxCnt(R);
+}
+
 // (lt0 'any) -> num | NIL
 any doLt0(any x) {
    x = cdr(x);

@@ -99,6 +99,12 @@
 (test 2147483648 (>> -31 1))
 
 
+### rev ###
+(test "1010" (bin (rev 4 (bin "0101"))))
+(test (hex "80000000") (rev 32 1))
+(test 7 (rev 32 (hex "E0000000")))
+
+
 ### lt0 ###
 (test -2 (lt0 -2))
 (test NIL (lt0 7))

@@ -862,6 +862,7 @@ any doRemove(any);
 any doRem(any);
 any doReplace(any);
 any doRest(any);
+any doRev(any);
 any doReverse(any);
 any doRewind(any);
 any doRollback(any);

@@ -314,6 +314,7 @@ static symInit Symbols[] = {
    {doRem, "%"},
    {doReplace, "replace"},
    {doRest, "rest"},
+   {doRev, "rev"},
    {doReverse, "reverse"},
    {doRewind, "rewind"},
    {doRollback, "rollback"},
