@@ -221,11 +221,11 @@
    (test A 1)
    (test B 2) )
 
-
-### push push1 pop ++ cut ###
+### push push1 pop ++ shift cut ###
 (let L NIL
-   (test 1 (push 'L 4 3 2 1))
-   (test L (1 2 3 4))
+   (test 0 (push 'L 4 3 2 1 0))
+   (test L (0 1 2 3 4))
+   (test (1 2 3 4) (shift 'L))
    (test 0 (push1 'L 0))
    (test 1 (push1 'L 1))
    (test L (0 1 2 3 4))

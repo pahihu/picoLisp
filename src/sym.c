@@ -931,6 +931,21 @@ any doPopq(any ex) {
    return car(y);
 }
 
+// (shift 'var) -> any
+any doShift(any ex) {
+   any x;
+   cell c1, c2;
+
+   x = cdr(ex); Push(c1, EVAL(car(x)));
+   NeedVar(ex,data(c1));
+   if (isSym(data(c1)) && isSym(val(tail(data(c1)))))
+      Touch(ex,data(c1));
+   Push(c2,val(data(c1)));
+   NeedLst(ex,data(c2));
+   val(data(c1)) = cdr(Pop(c2));
+   return val(Pop(c1));
+}
+
 // (cut 'cnt 'var) -> lst
 any doCut(any ex) {
    long n;

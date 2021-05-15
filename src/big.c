@@ -1380,7 +1380,7 @@ any doRem(any ex) {
 }
 
 // (>> 'cnt 'num) -> num
-any doShift(any ex) {
+any doShr(any ex) {
    any x;
    long n;
    bool sign;

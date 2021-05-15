@@ -29,6 +29,7 @@ To skip call, just assign handle and pointer, use:
 What is included?
 
 Pil21
+   (shift 'var) -> any
    *Term
    (co ['sym [.prg]]) -> any
    (stack ['cnt] ['cnt]) -> cnt | (.. (sym . cnt) . cnt)
@@ -84,6 +85,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* added 'shift' function
 * '*Term' to handle SIGTERM, 'plio' preserves Ptr and End, (co) returns tag
   of current coroutine
 * pil21-tests: 'enum' not supported (yet), fixed 'native'/'struct' bugs,
@@ -166,7 +168,7 @@ Native C Call
 * the 64bit emu version could be compiled on macOS
 * the 32bit version could be compiled with clang on macOS
 
-pahihu 5 / 14 / 2020
+pahihu 5 / 15 / 2020
 
 
 

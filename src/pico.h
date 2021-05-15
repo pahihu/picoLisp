@@ -877,6 +877,7 @@ any doSet(any);
 any doSetCol(any);
 any doSetq(any);
 any doShift(any);
+any doShr(any);
 any doSigio(any);
 any doSize(any);
 any doSkip(any);
