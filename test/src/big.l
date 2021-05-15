@@ -101,8 +101,12 @@
 
 ### rev ###
 (test "1010" (bin (rev 4 (bin "0101"))))
-(test (hex "80000000") (rev 32 1))
-(test 7 (rev 32 (hex "E0000000")))
+(if 64bit?
+   (test (hex "80000000") (rev 32 1))
+   (test (hex "20000000") (rev 30 1)) )
+(if 64bit?
+   (test   7 (rev 32 (hex "E0000000")))
+   (test 254 (rev 32 (hex "7F000000"))) )
 
 
 ### lt0 ###
