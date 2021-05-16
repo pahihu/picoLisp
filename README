@@ -14,6 +14,10 @@ examples. They should work.
 Implementing the documented pil21 functions is in progress. 'enum' and 
 'enum?' is not supported yet.
 
+How to run Mike Pechkin's [pil21-tests](https://git.envs.net/mpech/pil21-tests) ?
+Execute 'select_pil pil21' in the lib directory of the distribution. This
+selects the pil21 versions of frac.l,simul.l and svg.l.
+
 Note, to call a C function with variable number of arguments, the number of
 fixed arguments must be marked with ..., eg:
 
