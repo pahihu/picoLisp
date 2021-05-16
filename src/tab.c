@@ -117,6 +117,8 @@ static symInit Symbols[] = {
    {doDo, "do"},
    {doE, "e"},
    {doEcho, "echo"},
+   {doEnum, "enum"},
+   {doEnumQ, "enum?"},
    {doEnv, "env"},
    {doEof, "eof"},
    {doEol, "eol"},

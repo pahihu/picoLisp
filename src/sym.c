@@ -1071,6 +1071,119 @@ any doFifo(any ex) {
    return y;
 }
 
+static any flatEnum(any p, cell *head, any tail, long cnt, long lvl) {
+   cell c1;
+
+   if (!isCell(p))
+      return tail;
+
+   if (!isNil(cdr(p)))
+      tail = flatEnum(cadr(p), head, tail, cnt, lvl+1);
+   if (!isNil(car(p))) {
+      Push(c1, cons(boxLong(cnt + (1L<<lvl)), car(p)));
+      if (isNil(data(*head))) {
+         tail = data(*head) = cons(data(c1), Nil);
+      }
+      else
+         tail = cdr(tail) = cons(data(c1), Nil);
+      drop(c1);
+   }
+   if (!isNil(cdr(p)))
+      tail = flatEnum(cddr(p), head, tail, cnt + (1L<<lvl), lvl+1);
+   return tail;
+}
+
+// (enum 'var 'cnt ['cnt ..]) -> lst
+// (enum 'var) -> lst
+any doEnum(any ex) {
+   any x, p, *ptr;
+   cell c1, c2;
+   long cnt;
+
+   Push(c2, Nil);
+   x = cdr(ex), Push(c1, EVAL(car(x)));
+   NeedVar(ex,data(c1));
+   CheckVar(ex,data(c1));
+   x = cdr(x);
+   if (isCell(x)) {
+      p = *(ptr = &val(data(c1)));
+      ASSERT(ptr != &Nil);
+      do {
+         cnt = evCnt(ex, x);
+         if (cnt < 1) {
+            drop(c2);
+            return Nil;
+         }
+         if (isNil(p)) {
+            ASSERT(ptr != &Nil);
+            p = *ptr = cons(Nil,Nil);
+         }
+         while (cnt != 1) {
+            p = *(ptr = &cdr(p));
+            ASSERT(ptr != &Nil);
+            if (isNil(p)) {
+               ASSERT(ptr != &Nil);
+               p = *ptr = cons(Nil,Nil);
+            }
+            if (cnt & 1) {
+               if (isNil(cdr(p)))
+                  cdr(p) = cons(Nil,Nil);
+               p = cdr(p);
+            }
+            else {
+               if (isNil(car(p)))
+                  car(p) = cons(Nil,Nil);
+               p = car(p);
+            }
+            cnt >>= 1;
+         }
+         x = cdr(x);
+         ptr = &car(p);
+         ASSERT(ptr != &Nil);
+         if (isCell(x))
+            p = car(p);
+      } while (isCell(x));
+      drop(c2);
+      return p;
+   }
+
+   flatEnum(val(data(c1)), &c2, NULL, 0L, 0L);
+   return Pop(c2);
+}
+
+// (enum? 'lst 'cnt ['cnt ..]) -> lst | NIL
+any doEnumQ(any ex) {
+   any x, p, ret;
+   cell c1;
+
+   ret = Nil;
+   x = cdr(ex), Push(c1, EVAL(car(x)));
+   p = data(c1); x = cdr(x);
+   while (isCell(x)) {
+      int cnt = evCnt(ex, x);
+      while (cnt != 1) {
+         p = cdr(p);
+         if (cnt & 1)
+            p = cdr(p);
+         else
+            p = car(p);
+         if (isNil(p)) {
+            ret = Nil;
+            break;
+         }
+         cnt >>= 1;
+      }
+      x = cdr(x);
+      if (!isCell(x)) {
+         ret = p;
+         break;
+      }
+      p = car(p);
+   }
+   drop(c1);
+   return ret;
+}
+
 any idx(any var, any key, int flg) {
    any x, y, z, *p;
    int n;

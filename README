@@ -11,8 +11,7 @@ and the database format follows the pil32 tradition.
 So where you see in the documentation "64bit-only", you can try out the
 examples. They should work.
 
-Implementing the documented pil21 functions is in progress. 'enum' and 
-'enum?' is not supported yet.
+Implemented the documented pil21 functions.
 
 How to run Mike Pechkin's (https://git.envs.net/mpech/pil21-tests) ?
 Execute 'select_pil pil21' in the lib directory of the distribution. This
@@ -36,6 +35,9 @@ To skip call, just assign handle and pointer, use:
 What is included?
 
 Pil21
+   (enum 'var 'cnt ['cnt ..]) -> lst
+   (enum 'var) -> lst
+   (enum? 'lst 'cnt ['cnt ..]) -> lst | NIL
    (fish 'fun 'any ['any2]) -> lst
    (rev 'cnt1 'cnt2) -> cnt
    (shift 'var) -> any
@@ -94,6 +96,7 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* added 'enum' and 'enum?', pil21-tests: passed sym.l and turing.l
 * fixed 32bit 'struct'
 * unwind restores tgt coroutine env
 * clear *Bye and *Run in children

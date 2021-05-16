@@ -665,6 +665,8 @@ any doDm(any);
 any doDo(any);
 any doE(any);
 any doEcho(any);
+any doEnum(any);
+any doEnumQ(any);
 any doEnv(any);
 any doEof(any);
 any doEol(any);
