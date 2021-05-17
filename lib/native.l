@@ -21,6 +21,7 @@
                "-O2" "-mllvm" "-align-all-functions=5" "-fomit-frame-pointer"
                "-W" "-Wimplicit" "-Wreturn-type" "-Wunused" "-Wformat"
                "-Wuninitialized" "-Wstrict-prototypes" "-Wno-parentheses"
+               "-I/usr/X11R6/include"
                "-pipe" "-D_GNU_SOURCE" (tmp Nm ".c") ) ) )
       ("SunOS"
          (quote

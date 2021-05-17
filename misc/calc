@@ -1,8 +1,8 @@
-#!/usr/bin/picolisp /usr/lib/picolisp/lib.l
+#!/usr/local/bin/picolisp /usr/local/lib/picolisp/lib.l
 # 10may11abu
 # (c) Software Lab. Alexander Burger
 
-(load "@lib/misc.l" "/usr/share/picolisp/misc/calc.l")
+(load "@lib/misc.l" "/usr/local/share/picolisp/misc/calc.l")
 
 # Initialize
 (main)

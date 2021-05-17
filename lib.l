@@ -543,6 +543,13 @@
          (msg Prg)
          (quit "'test' failed" Pat) ) ) )
 
+### 32bit/64bit support ###
+(setq *BigNum (* 256 1024 1024))
+(setq 64bit? `(== *BigNum (format (format *BigNum))))
+(setq *Word   (if 64bit? 8 4))
+(de shlib (nm)
+   (pack nm (case *OS ("Darwin" ".dylib") (T ".so"))) )
+
 ### Debug ###
 `*Dbg
 
@@ -554,5 +561,6 @@
 
 (noLint 'pretty 'Z)
 (noLint '_pretty 'Z)
+
 
 # vi:et:ts=3:sw=3

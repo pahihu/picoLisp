@@ -2253,7 +2253,7 @@ pid_t forkLisp(any ex) {
          ((outFrame*)p)->pid = 0;
       for (p = CatchPtr; p; p = ((catchFrame*)p)->link)
          ((catchFrame*)p)->fin = Zero;
-      Bye = Nil; Run = Nil;
+      Bye = Nil;
       free(Termio),  Termio = NULL;
       if (Repl)
          ++Repl;
