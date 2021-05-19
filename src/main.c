@@ -1345,6 +1345,8 @@ any doStruct(any ex) {
       natBuf(data(c2), &p, &c);
       drop(c2);
    }
+   // pil21 @doc/diff:
+   //     useful atomic result specifications
    // if (isSym(data(c1))) {
    //    byte *pret = (byte*)&buf;
    //    x = natRet(data(c1), &pret, 0);

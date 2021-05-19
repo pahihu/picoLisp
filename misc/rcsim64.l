@@ -25,32 +25,32 @@
 # Create model
 (de model (Obj Lst Pos)
    (default Pos `(* 8 12))
-   (let L
+   (apply struct
       (conc
-         (extract  # Faces
+         (extract                                        # Faces
             '((M)
                (unless (and (car M) (sym? @))
                   (inc 'Pos 8)
                   (cons
-                     (prog1
-                        (%@ "malloc" 'P
+                     (struct
+                        (native "@" "malloc" 'N
                            (+ `(* 4 4) (* 8 (length (cddr M)))) )
-                        (struct @ NIL
-                           (cons (or (num? (car M)) `(hex "1000000")) 4)
-                           (cons
-                              (or
-                                 (num? (cadr M))
-                                 (if (cadr M)
-                                    `(hex "2000000")
-                                    `(hex "1000000") ) )
-                              4 )
-                           (- (/ (length (cddr M)) 3))
-                           -42
-                           (cons 1.0 (cddr M)) ) )
+                        'N
+                        (cons (or (num? (car M)) `(hex "1000000")) 4)
+                        (cons
+                           (or
+                              (num? (cadr M))
+                              (if (cadr M)
+                                 `(hex "2000000")
+                                 `(hex "1000000") ) )
+                           4 )
+                        (- (/ (length (cddr M)) 3))
+                        -42
+                        (cons 1.0 (cddr M)) )
                      8 ) ) )
             (cddddr Lst) )
          (cons (0 . 8))
-         (extract  # Submodels
+         (extract                                        # Submodels
             '((M)
                (when (and (car M) (sym? @))
                   (inc 'Pos 8)
@@ -62,12 +62,12 @@
                      8 ) ) )
             (cddddr Lst) )
          '((0 . 8)) )
-      (prog1
-         (%@ "malloc" 'P  # Return structure pointer
-            (+ `(* 8 12) (* 8 (length (cdr Lst)))) )  # (+ 2 CDDDR)
-         (apply struct L (put Obj (++ Lst) @) NIL
-            (cons 1.0 (head 3 Lst))  # pos
-            (1.0  1.0 0.0 0.0  0.0 1.0 0.0  0.0 0.0 1.0) )  ) ) )  # rot
+      (put Obj (++ Lst)
+         (native "@" "malloc" 'N
+            (+ `(* 8 12) (* 8 (length (cdr Lst)))) ) )   # (+ 2 CDDDR)
+      'N                                                 # Return structure pointer
+      (cons 1.0 (head 3 Lst))                            # pos
+      (1.0  1.0 0.0 0.0  0.0 1.0 0.0  0.0 0.0 1.0) ) )   # rot
 
 # Simulation
 (de *DT . 0.020)

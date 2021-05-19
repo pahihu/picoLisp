@@ -96,6 +96,8 @@ Native C Call
    long lisp(char*,long,long,long,long,long);
 
 
+* replaced (model) in rcsim.l with the pil21 version by Alexander Burger
+  misc/rcsim.l works as expected
 * added 'enum' and 'enum?', pil21-tests: passed sym.l and turing.l
 * fixed 32bit 'struct'
 * unwind restores tgt coroutine env
