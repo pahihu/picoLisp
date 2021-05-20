@@ -80,11 +80,10 @@ long lispTest(char *s,long a1,long a2,long a3,long a4,long a5) {
 (setq P (%@ "malloc" 'N (+ 24 4 (* 3 *Word))))
 
 # Store two integers, three doubles, one long, and four characters
-# NOTE      returns
-# pil21     (if 64bit? 17179869191 7)
-# pil/pil64 P
+# NOTE: pil21 handles atomic result specs differently than pil64.
+#       It dereferences the region passed to struct.
 #
-(test P
+(test (if 64bit? 17179869191 7)
    (struct P 'N -7 -4 (1.0 0.11 0.22 0.33) (cons 7 *Word) 65 66 67 0) )
 
 # Extract the structure
