@@ -269,9 +269,12 @@ any DADDU1(any x) {
 any DADDU(any x, word n) {
    ASSERT(isNum(x));
 
+   if (!n)
+      return x;
+
    if (shortLike(x)) {
 #ifdef __LP64__
-      return (any)(num(x) + SHORT(n));
+      return (any)(num(x) + (SHORT(n) << NORMBITS));
 #else
       word z;
       if (__builtin_uaddl_overflow(num(x), SHORT(n), &z))
