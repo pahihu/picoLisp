@@ -34,7 +34,7 @@ To skip call, just assign handle and pointer, use:
 
 What is included?
 
-Pil21
+From Pil21:
    (enum 'var 'cnt ['cnt ..]) -> lst
    (enum 'var) -> lst
    (enum? 'lst 'cnt ['cnt ..]) -> lst | NIL
@@ -52,48 +52,49 @@ Pil21
    (with 'var . prg) -> any
    (%@ 'cnt|sym 'any 'any ..) -> any
 
-Coroutines
-   (co 'sym [. prg]) -> any
-   (stack ['cnt]) -> cnt | (.. sym . cnt)
-   (yield 'any ['sym]) -> any
+From Pil64:
+   Coroutines
+      (co 'sym [. prg]) -> any
+      (stack ['cnt]) -> cnt | (.. sym . cnt)
+      (yield 'any ['sym]) -> any
 
-Database
-   (blk fd cnt siz [fd2]) -> lst
-   (blk fd 0) -> (cnt . siz)
-   (pool2 'sym . prg) -> any
+   Database
+      (blk fd cnt siz [fd2]) -> lst
+      (blk fd 0) -> (cnt . siz)
+      (pool2 'sym . prg) -> any
 
-Debug
-   (bt ['flg]) -> flg
-   (trail ['flg]) -> lst
-   (up [cnt] sym ['val]) -> any
+   Debug
+      (bt ['flg]) -> flg
+      (trail ['flg]) -> lst
+      (up [cnt] sym ['val]) -> any
 
-Misc
-   *CPU
-   (byte 'num ['cnt]) -> cnt
-   (errno) -> cnt
-   (gc ['cnt [cnt2]) -> cnt | NIL
-   *Tstp1, *Tstp2
-   (let (lst 'any ...) . prg) -> any
-      destructuring bind
-   (put ..)
-   (=: ...)
-      final destination as list
+   Misc
+      *CPU
+      (byte 'num ['cnt]) -> cnt
+      (errno) -> cnt
+      (gc ['cnt [cnt2]) -> cnt | NIL
+      *Tstp1, *Tstp2
+      (let (lst 'any ...) . prg) -> any
+         destructuring bind
+      (put ..)
+      (=: ...)
+         final destination as list
 
-Namespaces
-   (nsp 'sym) -> sym
-   pico
-   (symbols) -> lst
-   (symbols 'lst) -> lst
-   (symbols 'lst . prg) -> any
-   (symbols 'sym1 'sym2 ..) -> lst
-   (intern 'sym ['flg]) -> sym
-   (all ['T | '0 | 'sym]) -> lst
+   Namespaces
+      (nsp 'sym) -> sym
+      pico
+      (symbols) -> lst
+      (symbols 'lst) -> lst
+      (symbols 'lst . prg) -> any
+      (symbols 'sym1 'sym2 ..) -> lst
+      (intern 'sym ['flg]) -> sym
+      (all ['T | '0 | 'sym]) -> lst
 
-Native C Call
-   (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
-   (lisp 'sym ['fun]) -> num
-   (struct 'num 'any 'any ..) -> any
-   long lisp(char*,long,long,long,long,long);
+   Native C Call
+      (native 'cnt1|sym1 'cnt2|sym2 'any 'any ..) -> any
+      (lisp 'sym ['fun]) -> num
+      (struct 'num 'any 'any ..) -> any
+      long lisp(char*,long,long,long,long,long);
 
 
 * replaced (model) in rcsim.l with the pil21 version by Alexander Burger
