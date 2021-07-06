@@ -18,7 +18,7 @@
    (edge @A @Z @X)
    (not (member @Z @L))
    (path1 @Z @B (@Z . @L) @P @Y)
-   (@N + (-> @X) (-> @Y)) )
+   (^ @N (+ (-> @X) (-> @Y))) )
 
 (be edge (@A @B @N) (vect @A @B @N))
 (be edge (@A @B @N) (vect @B @A @N))

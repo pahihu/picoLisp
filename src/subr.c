@@ -1660,7 +1660,7 @@ any doProve(any x) {
             // pilog-rosettacode.l: Zebra puzzle
             // !!! When using checked arithmetic, it overflows !!!
             // data(n) = boxCnt(SHORT(1) + unDigShort(data(n)));
-            data(n) = (any)((SHORT(1)<<NORMBITS) + num(data(n)));
+            data(n) = (any)(ShortOne + num(data(n)));
             data(tp2) = cons(cdr(data(tp1)), data(tp2));
             data(tp1) = cdar(data(alt));
             data(alt) = Nil;
