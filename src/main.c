@@ -35,7 +35,7 @@ any Alarm, Sigio, Line, Zero, One, Pico1;
 any Transient[IHASH], Extern[EHASH];
 any DbVal, DbTail;
 any PicoNil, Nil, DB, Meth, Quote, T;
-any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym;
+any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym, RemSym;
 any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 any Tstp1, Tstp2, Winch, Term;

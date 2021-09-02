@@ -373,7 +373,7 @@ extern any Transient[IHASH], Extern[EHASH];
 extern CBL Lisp[NCBL];
 extern any DbVal, DbTail;
 extern any PicoNil, Nil, DB, Meth, Quote, T;
-extern any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym;
+extern any ISym, NSym, SSym, CSym, BSym, WSym, PSym, DotSym, RemSym;
 extern any Solo, PPid, Pid, At, At2, At3, This, Prompt, Dbg, Zap, Ext, Scl, Class;
 extern any Run, Hup, Sig1, Sig2, Up, Err, Msg, Uni, Led, Adr, Fork, Bye;
 extern any Tstp1, Tstp2, Winch, Term;

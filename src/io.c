@@ -1280,12 +1280,21 @@ static any rdAtom(int c) {
             *h = cons(x,*h);
             // XXX checkHashed(Intern);
          }
-         if (!isNsp(val(x))) {
-            while (!eol()) Env.get(); // ??? how to terminate input?
-            symNsError(Nil,x);
+         if (x == RemSym) {
+            if (isNil(cdr(Env.nsp))) {
+               while (!eol()) Env.get();
+               symNsError(Nil,RemSym);
+            }
+            Env.nsp = cdr(Env.nsp);
          }
+         else {
+            if (!isNsp(val(x))) {
+               while (!eol()) Env.get(); // ??? how to terminate input?
+               symNsError(Nil,x);
+            }
 // XXX outString("*** ns "); flushAll(); print1(x); newline();
-         Env.nsp = cons(x,Nil); // switch ns
+            Env.nsp = cons(x,Nil); // switch ns
+         }
          i = -1, Push(c1, y = BOX(0));
       }
       else {

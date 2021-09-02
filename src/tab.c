@@ -488,6 +488,8 @@ void initSymbols(void) {
       any x = boxFun(Symbols[i].code);
       // if (isShort(x) || (Symbols[i].code == 0x0000001001ddc40c))
       //      fprintf(stderr,"short %s (%p)\n",Symbols[i].name,Symbols[i].code);
-      initSym(x, Symbols[i].name);
+      any sym = initSym(x, Symbols[i].name);
+      if (doRem == Symbols[i].code)
+         RemSym = sym;
    }
 }
