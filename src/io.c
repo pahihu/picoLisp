@@ -2368,6 +2368,18 @@ any doOut(any ex) {
    return x;
 }
 
+// (tty . prg) -> any
+any doTty(any ex) {
+   any x;
+   outFrame f;
+
+   f.pid = 0, f.fd = STDERR_FILENO;
+   pushOutFiles(&f);
+   x = prog(cdr(ex));
+   popOutFiles();
+   return x;
+}
+
 // (fd) -> cnt
 any doFd(any ex) {
    return boxCnt(currFd(ex, (char*)&ex));

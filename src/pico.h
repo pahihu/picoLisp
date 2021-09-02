@@ -921,6 +921,7 @@ any doTrace(any);
 any doTrail(any);
 any doTrim(any);
 any doTry(any);
+any doTty(any);
 any doType(any);
 any doTzo(any);
 any doUdp(any);

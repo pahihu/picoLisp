@@ -373,6 +373,7 @@ static symInit Symbols[] = {
    {doTrail, "trail"},
    {doTrim, "trim"},
    {doTry, "try"},
+   {doTty, "tty"},
    {doType, "type"},
    {doTzo, "tzo"},
    {doUdp, "udp"},

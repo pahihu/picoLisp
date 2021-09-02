@@ -35,6 +35,7 @@ To skip call, just assign handle and pointer, use:
 What is included?
 
 From Pil21:
+   (tty . prg) -> any
    (enum 'var 'cnt ['cnt ..]) -> lst
    (enum 'var) -> lst
    (enum? 'lst 'cnt ['cnt ..]) -> lst | NIL
@@ -97,6 +98,7 @@ From Pil64:
       long lisp(char*,long,long,long,long,long);
 
 
+* added 'tty'
 * replaced (model) in rcsim.l with the pil21 version by Alexander Burger
   misc/rcsim.l works as expected
 * added 'enum' and 'enum?', pil21-tests: passed sym.l and turing.l
