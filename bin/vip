@@ -2,7 +2,7 @@
 # 01may18abu
 
 (for KV '(("COLUMNS" . "cols") ("LINES" . "lines"))
-   (ifn (sys (car KV))
+   (unless (sys (car KV))
       (sys (car KV)
          (pipe (call "tput" (cdr KV)) (line T)) ) ) )
 
