@@ -86,7 +86,6 @@ any doEval(any x) {
       data(c1) = EVAL(data(c1));
    else {
       int cnt, n, i, j;
-      /* XXX struct {any sym; any val;} bnd[length(x)]; */
       bindFrame *f = allocFrame(length(x));
 
       f->exe = Nil;
@@ -152,7 +151,6 @@ any doRun(any x) {
          data(c1) = isSym(data(c1))? val(data(c1)) : run(data(c1));
       else {
          int cnt, n, i, j;
-         /* XXX struct {any sym; any val;} bnd[length(x)]; */
          bindFrame *f = allocFrame(length(x));
 
          f->exe = Nil;
@@ -290,12 +288,10 @@ any doDm(any ex) {
 static any evMethod(any o, any expr, any x) {
    any y = car(expr);
    any cls = TheCls, key = TheKey;
-   /* XXX struct {any sym; any val;} bnd[length(y)+3]; */
    bindFrame *f = allocFrame(length(y)+3);
 
    f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
-   /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 2; */
    f->i = length(y) + 1;
    f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
    while (isCell(y)) {
@@ -661,7 +657,6 @@ any doBind(any ex) {
       return x;
    }
    {
-      /* XXX struct {any sym; any val;} bnd[length(y)]; */
       bindFrame *f = allocFrame(length(y));
 
       f->exe = Nil;
@@ -694,7 +689,6 @@ any doJob(any ex) {
    any x = cdr(ex);
    any y = EVAL(car(x));
    cell c1;
-   /* XXX struct {any sym; any val;} bnd[length(y)]; */
    bindFrame *f = allocFrame(length(y));
 
    Push(c1,y);
@@ -771,7 +765,6 @@ any doLet(any x) {
       Unbind(f);
    }
    else {
-      /* XXX struct {any sym; any val;} bnd[(length(y)+1)/2]; */
       bindFrame *f = allocFrame(numsyms(y));
 
       f->exe = Nil;
@@ -825,7 +818,6 @@ any doUse(any x) {
       Unbind(f);
    }
    else {
-      /* XXX struct {any sym; any val;} bnd[length(y)]; */
       bindFrame *f = allocFrame(length(y));
 
       f->exe = Nil;
@@ -1570,7 +1562,7 @@ int dummy_getcontext(ucontext_t *ucp)
 #define pilGetContext  getcontext
 #endif
 
-// resume coroutine environment, with return value ret
+/* resume coroutine environment, with return value ret */
 any resumeCoro(coFrame *c, coFrame *t, any ret) {
    int i;
    bindFrame *mbF, *bF;

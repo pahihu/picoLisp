@@ -83,7 +83,7 @@ static any searchSym(any s, any *p, any first, any more) {
    any x, y;
 
    ASSERT(isSym(first) && isNsp(val(first)));
-   // XXX checkHashed(ptrNsp(val(first)));
+   /* XXX checkHashed(ptrNsp(val(first))); */
 
    y = findHash(s, p);
    if (y)
@@ -96,7 +96,7 @@ static any searchSym(any s, any *p, any first, any more) {
    do {
       x = car(more);
       ASSERT(isSym(x) && isNsp(val(x)));
-      // XXX checkHashed(ptrNsp(val(x)));
+      /* XXX checkHashed(ptrNsp(val(x))); */
       p = ptrNsp(val(x)) + d;
       y = findHash(s, p);
       if (y)
@@ -117,7 +117,7 @@ any whereHashed(any s, any* p) {
       p = ptrNsp(val(y)) + d;
       x = *p;
 
-      // XXX checkHashed(ptrNsp(val(y)));
+      /* XXX checkHashed(ptrNsp(val(y))); */
 
       while (isCell(x)) {
          ASSERT(isSym(car(x)));
@@ -390,7 +390,6 @@ any doIntern(any ex) {
          nsp = flg;
       }
    }
-// XXX outString("*** intern "); flushAll(); print1(x); newline();
    if (z = searchSym(y, h = Intern + ihash(y),
                         nsp,
                         isNil(flg) ? cdr(Env.nsp) : Nil))

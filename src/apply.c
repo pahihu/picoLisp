@@ -14,7 +14,6 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
       if (isCell(foo)) {
          int i, aCnt;
          any x = car(foo);
-         /* XXX struct {any sym; any val;} bnd[length(x)+2]; */
          bindFrame *f = allocFrame(argLength(x,1)+2);
 
          // fprintf(stderr,"\r\nargLen = %d\r\n",argLength(x,1));
@@ -94,7 +93,6 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          if (expr = method(o)) {
             int i;
             any cls = Env.cls, key = Env.key;
-            /* XXX struct {any sym; any val;} bnd[length(x = car(expr))+3]; */
             bindFrame *f = allocFrame(length(x = car(expr))+3);
 
             Env.cls = TheCls,  Env.key = TheKey;

@@ -47,8 +47,9 @@ static void balance(char **data, int len) {
    }
 }
 
-// balance [-<cmd> [<arg> ..]]
-// balance [<file>]
+/* balance [-<cmd> [<arg> ..]]
+ * balance [<file>]
+ */
 int main(int ac, char *av[]) {
    int cnt;
    char *s;

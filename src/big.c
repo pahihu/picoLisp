@@ -5,9 +5,9 @@
 #include "pico.h"
 
 #define MAX    MASK                    // Max digit size    0xFFFF....
-// #define OVFL   (num(1)<<(BITS-1))      // Carry/Overflow    0x8000....
+/* #define OVFL   (num(1)<<(BITS-1))      // Carry/Overflow    0x8000.... */
 
-// For Solaris 10
+/* For Solaris 10 */
 #ifdef __SVR4
 #include <ieeefp.h>
 static int isinf(double x) {return !finite(x) && x==x;}
@@ -83,7 +83,7 @@ any shorten(any x) {
    return x;
 }
 
-// Convert signed number to short/bigNum
+/* Convert signed number to short/bigNum */
 any cvtSigned(any x) {
    int sign;
 

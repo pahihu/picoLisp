@@ -947,12 +947,10 @@ any argPop(any *x) {
 /*** Evaluation ***/
 any evExpr(any expr, any x) {
    any y = car(expr), Z;
-   /* XXX struct {any sym; any val;} bnd[length(y)+2]; */
    bindFrame *f = allocFrame(argLength(y,1)+2);
 
    f->exe = Env.exe;
    f->link = Env.bind,  Env.bind = (bindFrame*)f;
-   /* XXX f.i = sizeof(f.bnd) / (2*sizeof(any)) - 1; */
    f->i = argLength(y,1) + 1;
    f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
    while (isCell(y)) {
@@ -1365,7 +1363,7 @@ typedef union {
    any    a;
 } CARG;
 
-// Native library interface from pil21 sources (c) abu
+/* Native library interface from pil21 sources (c) abu */
 #ifdef __APPLE__
 #include <ffi/ffi.h>
 #else
@@ -1443,7 +1441,7 @@ static ffi_type *ffiType(any y,int isarg) {
    return &ffi_type_pointer; // (Typ . Cnt)
 }
 
-// Needs evaluated lst
+/* Needs evaluated lst */
 static ffi *ffiPrep(void *lib,char *s,any x) {
    any y = car(x);
    int i, j, nargs = length(x = cdr(x));
@@ -1715,8 +1713,6 @@ long lisp(char *s,long a1,long a2,long a3,long a4,long a5) {
    any x;
    cell nm, foo, c[5];
 
-// XXX fprintf(stderr,"lisp(%s,%ld,%ld,%ld,%ld,%ld)\n",s,a1,a2,a3,a4,a5);
-
    Push(nm, x = mkName(s));
    Push(foo, EVAL(findSym(x, Intern + ihash(x))));
 
@@ -1730,7 +1726,6 @@ long lisp(char *s,long a1,long a2,long a3,long a4,long a5) {
    drop(nm);
 
    r = unBox(x);
-// XXX fprintf(stderr,"ret=%ld\n",r);
    return r;
 }
 
@@ -1738,8 +1733,6 @@ long cb(int i,long a1,long a2,long a3,long a4,long a5) {
    long r;
    any x;
    cell foo, c[5];
-
-// XXX fprintf(stderr,"cb%d(%d,%d,%d,%d,%d)\n",i,a1,a2,a3,a4,a5);
 
    Push(foo, Lisp[i].fun);
 
@@ -1753,7 +1746,6 @@ long cb(int i,long a1,long a2,long a3,long a4,long a5) {
    drop(foo);
 
    r = unBox(x);
-// XXX fprintf(stderr,"ret=%ld\n",r);
    return r;
 }
 
@@ -1800,7 +1792,6 @@ any doLisp(any ex) {
    Lisp[i].tag = y;
    x = cdr(x), y = EVAL(car(x));
    Lisp[i].fun = y;
-// XXX fprintf(stderr,"Lisp[i].cb=%p\n",Lisp[i].cb);
    return boxWord(num(Lisp[i].cb));
 }
 

@@ -151,8 +151,9 @@ static void iSignal(int n, void (*foo)(int)) {
    sigaction(n, &act, NULL);
 }
 
-// ssl host port [url key file]
-// ssl host port url key file dir sec [min] [dir ..]
+/* ssl host port [url key file]
+ * ssl host port url key file dir sec [min] [dir ..]
+ */
 int main(int ac, char *av[]) {
    bool dbg;
    SSL_CTX *ctx;

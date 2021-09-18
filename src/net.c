@@ -134,12 +134,10 @@ static struct addrinfo *server(int type, any node, any service) {
    struct addrinfo hints, *lst;
    char nd[bufSize(node)], sv[bufSize(service)];
 
-// XXX fprintf(stderr,"*** server()\n");
    memset(&hints, 0, sizeof(hints));
    hints.ai_family = AF_UNSPEC;
    hints.ai_socktype = type;
    bufString(node, nd),  bufString(service, sv);
-// XXX fprintf(stderr,"*** node=%s service=%s\n",nd,sv);
    return getaddrinfo(nd, sv, &hints, &lst)? NULL : lst;
 }
 
@@ -176,14 +174,12 @@ static byte *UdpBuf, *UdpPtr;
 static void putUdp(int c) {
    if (UdpPtr == UdpBuf + UDPMAX)
       err(NULL, NULL, "UDP overflow");
-// XXX fprintf(stderr,"--> %X\n",c);
    *UdpPtr++ = c;
 }
 
 static int getUdp(void) {
    if (UdpPtr == UdpBuf + UDPMAX)
       return -1;
-// XXX fprintf(stderr,"<-- %X\n",*UdpPtr);
    return *UdpPtr++;
 }
 
@@ -201,7 +197,6 @@ any doUdp(any ex) {
       int n;
       if ((n = recv((int)xCnt(ex, data(c1)), buf, UDPMAX, 0)) < 0)
          return Nil;
-// XXX fprintf(stderr,"*** recv len = %d\n",n);
       getBin = getUdp,  UdpPtr = UdpBuf = buf;
       return binRead(ExtN) ?: Nil;
    }
@@ -212,7 +207,6 @@ any doUdp(any ex) {
    if (lst = server(SOCK_DGRAM, data(c1), y)) {
       x = cdr(x),  x = EVAL(car(x));
       putBin = putUdp,  UdpPtr = UdpBuf = buf,  binPrint(ExtN, x);
-// XXX fprintf(stderr,"send len = %d\n",UdpPtr - buf);
       for (p = lst; p; p = p->ai_next) {
          if ((sd = socket(p->ai_family, p->ai_socktype, 0)) >= 0) {
             sendto(sd, buf, UdpPtr-buf, 0, p->ai_addr, p->ai_addrlen);
@@ -223,6 +217,5 @@ any doUdp(any ex) {
       }
       freeaddrinfo(lst);
    }
-// XXX else fprintf(stderr,"*** server() failed\n");
    return Nil;
 }

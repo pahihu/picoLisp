@@ -460,7 +460,6 @@ any doLink(any x) {
    x = cdr(x);
    do {
       y = EVAL(car(x));
-// XXX outString("link: ");print1(y);flushAll();newline();
       Env.make = &cdr(*Env.make = cons(y, Nil));
    } while (isCell(x = cdr(x)));
    return y;
@@ -1482,7 +1481,7 @@ any doMatch(any x) {
    return x;
 }
 
-// Fill template structure
+/* Fill template structure */
 static any fill(any x, any s) {
    any y;
    cell c1;

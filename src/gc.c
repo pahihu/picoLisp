@@ -17,7 +17,7 @@ static void mark(any x) {
       if (isNsp(x)) { // namespace
          any *q = ptrNsp(x);
          int i;
-// fprintf(stderr,"*** mark ns %p\n",q);
+/* fprintf(stderr,"*** mark ns %p\n",q); */
          for (i = 0; i < IHASH; i++)
             mark(q[i]);
       }
@@ -72,8 +72,6 @@ void gc(long c) {
    heap *h;
    int i;
 
-// XXX outString("=== gc ==="); flushAll();
-
    NumGc++;
    val(DB) = Nil;
    h = Heaps;
@@ -84,7 +82,6 @@ void gc(long c) {
       while (--p >= h->cells);
    } while (h = h->next);
 
-// XXX outString("*** heaps "); flushAll(); outNum(mkShort(2*nheaps)); newline();
    /* Mark */
    mark(Nil+1);
    mark(Alarm),  mark(Sigio),  mark(Line),  mark(Zero),  mark(One);
@@ -220,7 +217,6 @@ any cons(any x, any y) {
       drop(c1);
       p = Avail;
    }
-// XXX if (x == TNsp) fprintf(stderr,"*** cons\n");
    Avail = p->car;
    p->car = x;
    p->cdr = y;
@@ -303,7 +299,6 @@ any consNsp(void) {
    u >>= NORMBITS;
 #endif
    x = cons(TNsp, mkShort(u));
-// XXX fprintf(stderr,"*** consNsp %p=(%p,%p) ptr=%p\n",x,TNsp,cdr(x),p);
    return x;
 }
 

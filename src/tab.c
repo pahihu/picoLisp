@@ -424,7 +424,6 @@ void initSymbols(void) {
    Zero = box(0);
    One = boxCnt(1);
    TNsp = BOX(1383865);
-// XXX fprintf(stderr,"*** TNsp = %p\n",TNsp);
    for (i = 0; i < IHASH; ++i)
       Transient[i] = Nil;
    for (i = 0; i < EHASH; ++i)

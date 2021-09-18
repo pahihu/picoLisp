@@ -10,8 +10,9 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-// utf2 [-<cmd> [<arg> ..]]
-// utf2 [<Infile/ISO-8859-15>]
+/* utf2 [-<cmd> [<arg> ..]]
+ * utf2 [<Infile/ISO-8859-15>]
+ */
 int main(int ac, char *av[]) {
 	int c;
    pid_t pid = 0;

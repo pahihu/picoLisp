@@ -10,8 +10,9 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-// lat1 [-<cmd> [<arg> ..]]
-// lat1 [[+]<Outfile/ISO-8859-15>]
+/* lat1 [-<cmd> [<arg> ..]]
+ * lat1 [[+]<Outfile/ISO-8859-15>]
+ */
 int main(int ac, char *av[]) {
 	int c;
    pid_t pid = 0;
