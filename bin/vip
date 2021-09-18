@@ -1,4 +1,4 @@
-#!/usr/bin/picolisp /usr/lib/picolisp/lib.l
+#!/usr/local/bin/picolisp /usr/local/lib/picolisp/lib.l
 # 01may18abu
 
 (load "@lib/misc.l" "@lib/vip.l")
