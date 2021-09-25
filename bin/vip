@@ -4,7 +4,7 @@
 (for KV '(("COLUMNS" . "cols") ("LINES" . "lines"))
    (unless (sys (car KV))
       (sys (car KV)
-         (pipe (call "tput" (cdr KV)) (line T)) ) ) )
+         (in (list "tput" (cdr KV)) (line T)) ) ) )
 
 (load "@lib/misc.l" "@lib/vip.l")
 
