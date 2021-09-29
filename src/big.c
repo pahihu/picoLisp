@@ -829,9 +829,9 @@ any doubleToNum(double d) {
    any x;
    cell c1;
 
-   if (isnan(d) || isinf(d) < 0)
+   if (isnan(d) || (isinf(d) && signbit(d)))
       return Nil;
-   if (isinf(d) > 0)
+   if (isinf(d) && !signbit(d))
       return T;
    sign = NO;
    if (d < 0.0)
