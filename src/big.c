@@ -821,7 +821,7 @@ any numToSym(any x, int scl, int sep, int ign) {
    }
 }
 
-#define DMAX ((double)((word2)MASK+1))
+#define DMAX (1+(double)MASK)
 
 /* Make number from double */
 any doubleToNum(double d) {
@@ -854,7 +854,12 @@ double numToDouble(any x) {
    bool sign;
 
    sign = isNeg(x);
-   d = (double)(unDigU(x)),  m = DMAX/2.0;
+   d = (double)(unDigU(x));
+#ifdef __LP64__
+   m = DMAX;
+#else
+   m = DMAX/2.0;
+#endif
    while (isNum(x = nextDig(x)))
       d += m * (double)unDig(x),  m *= DMAX;
    return sign? -d : d;
