@@ -1492,8 +1492,12 @@ static any fill(any x, any s) {
       return x != val(x) && (isNil(s)? x!=At && firstByte(x)=='@' : memq(x,s)!=NULL)? val(x) : NULL;
    if (car(x) == Up) {
       x = cdr(x);
-      if (!isCell(y = EVAL(car(x))))
-         return fill(cdr(x), s) ?: cdr(x);
+      y = EVAL(car(x));
+      if (!isCell(y)) {
+         if (!isCell(car(x)))
+            return fill(cdr(x), s) ?: cdr(x);
+         y = cons(y, Nil);
+      }
       Push(c1, y);
       while (isCell(cdr(y)))
          y = cdr(y);

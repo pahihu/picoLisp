@@ -1350,7 +1350,10 @@ static any rdList(void) {
       }
       Env.get();
       Push(c1, read0(NO));
-      if (isCell(x = data(c1) = EVAL(data(c1)))) {
+      x = data(c1) = EVAL(data(c1));
+      if (!isCell(x))
+         x = data(c1) = cons(x, Nil);
+      if (isCell(x)) {
          while (isCell(cdr(x)))
             x = cdr(x);
          break;
@@ -1382,6 +1385,8 @@ static any rdList(void) {
          Env.get();
          cdr(x) = read0(NO);
          cdr(x) = EVAL(cdr(x));
+         if (!isCell(cdr(x)))
+            cdr(x) = cons(cdr(x), Nil);
          while (isCell(cdr(x)))
             x = cdr(x);
       }
