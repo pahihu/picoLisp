@@ -85,7 +85,7 @@ any shorten(any x) {
 
 /* Convert signed number to short/bigNum */
 any cvtSigned(any x) {
-   int sign;
+   int sign = 0;
 
    ASSERT(isBig(x));
 
@@ -99,6 +99,7 @@ any cvtSigned(any x) {
    }
    return sign? neg(x) : x;
 #else
+   IGNORE_VALUE(sign);
    return shorten(x);
 #endif
 }

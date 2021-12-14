@@ -73,6 +73,8 @@ void checkHashed(any* p) {
          x = cdr(x);
       }
    }
+#else
+   IGNORE_VALUE(p);
 #endif
    return;
 }

@@ -45,6 +45,8 @@ void myAssert(int,const char*,const char*,int);
 #define ASSERT(x)
 #endif
 
+#define IGNORE_VALUE(x) ((void)((x)+1))
+
 #define WORD ((int)sizeof(word))
 #define BITS (8*WORD)
 #define BITS32 ((int)32)

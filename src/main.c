@@ -273,6 +273,7 @@ void *alloc(void *p, size_t siz) {
 /* Allocate aligned memory */
 void *allocAligned(void *p, size_t siz, size_t boundary) {
 #ifdef __LP64__
+   IGNORE_VALUE(boundary);
    return alloc(p,siz);
 #else
    char *q, *r;
