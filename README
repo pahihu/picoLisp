@@ -99,6 +99,7 @@ From Pil64:
       long lisp(char*,long,long,long,long,long);
 
 
+* '~' reader macro splice atoms too, '^' in fill modified as well
 * added 'tty', '%~' reader macro
 * replaced (model) in rcsim.l with the pil21 version by Alexander Burger
   misc/rcsim.l works as expected

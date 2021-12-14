@@ -524,7 +524,7 @@
       (fill '(a b (c @X) ((@Y . d) e))) ) )
 (test (1 a b c 9)
    (fill (1 ^ (list 'a 'b 'c) 9)) )
-(test (1 9)
+(test (1 7 9)
    (fill (1 ^ 7 9)) )
 (test (1 5 7)
    (fill (1 ^(+ 2 3) 7)) )
