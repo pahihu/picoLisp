@@ -18,7 +18,7 @@ ifeq ($(debug),yes)
 	OPT = -DPICODEBUG=1
         STRIP = :
 else
-	OPT = -O2 -fomit-frame-pointer #-DPICODEBUG=1
+	OPT = -O2 -fomit-frame-pointer -DNDEBUG #-DPICODEBUG=1
         STRIP = strip
 endif
 

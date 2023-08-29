@@ -372,11 +372,23 @@ any doSymbols(any ex) {
    return x;
 }
 
+any packAny(any x) {
+   int i;
+   any nm;
+   cell c1, c2;
+
+   Push(c1, x);
+   nm = NULL,  pack(data(c1), &i, &nm, &c2);
+   drop(c1);
+   return nm? consStr(data(c2)) : Nil;
+}
+
 // (intern 'sym ['nsp]) -> sym
 any doIntern(any ex) {
    any x, y, z, *h, flg, nsp;
 
    x = cdr(ex),  x = EVAL(car(x));
+   if (!isSym(x)) x = packAny(x);
    NeedSym(ex,x);
    if (!isNum(y = name(x)))
       return Nil;
