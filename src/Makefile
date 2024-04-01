@@ -6,20 +6,20 @@ lib = ../lib
 
 picoFiles = main.c gc.c apply.c flow.c sym.c subr.c big.c io.c net.c tab.c
 
-CC = gcc
+CC = clang -flto
 # CCLD is the cc (compiler frontend) to use for the link step.
-CCLD = gcc
-GCCLD = gcc
+CCLD = clang -flto
+GCCLD = gcc-mp-12 -flto
 CPU = $(shell uname -m)
 
 ifeq ($(debug),yes)
 	CC += -g #-fsanitize=address
 	CCLD += -g #-fsanitize=address
 	OPT = -DPICODEBUG=1
-        STRIP = :
+    STRIP = :
 else
-	OPT = -O2 -fomit-frame-pointer -DNDEBUG #-DPICODEBUG=1
-        STRIP = strip
+	OPT = -O3 -fomit-frame-pointer -DNDEBUG #-DPICODEBUG=1
+    STRIP = strip
 endif
 
 ifeq ($(target),pil32)
@@ -89,14 +89,15 @@ ifeq ($(target), pil32)
     # LIB-FLAGS = $(HOME)/local32/lib/libffi.a
 endif
 	OS = Darwin
-	ALIGN_FUNCTIONS = -mllvm -align-all-functions=5
+	# ALIGN_FUNCTIONS = -mllvm -align-all-functions=5
+	ALIGN_FUNCTIONS = -falign-functions=32
 	BFLAGS += ${M32} -mmacosx-version-min=10.6 \
 		  -Wno-parentheses -D_DARWIN_UNLIMITED_SELECT \
 		  -D_XOPEN_SOURCE -Wno-deprecated-declarations
 	PICOLISP-FLAGS = ${M32}
 	LIB-FLAGS += -lc -lm -ldl
 	DYNAMIC-LIB-FLAGS = ${M32} -dynamiclib -undefined dynamic_lookup
-    SYSDIRS = -I/opt/local/include -L/opt/local/lib
+    SYSDIRS = -I/usr/local/include -L/usr/local/lib
 	LCRYPT = #-lcrypto
 	STRIP-FLAGS = -x
 else
